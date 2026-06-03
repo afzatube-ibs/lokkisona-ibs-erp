@@ -18,7 +18,7 @@ class ActivityLog
             'action' => $action,
             'message' => $message,
             'user' => $context['user'] ?? (Auth::user() ?: 'guest'),
-            'role' => $context['role'] ?? 'admin',
+            'role' => $context['role'] ?? Auth::role(),
             'ip' => $_SERVER['REMOTE_ADDR'] ?? 'cli',
             'method' => $_SERVER['REQUEST_METHOD'] ?? 'CLI',
             'path' => parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH),

@@ -34,6 +34,12 @@ class Auth
         return $_SESSION['ibs_user'] ?? null;
     }
 
+    public static function role()
+    {
+        self::startSession();
+        return $_SESSION['ibs_role'] ?? config('permissions.default_role', 'owner');
+    }
+
     public static function attempt($username, $password)
     {
         $validUser = config('app.auth.username', 'admin');
@@ -52,12 +58,13 @@ class Auth
         session_regenerate_id(true);
         $_SESSION['ibs_authenticated'] = true;
         $_SESSION['ibs_user'] = $username;
+        $_SESSION['ibs_role'] = config('permissions.default_role', 'owner');
         $_SESSION['ibs_login_at'] = time();
 
         app_log('User logged in: ' . $username);
         ActivityLog::record('login', 'User logged in', [
             'user' => $username,
-            'role' => 'admin',
+            'role' => self::role(),
         ]);
         return true;
     }
@@ -66,6 +73,7 @@ class Auth
     {
         self::startSession();
         $user = $_SESSION['ibs_user'] ?? 'unknown';
+        $role = $_SESSION['ibs_role'] ?? config('permissions.default_role', 'owner');
         $_SESSION = [];
 
         if (ini_get('session.use_cookies')) {
@@ -85,7 +93,7 @@ class Auth
         app_log('User logged out: ' . $user);
         ActivityLog::record('logout', 'User logged out', [
             'user' => $user,
-            'role' => 'admin',
+            'role' => $role,
         ]);
     }
 

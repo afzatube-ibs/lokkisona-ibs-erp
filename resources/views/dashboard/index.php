@@ -61,6 +61,10 @@
                     <span class="action-link-title">Activity Log</span>
                     <span class="action-link-desc">Review recent authentication and system activity</span>
                 </a>
+                <a href="<?= e(url('/roles-permissions')) ?>" class="action-link">
+                    <span class="action-link-title">Role & Permissions</span>
+                    <span class="action-link-desc">Review role and permission foundation planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -73,6 +77,7 @@
             <ul class="feature-list">
                 <li>Standalone PHP application — no OpenCart extension</li>
                 <li>Session-based authentication ready for future owner, admin, and staff roles</li>
+                <li>Config-backed role and permission foundation</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>

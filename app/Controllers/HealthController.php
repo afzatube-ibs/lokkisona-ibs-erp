@@ -3,14 +3,13 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
-use App\Auth;
 use App\Database;
 
 class HealthController extends Controller
 {
     public function index()
     {
-        Auth::requireAuth();
+        $this->authorize('health.view');
         ActivityLog::record('health_access', 'Health check viewed');
 
         $checks = $this->runChecks();

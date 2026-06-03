@@ -3,13 +3,12 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
-use App\Auth;
 
 class VersionController extends Controller
 {
     public function index()
     {
-        Auth::requireAuth();
+        $this->authorize('version.view');
         ActivityLog::record('version_access', 'Version page viewed');
 
         $this->render('version.index', [
@@ -39,7 +38,9 @@ class VersionController extends Controller
             ],
             'features' => [
                 'Session authentication foundation',
-                'Owner, admin, and staff role wording prepared',
+                'Owner, admin, staff, and supplier roles prepared',
+                'Config-backed permission policy service',
+                'Permission-aware route protection and sidebar visibility',
                 'File-backed activity log foundation',
                 'Simple router',
                 'Admin layout',

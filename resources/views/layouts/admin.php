@@ -20,22 +20,12 @@
                 </div>
             </div>
             <nav class="sidebar-nav">
-                <a href="<?= e(url('/dashboard')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/dashboard') !== false ? 'active' : '' ?>">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    Dashboard
+                <?php foreach ($navItems ?? [] as $item): ?>
+                <a href="<?= e(url($item['path'])) ?>" class="nav-item <?= strpos($currentPath ?? '', $item['path']) !== false ? 'active' : '' ?>">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><?= $item['icon'] ?></svg>
+                    <?= e($item['label']) ?>
                 </a>
-                <a href="<?= e(url('/health')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/health') !== false ? 'active' : '' ?>">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                    Health Check
-                </a>
-                <a href="<?= e(url('/version')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/version') !== false ? 'active' : '' ?>">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                    Version
-                </a>
-                <a href="<?= e(url('/activity-log')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/activity-log') !== false ? 'active' : '' ?>">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
-                    Activity Log
-                </a>
+                <?php endforeach; ?>
             </nav>
             <div class="sidebar-footer">
                 <span class="version-badge">v<?= e($appVersion) ?></span>
@@ -60,7 +50,7 @@
                 </nav>
                 <?php endif; ?>
                 <div class="topbar-actions">
-                    <span class="user-badge"><?= e($currentUser ?? 'User') ?></span>
+                    <span class="user-badge"><?= e($currentUser ?? 'User') ?> · <?= e($currentRole ?? 'owner') ?></span>
                     <a href="<?= e(url('/logout')) ?>" class="btn btn-ghost btn-sm">Sign out</a>
                 </div>
             </header>

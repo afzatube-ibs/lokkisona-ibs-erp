@@ -3,13 +3,12 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
-use App\Auth;
 
 class ActivityLogController extends Controller
 {
     public function index()
     {
-        Auth::requireAuth();
+        $this->authorize('activity_log.view');
         ActivityLog::record('activity_log_access', 'Activity log viewed');
 
         $this->render('activity-log.index', [

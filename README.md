@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.2 - Authentication + Activity Log Foundation**
+**Version 0.1.3 - Role & Permission Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -59,18 +59,32 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/health`   | Health check (auth)|
 | GET    | `/version`  | Version info (auth)|
 | GET    | `/activity-log` | Activity log (auth) |
+| GET    | `/roles-permissions` | Role and permission foundation (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.2.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.3.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
 ## Authentication
 
-The current release keeps the configured single-admin login in `config/app.php` working. It prepares owner, admin, and staff wording for future role work, but does not add database-backed multi-user authentication yet.
+The current release keeps the configured single-admin login in `config/app.php` working. It prepares owner, admin, staff, and supplier wording for future role work, but does not add database-backed multi-user authentication yet.
+
+## Roles & Permissions
+
+Roles and permissions are config-backed in `config/permissions.php` and enforced through `App\Permission` plus controller authorization helpers. The current configured admin is treated as owner-level access for now.
+
+Prepared roles:
+
+- owner
+- admin
+- staff
+- supplier
+
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, orders, product control, dispatch, returns, payable, and settings.
 
 ## Activity Log
 
@@ -85,12 +99,14 @@ Logged foundation events include:
 - Health check access
 - Version page access
 - Activity log access
+- Roles and permissions page access
+- Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.2
+- App Version v0.1.3
 - PHP Version
 - Database Connection Status
 - Storage Writable Status
