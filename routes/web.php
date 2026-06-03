@@ -20,6 +20,7 @@ $router->get('/health', 'HealthController@index');
 $router->get('/version', 'VersionController@index');
 $router->get('/activity-log', 'ActivityLogController@index');
 $router->get('/roles-permissions', 'RolesPermissionsController@index');
+$router->get('/database-safety', 'DatabaseSafetyController@index');
 
 $router->setNotFound(function () {
     http_response_code(404);

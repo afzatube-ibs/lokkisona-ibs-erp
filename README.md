@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.3 - Role & Permission Foundation**
+**Version 0.1.4 - Manual Migration and Database Safety Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -60,14 +60,49 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/version`  | Version info (auth)|
 | GET    | `/activity-log` | Activity log (auth) |
 | GET    | `/roles-permissions` | Role and permission foundation (auth) |
+| GET    | `/database-safety` | Database safety and manual migration rules (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.3.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.4.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
+
+Manual migration notes and planned schema files live in `database/migrations/`. They are owner/admin action files only; the application does not execute them automatically.
+
+## Business Architecture Direction
+
+IBS-LK Business Manager starts with Iqbal & Brothers supplier operations and Lokkisona order workflow references, but the architecture stays channel-neutral. Future tables and modules should support multiple businesses, sales channels, manual/offline orders, supplier workflows, payable workflows, return workflows, and later expansion beyond one channel.
+
+## Database Safety
+
+The authenticated `/database-safety` page reports the current database connection, manual migration rules, no page-load schema rules, and pending planned tables.
+
+Planned future tables are documented only:
+
+- users
+- roles
+- user_roles
+- activity_logs
+- businesses
+- sales_channels
+- suppliers
+- products
+- product_variants
+- supplier_product_costs
+- orders
+- order_items
+- order_status_mappings
+- dispatch_reports
+- dispatch_report_items
+- supplier_returns
+- owner_returns
+- payable_ledgers
+- supplier_invoices
+- supplier_payments
+- settings
 
 ## Authentication
 
@@ -84,7 +119,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, orders, product control, dispatch, returns, payable, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, orders, product control, dispatch, returns, payable, and settings.
 
 ## Activity Log
 
@@ -100,13 +135,14 @@ Logged foundation events include:
 - Version page access
 - Activity log access
 - Roles and permissions page access
+- Database safety page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.3
+- App Version v0.1.4
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

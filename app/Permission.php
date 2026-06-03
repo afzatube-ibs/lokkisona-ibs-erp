@@ -65,6 +65,12 @@ class Permission
                 'permission' => 'roles_permissions.view',
                 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>',
             ],
+            [
+                'label' => 'Database Safety',
+                'path' => '/database-safety',
+                'permission' => 'database_safety.view',
+                'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M9 12l2 2 4-4"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

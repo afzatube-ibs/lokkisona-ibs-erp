@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.3',
-    'release_label' => 'Role & Permission Foundation',
+    'version' => '0.1.4',
+    'release_label' => 'Manual Migration and Database Safety Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

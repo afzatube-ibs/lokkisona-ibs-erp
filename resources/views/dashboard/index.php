@@ -65,6 +65,10 @@
                     <span class="action-link-title">Role & Permissions</span>
                     <span class="action-link-desc">Review role and permission foundation planning</span>
                 </a>
+                <a href="<?= e(url('/database-safety')) ?>" class="action-link">
+                    <span class="action-link-title">Database Safety</span>
+                    <span class="action-link-desc">Review manual migration rules and planned tables</span>
+                </a>
             </div>
         </div>
     </div>
@@ -78,6 +82,7 @@
                 <li>Standalone PHP application — no OpenCart extension</li>
                 <li>Session-based authentication ready for future owner, admin, and staff roles</li>
                 <li>Config-backed role and permission foundation</li>
+                <li>Manual migration and database safety foundation</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>

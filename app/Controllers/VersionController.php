@@ -37,6 +37,9 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Manual migration foundation',
+                'Database safety page and permission',
+                'Planned future table inventory',
                 'Session authentication foundation',
                 'Owner, admin, staff, and supplier roles prepared',
                 'Config-backed permission policy service',
