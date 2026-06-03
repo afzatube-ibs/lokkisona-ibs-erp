@@ -1,0 +1,21 @@
+# Dependencies
+/vendor/
+
+# Environment
+.env
+.env.*
+
+# Storage & logs
+/storage/logs/*.log
+!/storage/logs/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# PHP
+*.cache

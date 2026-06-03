@@ -1,0 +1,78 @@
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-description">Welcome to Lokkisona IBS ERP Standalone Foundation.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">System Status</span>
+            <span class="stat-value">Operational</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Version</span>
+            <span class="stat-value">v<?= e($appVersion) ?></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Signed in as</span>
+            <span class="stat-value"><?= e($currentUser) ?></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Database</span>
+            <span class="stat-value">Configure</span>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Quick Actions</h2>
+        </div>
+        <div class="card-body">
+            <div class="action-links">
+                <a href="<?= e(url('/health')) ?>" class="action-link">
+                    <span class="action-link-title">Health Check</span>
+                    <span class="action-link-desc">Verify system requirements and connectivity</span>
+                </a>
+                <a href="<?= e(url('/version')) ?>" class="action-link">
+                    <span class="action-link-title">Version Info</span>
+                    <span class="action-link-desc">View release details and dependencies</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Foundation Overview</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <li>Standalone PHP application — no OpenCart extension</li>
+                <li>Session-based authentication</li>
+                <li>Simple router with MVC-style controllers</li>
+                <li>Responsive admin layout with Lokkisona branding</li>
+                <li>Git-ready repository structure</li>
+            </ul>
+        </div>
+    </div>
+</div>
