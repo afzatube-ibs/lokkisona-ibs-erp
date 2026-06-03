@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-description">Welcome to Lokkisona IBS ERP Standalone Foundation.</p>
+    <p class="page-description">Welcome to IBS-LK Business Manager.</p>
 </div>
 
 <div class="stats-grid">
@@ -57,6 +57,10 @@
                     <span class="action-link-title">Version Info</span>
                     <span class="action-link-desc">View release details and dependencies</span>
                 </a>
+                <a href="<?= e(url('/activity-log')) ?>" class="action-link">
+                    <span class="action-link-title">Activity Log</span>
+                    <span class="action-link-desc">Review recent authentication and system activity</span>
+                </a>
             </div>
         </div>
     </div>
@@ -68,9 +72,10 @@
         <div class="card-body">
             <ul class="feature-list">
                 <li>Standalone PHP application — no OpenCart extension</li>
-                <li>Session-based authentication</li>
+                <li>Session-based authentication ready for future owner, admin, and staff roles</li>
                 <li>Simple router with MVC-style controllers</li>
-                <li>Responsive admin layout with Lokkisona branding</li>
+                <li>Responsive admin layout with IBS-LK branding</li>
+                <li>File-backed activity log foundation</li>
                 <li>Git-ready repository structure</li>
             </ul>
         </div>

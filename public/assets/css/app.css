@@ -1,4 +1,4 @@
-/* Lokkisona IBS ERP v0.1.1 - Standalone Foundation */
+/* IBS-LK Business Manager v0.1.2 - Authentication + Activity Log Foundation */
 
 :root {
     --color-primary: #1a4d8c;
@@ -457,6 +457,12 @@ code {
 
 .card-body {
     padding: 1.25rem;
+}
+
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-text-muted);
 }
 
 .card-body-flush {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — Lokkisona IBS ERP</title>
+    <title>Sign In — IBS-LK Business Manager</title>
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,9 +14,9 @@
         <div class="login-card">
             <div class="login-brand">
                 <div class="brand-mark brand-mark-lg">IBS</div>
-                <h1 class="login-title">Lokkisona IBS ERP</h1>
-                <p class="login-subtitle">Standalone Enterprise Resource Planning</p>
-                <span class="version-pill">v0.1.1 Foundation</span>
+                <h1 class="login-title">IBS-LK Business Manager</h1>
+                <p class="login-subtitle">Standalone ERP foundation</p>
+                <span class="version-pill">v<?= e(config('app.version')) ?> <?= e(config('app.release_label')) ?></span>
             </div>
 
             <?php if (!empty($error)): ?>
@@ -43,7 +43,7 @@
         </div>
 
         <footer class="login-footer">
-            <span>Git-based deployment · No OpenCart · PHP 7.4+</span>
+            <span>Git-based deployment · No OpenCart · Runtime PHP <?= e(PHP_VERSION) ?></span>
         </footer>
     </div>
 </body>

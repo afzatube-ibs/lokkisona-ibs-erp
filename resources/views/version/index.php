@@ -7,7 +7,7 @@
     <div class="version-hero-mark">IBS</div>
     <div class="version-hero-info">
         <h2><?= e($info['product']) ?></h2>
-        <p class="version-number">Version <?= e($info['version']) ?></p>
+        <p class="version-number">v<?= e($info['version']) ?> <?= e($info['codename']) ?></p>
         <p class="version-codename"><?= e($info['codename']) ?></p>
     </div>
 </div>
@@ -40,6 +40,10 @@
                     <dd><?= e($info['php_version']) ?></dd>
                 </div>
                 <div class="info-row">
+                    <dt>PHP Requirement</dt>
+                    <dd><?= e($info['php_requirement']) ?></dd>
+                </div>
+                <div class="info-row">
                     <dt>Environment</dt>
                     <dd><?= e($info['environment']) ?></dd>
                 </div>
@@ -66,7 +70,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">v0.1.1 Features</h2>
+        <h2 class="card-title">v0.1.2 Features</h2>
     </div>
     <div class="card-body">
         <ul class="feature-list feature-list-columns">

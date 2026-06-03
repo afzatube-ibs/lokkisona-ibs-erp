@@ -41,6 +41,10 @@ class Auth
 
         if ($username !== $validUser || $password !== $validPass) {
             app_log('Failed login attempt for user: ' . $username, 'warning');
+            ActivityLog::record('failed_login', 'Failed login attempt', [
+                'user' => $username,
+                'role' => 'guest',
+            ]);
             return false;
         }
 
@@ -51,6 +55,10 @@ class Auth
         $_SESSION['ibs_login_at'] = time();
 
         app_log('User logged in: ' . $username);
+        ActivityLog::record('login', 'User logged in', [
+            'user' => $username,
+            'role' => 'admin',
+        ]);
         return true;
     }
 
@@ -75,6 +83,10 @@ class Auth
 
         session_destroy();
         app_log('User logged out: ' . $user);
+        ActivityLog::record('logout', 'User logged out', [
+            'user' => $user,
+            'role' => 'admin',
+        ]);
     }
 
     public static function requireAuth()

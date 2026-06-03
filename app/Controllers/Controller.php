@@ -9,6 +9,7 @@ class Controller
         $data['pageTitle'] = $data['pageTitle'] ?? config('app.name');
         $data['appName'] = config('app.name');
         $data['appVersion'] = config('app.version');
+        $data['appReleaseLabel'] = config('app.release_label');
         $data['currentUser'] = \App\Auth::user();
         $data['currentPath'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 

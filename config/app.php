@@ -1,8 +1,9 @@
 <?php
 
 return [
-    'name' => 'Lokkisona IBS ERP',
-    'version' => '0.1.1',
+    'name' => 'IBS-LK Business Manager',
+    'version' => '0.1.2',
+    'release_label' => 'Authentication + Activity Log Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

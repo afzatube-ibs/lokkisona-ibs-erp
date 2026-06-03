@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\ActivityLog;
 use App\Auth;
 use App\Database;
 
@@ -10,6 +11,7 @@ class HealthController extends Controller
     public function index()
     {
         Auth::requireAuth();
+        ActivityLog::record('health_access', 'Health check viewed');
 
         $checks = $this->runChecks();
 
@@ -32,14 +34,14 @@ class HealthController extends Controller
             'name' => 'App Version',
             'status' => 'ok',
             'message' => 'v' . config('app.version'),
-            'detail' => config('app.name'),
+            'detail' => config('app.release_label'),
         ];
 
         $checks[] = [
             'name' => 'PHP Version',
-            'status' => version_compare(PHP_VERSION, '7.4.0', '>=') ? 'ok' : 'fail',
+            'status' => version_compare(PHP_VERSION, '8.2.0', '>=') ? 'ok' : 'fail',
             'message' => PHP_VERSION,
-            'detail' => 'Minimum required: 7.4.0',
+            'detail' => 'Minimum required: 8.2.0',
         ];
 
         $storageWritable = $this->isStorageWritable();

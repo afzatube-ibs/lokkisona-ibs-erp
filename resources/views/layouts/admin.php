@@ -15,8 +15,8 @@
             <div class="sidebar-brand">
                 <div class="brand-mark">IBS</div>
                 <div class="brand-text">
-                    <span class="brand-name">Lokkisona</span>
-                    <span class="brand-sub">IBS ERP</span>
+                    <span class="brand-name">IBS-LK</span>
+                    <span class="brand-sub">Business Manager</span>
                 </div>
             </div>
             <nav class="sidebar-nav">
@@ -31,6 +31,10 @@
                 <a href="<?= e(url('/version')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/version') !== false ? 'active' : '' ?>">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                     Version
+                </a>
+                <a href="<?= e(url('/activity-log')) ?>" class="nav-item <?= strpos($currentPath ?? '', '/activity-log') !== false ? 'active' : '' ?>">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
+                    Activity Log
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -66,8 +70,8 @@
             </main>
 
             <footer class="app-footer">
-                <span>&copy; <?= date('Y') ?> Lokkisona IBS ERP</span>
-                <span>Standalone Foundation v<?= e($appVersion) ?></span>
+                <span>&copy; <?= date('Y') ?> IBS-LK Business Manager</span>
+                <span>Runtime PHP <?= e(PHP_VERSION) ?> · v<?= e($appVersion) ?> <?= e($appReleaseLabel) ?></span>
             </footer>
         </div>
     </div>
