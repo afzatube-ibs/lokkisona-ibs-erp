@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.5',
-    'release_label' => 'Local Checkpoint Runner Foundation',
+    'version' => '0.1.6',
+    'release_label' => 'User Management Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

@@ -37,6 +37,8 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'User Management foundation page and permission',
+                'Future database user planning without writes',
                 'Local checkpoint runner for PHP lint, route smoke, and safety checks',
                 'Manual migration foundation',
                 'Database safety page and permission',

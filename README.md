@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.5 - Local Checkpoint Runner Foundation**
+**Version 0.1.6 - User Management Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -61,12 +61,13 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/activity-log` | Activity log (auth) |
 | GET    | `/roles-permissions` | Role and permission foundation (auth) |
 | GET    | `/database-safety` | Database safety and manual migration rules (auth) |
+| GET    | `/users` | User management foundation (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.5.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.6.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
@@ -118,6 +119,12 @@ Planned future tables are documented only:
 
 The current release keeps the configured single-admin login in `config/app.php` working. It prepares owner, admin, staff, and supplier wording for future role work, but does not add database-backed multi-user authentication yet.
 
+## User Management
+
+The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
+
+No users table is created automatically and no database user records are written in v0.1.6.
+
 ## Roles & Permissions
 
 Roles and permissions are config-backed in `config/permissions.php` and enforced through `App\Permission` plus controller authorization helpers. The current configured admin is treated as owner-level access for now.
@@ -129,7 +136,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, orders, product control, dispatch, returns, payable, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, orders, product control, dispatch, returns, payable, and settings.
 
 ## Activity Log
 
@@ -146,13 +153,14 @@ Logged foundation events include:
 - Activity log access
 - Roles and permissions page access
 - Database safety page access
+- Users page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.5
+- App Version v0.1.6
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

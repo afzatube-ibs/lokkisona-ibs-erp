@@ -69,6 +69,10 @@
                     <span class="action-link-title">Database Safety</span>
                     <span class="action-link-desc">Review manual migration rules and planned tables</span>
                 </a>
+                <a href="<?= e(url('/users')) ?>" class="action-link">
+                    <span class="action-link-title">Users</span>
+                    <span class="action-link-desc">Review user management foundation planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -83,6 +87,7 @@
                 <li>Session-based authentication ready for future owner, admin, and staff roles</li>
                 <li>Config-backed role and permission foundation</li>
                 <li>Manual migration and database safety foundation</li>
+                <li>User management foundation without database writes</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>

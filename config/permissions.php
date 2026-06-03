@@ -28,8 +28,14 @@ return [
             'activity_log.view',
             'roles_permissions.view',
             'database_safety.view',
+            'users.view',
+            'users.manage',
             'settings.view',
             'settings.manage',
+        ],
+        'User Management' => [
+            'users.view',
+            'users.manage',
         ],
         'Orders' => [
             'orders.view',
@@ -61,6 +67,8 @@ return [
             'activity_log.view',
             'roles_permissions.view',
             'database_safety.view',
+            'users.view',
+            'users.manage',
             'orders.view',
             'orders.manage',
             'product_control.view',
