@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.4 - Manual Migration and Database Safety Foundation**
+**Version 0.1.5 - Local Checkpoint Runner Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -66,11 +66,21 @@ Change credentials in `config/app.php` under the `auth` key.
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.4.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.5.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
 Manual migration notes and planned schema files live in `database/migrations/`. They are owner/admin action files only; the application does not execute them automatically.
+
+## Local Checkpoint
+
+Run the local checkpoint after every build or foundation change:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/check-local.ps1
+```
+
+The checkpoint runs PHP lint, route smoke tests, version checks, forbidden text checks, database safety checks, and a git status summary. It does not commit or push.
 
 ## Business Architecture Direction
 
@@ -142,7 +152,7 @@ Logged foundation events include:
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.4
+- App Version v0.1.5
 - PHP Version
 - Database Connection Status
 - Storage Writable Status
