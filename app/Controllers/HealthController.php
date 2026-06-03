@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Auth;
+use App\Database;
 
 class HealthController extends Controller
 {
@@ -28,85 +29,64 @@ class HealthController extends Controller
         $checks = [];
 
         $checks[] = [
+            'name' => 'App Version',
+            'status' => 'ok',
+            'message' => 'v' . config('app.version'),
+            'detail' => config('app.name'),
+        ];
+
+        $checks[] = [
             'name' => 'PHP Version',
             'status' => version_compare(PHP_VERSION, '7.4.0', '>=') ? 'ok' : 'fail',
-            'message' => 'Running PHP ' . PHP_VERSION,
+            'message' => PHP_VERSION,
             'detail' => 'Minimum required: 7.4.0',
         ];
 
+        $storageWritable = $this->isStorageWritable();
+        $databaseStatus = $this->databaseStatus();
         $checks[] = [
-            'name' => 'Session',
-            'status' => session_status() === PHP_SESSION_ACTIVE || session_status() === PHP_SESSION_NONE ? 'ok' : 'warn',
-            'message' => session_status() === PHP_SESSION_ACTIVE ? 'Active' : 'Available',
-            'detail' => 'Session authentication ready',
+            'name' => 'Database Connection Status',
+            'status' => $databaseStatus['connected'] ? 'ok' : 'warn',
+            'message' => $databaseStatus['message'],
+            'detail' => $databaseStatus['detail'],
         ];
 
-        $storageWritable = is_writable(IBS_STORAGE) || @mkdir(IBS_STORAGE . '/logs', 0755, true);
         $checks[] = [
-            'name' => 'Storage',
+            'name' => 'Storage Writable Status',
             'status' => $storageWritable ? 'ok' : 'fail',
             'message' => $storageWritable ? 'Writable' : 'Not writable',
             'detail' => IBS_STORAGE,
         ];
 
-        $configExists = file_exists(IBS_CONFIG . '/database.php');
         $checks[] = [
-            'name' => 'Database Config',
-            'status' => $configExists ? 'ok' : 'fail',
-            'message' => $configExists ? 'Present' : 'Missing',
-            'detail' => 'config/database.php',
+            'name' => 'Environment',
+            'status' => 'ok',
+            'message' => config('app.env', 'local'),
+            'detail' => 'Standalone foundation, no OpenCart dependency',
         ];
 
-        $dbStatus = $this->checkDatabase();
-        $checks[] = $dbStatus;
-
         $checks[] = [
-            'name' => 'Application',
+            'name' => 'Current Server Time',
             'status' => 'ok',
-            'message' => config('app.name') . ' v' . config('app.version'),
-            'detail' => 'Standalone foundation — no OpenCart dependency',
+            'message' => date('Y-m-d H:i:s T'),
+            'detail' => 'Timezone: ' . date_default_timezone_get(),
         ];
 
         return $checks;
     }
 
-    private function checkDatabase()
+    private function databaseStatus()
     {
-        $host = config('database.host');
-        $port = config('database.port');
-        $database = config('database.database');
+        return Database::check();
+    }
 
-        try {
-            $dsn = sprintf(
-                'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-                $host,
-                $port,
-                $database,
-                config('database.charset', 'utf8mb4')
-            );
-
-            $pdo = new \PDO(
-                $dsn,
-                config('database.username'),
-                config('database.password'),
-                config('database.options', [])
-            );
-            $pdo->query('SELECT 1');
-
-            return [
-                'name' => 'Database Connection',
-                'status' => 'ok',
-                'message' => 'Connected',
-                'detail' => $database . '@' . $host . ':' . $port,
-            ];
-        } catch (\PDOException $e) {
-            return [
-                'name' => 'Database Connection',
-                'status' => 'warn',
-                'message' => 'Not connected',
-                'detail' => 'Configure config/database.php and ensure MySQL is running. ' . $e->getMessage(),
-            ];
+    private function isStorageWritable()
+    {
+        if (!is_dir(IBS_STORAGE)) {
+            @mkdir(IBS_STORAGE, 0755, true);
         }
+
+        return is_dir(IBS_STORAGE) && is_writable(IBS_STORAGE);
     }
 
     private function overallStatus($checks)

@@ -1,13 +1,13 @@
 # Lokkisona IBS ERP
 
-**Version 0.1 — Standalone Foundation**
+**Version 0.1.1 - Database Connection + Health Check**
 
 A standalone Enterprise Resource Planning foundation built with PHP 7.4+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
 ## Requirements
 
 - PHP 7.4 or higher
-- MySQL 5.7+ (optional for v0.1; configure when ready)
+- MySQL 5.7+ for PDO database connection checks
 - Apache with `mod_rewrite` or PHP built-in server
 
 ## Quick Start
@@ -62,6 +62,19 @@ Change credentials in `config/app.php` under the `auth` key.
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
+
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.1.
+
+## Health Check
+
+The authenticated `/health` page reports:
+
+- App Version v0.1.1
+- PHP Version
+- Database Connection Status
+- Storage Writable Status
+- Environment
+- Current Server Time
 
 ## License
 

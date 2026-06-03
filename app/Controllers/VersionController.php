@@ -38,7 +38,8 @@ class VersionController extends Controller
                 'Session authentication',
                 'Simple router',
                 'Admin layout',
-                'Health monitoring',
+                'PDO database connection',
+                'Health monitoring with database and storage status',
                 'Git-based deployment',
             ],
         ];

@@ -16,7 +16,7 @@
                 <div class="brand-mark brand-mark-lg">IBS</div>
                 <h1 class="login-title">Lokkisona IBS ERP</h1>
                 <p class="login-subtitle">Standalone Enterprise Resource Planning</p>
-                <span class="version-pill">v0.1 Foundation</span>
+                <span class="version-pill">v0.1.1 Foundation</span>
             </div>
 
             <?php if (!empty($error)): ?>

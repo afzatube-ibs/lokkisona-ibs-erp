@@ -66,7 +66,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">v0.1 Features</h2>
+        <h2 class="card-title">v0.1.1 Features</h2>
     </div>
     <div class="card-body">
         <ul class="feature-list feature-list-columns">
