@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.7 - Supplier Foundation**
+**Version 0.1.8 - Business Source and Sales Channel Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -63,12 +63,13 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/database-safety` | Database safety and manual migration rules (auth) |
 | GET    | `/users` | User management foundation (auth) |
 | GET    | `/suppliers` | Supplier foundation (auth) |
+| GET    | `/business-sources` | Business source and sales channel foundation (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.7.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.8.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
@@ -124,7 +125,7 @@ The current release keeps the configured single-admin login in `config/app.php` 
 
 The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
 
-No users table is created automatically and no database user records are written in v0.1.7.
+No users table is created automatically and no database user records are written in v0.1.8.
 
 ## Supplier Management
 
@@ -136,7 +137,17 @@ Planned supplier fields documented only: supplier name, contact person, phone, e
 
 Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
 
-No suppliers table is created automatically and no supplier records are written in v0.1.7.
+No suppliers table is created automatically and no supplier records are written in v0.1.8.
+
+## Business Source & Sales Channel Management
+
+The authenticated `/business-sources` page documents the Business Source and Sales Channel Foundation only. It shows the current primary source (Lokkisona.com), the current primary supplier relationship (Iqbal & Brothers), future source/channel structure, manual/offline order support, ecommerce channel support, marketplace/channel support, multi-business readiness, and how orders will later connect to supplier workflow, dispatch, returns, and payable.
+
+The first source is Lokkisona.com, but the architecture is not hard-coded to one website. Future source types include Ecommerce Website, Manual Order, Offline Retail, Marketplace, Wholesale, and Other.
+
+Planned business/source fields documented only: business name, channel name, source type, website/domain, order source label, status, default supplier, default workflow, created at, updated at.
+
+No business, source, or sales channel tables are created automatically and no database records are written in v0.1.8.
 
 ## Roles & Permissions
 
@@ -149,7 +160,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, orders, product control, dispatch, returns, payable, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, product control, dispatch, returns, payable, and settings.
 
 ## Activity Log
 
@@ -168,13 +179,14 @@ Logged foundation events include:
 - Database safety page access
 - Users page access
 - Suppliers page access
+- Business Sources page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.7
+- App Version v0.1.8
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

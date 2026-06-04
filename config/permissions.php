@@ -32,6 +32,8 @@ return [
             'users.manage',
             'suppliers.view',
             'suppliers.manage',
+            'business_sources.view',
+            'business_sources.manage',
             'settings.view',
             'settings.manage',
         ],
@@ -42,6 +44,10 @@ return [
         'Supplier Management' => [
             'suppliers.view',
             'suppliers.manage',
+        ],
+        'Business Sources' => [
+            'business_sources.view',
+            'business_sources.manage',
         ],
         'Orders' => [
             'orders.view',
@@ -77,6 +83,8 @@ return [
             'users.manage',
             'suppliers.view',
             'suppliers.manage',
+            'business_sources.view',
+            'business_sources.manage',
             'orders.view',
             'orders.manage',
             'product_control.view',

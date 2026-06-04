@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Business Source and Sales Channel foundation page and permissions without database writes',
+                'Current primary source Lokkisona.com documented without hard-coding future channels',
+                'Manual, offline, ecommerce, marketplace, wholesale, and other source types prepared',
+                'Future order source links prepared for supplier workflow, dispatch, returns, and payable',
                 'Supplier foundation page and permissions without database writes',
                 'Primary supplier Iqbal & Brothers documented with channel-neutral architecture',
                 'Planned supplier fields and clean supplier accounting wording',

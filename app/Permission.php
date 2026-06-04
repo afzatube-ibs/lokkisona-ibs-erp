@@ -83,6 +83,12 @@ class Permission
                 'permission' => 'suppliers.view',
                 'icon' => '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 22V12h6v10"/>',
             ],
+            [
+                'label' => 'Business Sources',
+                'path' => '/business-sources',
+                'permission' => 'business_sources.view',
+                'icon' => '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20"/><path d="M12 2a15.3 15.3 0 0 0 0 20"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {
