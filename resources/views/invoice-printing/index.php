@@ -132,6 +132,16 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Supplier Tools Separation Rule</h2>
+    </div>
+    <div class="card-body">
+        <p>Supplier Quick Invoice Generator is independent and does not affect official ERP invoices.</p>
+        <p class="page-description">Supplier quick invoices are supplier engagement outputs only. They do not create ERP orders, do not update official ERP invoice records, and do not affect payable, settlement, product cost, stock, courier, dispatch, returns, sync/import, or accounting. See <a href="<?= e(url('/supplier-tools')) ?>">Supplier Tools planning foundation</a>.</p>
+    </div>
+</div>
+
 <div class="card-grid">
     <div class="card">
         <div class="card-header">

@@ -137,6 +137,12 @@ class Permission
                 'permission' => 'invoice_printing.view',
                 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
             ],
+            [
+                'label' => 'Supplier Tools',
+                'path' => '/supplier-tools',
+                'permission' => 'supplier_tools.view',
+                'icon' => '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.1 6.1a2.1 2.1 0 0 1-3-3l6.1-6.1a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

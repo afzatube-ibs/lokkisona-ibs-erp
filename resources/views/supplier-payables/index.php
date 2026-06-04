@@ -69,6 +69,16 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Supplier Tools Separation Rule</h2>
+    </div>
+    <div class="card-body">
+        <p>Supplier Tools do not affect payables or settlement unless owner/admin explicitly reviews/converts later.</p>
+        <p class="page-description">Supplier Quick Invoice Generator and Simple Calculator are independent engagement tools only. They do not create Product Cost Payable, Supplier Invoice, settlement, payment, deduction, product cost, stock, courier charge, order, dispatch, return, sync/import, or accounting entries. See <a href="<?= e(url('/supplier-tools')) ?>">Supplier Tools planning foundation</a>.</p>
+    </div>
+</div>
+
 <div class="card-grid">
     <div class="card">
         <div class="card-header">

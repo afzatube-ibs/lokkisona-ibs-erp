@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.16 - ERP Invoice and Packing Print Planning Foundation**
+**Version 0.1.17 - Supplier Tools Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -72,6 +72,7 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/status-mapping` | Status mapping and sync planning foundation (auth) |
 | GET    | `/sync-preview` | Sync preview and import safety planning foundation (auth) |
 | GET    | `/invoice-printing` | ERP invoice and packing print planning foundation (auth) |
+| GET    | `/supplier-tools` | Supplier tools planning foundation (auth) |
 
 ## Database
 
@@ -110,6 +111,9 @@ Planned future tables are documented only:
 - businesses
 - sales_channels
 - suppliers
+- supplier_quick_invoices
+- supplier_quick_invoice_items
+- supplier_quick_invoice_audits
 - products
 - product_variants
 - supplier_product_costs
@@ -192,7 +196,7 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.16. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.17. OpenCart is not connected in this release.
 
 ## Sync Preview & Import Safety
 
@@ -202,7 +206,7 @@ Sync/import should prepare source invoice reference and ERP invoice template typ
 
 Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
 
-No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.16. OpenCart and WooCommerce are not connected in this release.
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.17. OpenCart and WooCommerce are not connected in this release.
 
 ## ERP Invoice & Packing Print Planning
 
@@ -216,7 +220,19 @@ Print rules documented: customer invoice must not show supplier cost; supplier m
 
 Planned document types: Customer Invoice, Packing Invoice / Packing Slip, Dispatch Batch Report, Supplier Product Summary, Return Receive Batch Print, Supplier Payable Settlement Summary.
 
-No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.16.
+No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.17.
+
+## Supplier Tools Planning
+
+The authenticated `/supplier-tools` page documents the Supplier Tools Planning Foundation only. Supplier Tools are independent engagement tools for supplier convenience and must not affect official ERP financial workflow.
+
+Planned tools: Supplier Quick Invoice Generator and Simple Calculator.
+
+Supplier Quick Invoice Generator rules: independent tool only; does not create ERP orders; does not affect supplier payable, settlement, official ERP invoice, stock, courier, dispatch, returns, sync/import, or accounting; supplier can create and print/download once; supplier cannot reopen/edit/view after creation/download; owner/admin backend can see audit/history/details; every generated invoice later must have audit; owner/admin may later review/convert manually, with no automatic conversion.
+
+Simple Calculator rules: basic standalone calculator only; no payable calculation; no settlement helper; no product cost calculation; no courier charge calculation; no save to ERP accounting; no system impact; no database write required for calculator.
+
+Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.17.
 
 ## Roles & Permissions
 
@@ -229,7 +245,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, supplier tools, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
 
 ## Activity Log
 
@@ -253,13 +269,14 @@ Logged foundation events include:
 - Status Mapping page access
 - Sync Preview page access
 - Invoice Printing page access
+- Supplier Tools page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.16
+- App Version v0.1.17
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

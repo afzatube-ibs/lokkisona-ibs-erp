@@ -113,6 +113,10 @@
                     <span class="action-link-title">Invoice Printing</span>
                     <span class="action-link-desc">Review ERP invoice and packing print planning</span>
                 </a>
+                <a href="<?= e(url('/supplier-tools')) ?>" class="action-link">
+                    <span class="action-link-title">Supplier Tools</span>
+                    <span class="action-link-desc">Review independent supplier engagement tools planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -218,6 +222,16 @@
         <div class="card-body">
             <p>ERP invoice and packing print planning — source-aware customer invoice templates, internal packing/dispatch documents, PIT courier reference fields, print logs, and reprint rules without invoice generation or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/invoice-printing')) ?>">Open Invoice Printing planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Supplier Tools Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Independent supplier engagement tools planning — quick invoice generator and simple calculator, separated from official ERP invoices, payables, stock, orders, courier, returns, sync/import, and accounting.</p>
+            <p class="page-description"><a href="<?= e(url('/supplier-tools')) ?>">Open Supplier Tools planning foundation</a></p>
         </div>
     </div>
 </div>

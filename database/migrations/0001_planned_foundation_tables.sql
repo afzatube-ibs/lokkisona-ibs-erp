@@ -16,6 +16,9 @@
 
 -- Planned supplier and product tables:
 -- suppliers
+-- supplier_quick_invoices
+-- supplier_quick_invoice_items
+-- supplier_quick_invoice_audits
 -- products
 -- product_variants
 -- supplier_product_costs

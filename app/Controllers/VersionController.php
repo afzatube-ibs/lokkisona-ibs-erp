@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Supplier Tools planning foundation page and permissions without generator, calculator, or supplier tool writes',
+                'Supplier Quick Invoice Generator planned as independent one-time supplier output with admin audit/history',
+                'Simple Calculator planned as standalone tool with no payable, settlement, product cost, courier, stock, order, or accounting impact',
+                'Planned supplier quick invoice, item, and audit fields documented without automatic table creation',
                 'ERP Invoice and Packing Print planning foundation page and permissions without invoice generation or print writes',
                 'Lokkisona-style, Sonamoni-style, and manual ERP invoice template planning from ERP order snapshots',
                 'Real Lokkisona invoice sample, current invoice extension, and PIT Order Manager documented as read-only references only',
