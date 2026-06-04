@@ -77,6 +77,12 @@ return [
             'payable.view',
             'payable.manage',
         ],
+        'Supplier Payables' => [
+            'payables.view',
+            'payables.manage',
+            'supplier_payables.view',
+            'supplier_payables.manage',
+        ],
     ],
     'role_permissions' => [
         'owner' => ['*'],
@@ -107,6 +113,10 @@ return [
             'returns.manage',
             'payable.view',
             'payable.manage',
+            'payables.view',
+            'payables.manage',
+            'supplier_payables.view',
+            'supplier_payables.manage',
             'settings.view',
             'settings.manage',
         ],

@@ -107,6 +107,12 @@ class Permission
                 'permission' => 'dispatch_reports.view',
                 'icon' => '<rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5a1 1 0 0 1-1 1h-6z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
             ],
+            [
+                'label' => 'Supplier Payables',
+                'path' => '/supplier-payables',
+                'permission' => 'supplier_payables.view',
+                'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

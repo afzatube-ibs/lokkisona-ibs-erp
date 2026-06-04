@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.11',
-    'release_label' => 'Dispatch Batch and Report Planning Foundation',
+    'version' => '0.1.12',
+    'release_label' => 'Supplier Payable and Settlement Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

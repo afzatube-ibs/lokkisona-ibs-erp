@@ -37,6 +37,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Supplier Payable & Settlement planning foundation page and permissions without payable writes',
+                'Product Cost Payable from dispatch cost snapshot, based on product cost only, not selling price',
+                'Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment, and Advance wording planned',
+                'Net Payable to Supplier formula, owner/admin approval/audit, and supplier self-request rules planned',
+                'Planned payable ledger, supplier invoice, supplier payment, and deduction fields documented',
                 'Dispatch Batch / Dispatch Report planning foundation page and permissions without dispatch writes',
                 'Locked dispatch gate after Shipped with single-supplier batches and batch locking documented',
                 'Batch reference format DDMMYYYY(COUNT_ORDER) and cost snapshot for Product Cost Payable planned',

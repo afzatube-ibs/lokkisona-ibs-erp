@@ -130,7 +130,7 @@ class DispatchReportsController extends Controller
             'summary' => 'A dispatch report captures cost snapshots so payable uses locked values, not live changing cost.',
             'points' => [
                 'Dispatch report items store a cost snapshot at creation time.',
-                'Product Cost Payable should be created from the cost snapshot later.',
+                'Dispatch report later creates Product Cost Payable using the cost snapshot, feeding Supplier Payables.',
                 'Live product cost stays editable for planning and future orders.',
                 'Payable must never recalculate from live cost after a snapshot is taken.',
             ],

@@ -49,6 +49,8 @@ class DatabaseSafetyController extends Controller
             'payable_ledgers',
             'supplier_invoices',
             'supplier_payments',
+            'supplier_deductions',
+            'supplier_settlements',
             'settings',
         ];
     }

@@ -93,6 +93,10 @@
                     <span class="action-link-title">Dispatch Reports</span>
                     <span class="action-link-desc">Review dispatch batch, lock, and cost snapshot planning</span>
                 </a>
+                <a href="<?= e(url('/supplier-payables')) ?>" class="action-link">
+                    <span class="action-link-title">Supplier Payables</span>
+                    <span class="action-link-desc">Review supplier payable and settlement planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -148,6 +152,16 @@
         <div class="card-body">
             <p>Dispatch batch / dispatch report planning — the locked gate after Shipped, single-supplier batches, batch reference format, batch locking, and cost snapshots for payable without dispatch tables or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/dispatch-reports')) ?>">Open Dispatch Report planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Supplier Payable Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Supplier payable &amp; settlement planning for Iqbal &amp; Brothers — Product Cost Payable from dispatch snapshots, supplier invoices, additional payable, return/damage deductions, payments, advances, and net payable without payable tables or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/supplier-payables')) ?>">Open Supplier Payable planning foundation</a></p>
         </div>
     </div>
 </div>
