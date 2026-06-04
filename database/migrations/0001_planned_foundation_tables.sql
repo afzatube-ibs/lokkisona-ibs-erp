@@ -26,6 +26,10 @@
 -- orders
 -- order_items
 -- order_status_mappings
+-- status_mappings
+-- courier_status_mappings
+-- sync_previews
+-- sync_logs
 
 -- Planned dispatch and return workflow tables:
 -- dispatch_reports

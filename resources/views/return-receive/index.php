@@ -50,6 +50,9 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
+            <?php if ($section['title'] === 'Sync Status Mapping Rule'): ?>
+            <p class="page-description">Supplier Return and Lokkisona Return can later be created by source status mapping or manual entry. See <a href="<?= e(url('/status-mapping')) ?>">Status Mapping planning foundation</a>.</p>
+            <?php endif; ?>
         </div>
     </div>
     <?php endforeach; ?>

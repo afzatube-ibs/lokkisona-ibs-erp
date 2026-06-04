@@ -129,9 +129,10 @@ class OrderWorkflowController extends Controller
             'summary' => 'Source/origin order status mapping is used only when importing or syncing into IBS. It seeds the initial IBS workflow status and is never a live link afterward.',
             'points' => [
                 'Mapping translates a source/OpenCart status into an IBS workflow status only at import/sync time.',
+                'Sync must read Settings/Status Mapping first — see the Status Mapping planning foundation.',
                 'If the source/OpenCart order status changes later, it must not automatically overwrite IBS workflow status.',
                 'The IBS workflow remains the single source of truth for fulfillment once an order is imported.',
-                'Mappings will live in order_status_mappings and are planning data only in this release.',
+                'Mappings will live in status_mappings and order_status_mappings — planning data only in this release.',
             ],
         ];
     }

@@ -79,6 +79,14 @@ return [
             'return_batches.view',
             'return_batches.manage',
         ],
+        'Status Mapping' => [
+            'status_mapping.view',
+            'status_mapping.manage',
+        ],
+        'Sync' => [
+            'sync.view',
+            'sync.manage',
+        ],
         'Payable' => [
             'payable.view',
             'payable.manage',
@@ -121,6 +129,10 @@ return [
             'return_receive.manage',
             'return_batches.view',
             'return_batches.manage',
+            'status_mapping.view',
+            'status_mapping.manage',
+            'sync.view',
+            'sync.manage',
             'payable.view',
             'payable.manage',
             'payables.view',
@@ -137,6 +149,8 @@ return [
             'product_control.view',
             'dispatch.view',
             'returns.view',
+            'status_mapping.view',
+            'sync.view',
         ],
         'supplier' => [
             'dashboard.view',

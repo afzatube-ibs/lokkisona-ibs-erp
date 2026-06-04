@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.13',
-    'release_label' => 'Return Receive and Review Batch Foundation',
+    'version' => '0.1.14',
+    'release_label' => 'Status Mapping and Sync Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

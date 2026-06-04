@@ -101,6 +101,10 @@
                     <span class="action-link-title">Return Receive</span>
                     <span class="action-link-desc">Review return receive and review batch planning</span>
                 </a>
+                <a href="<?= e(url('/status-mapping')) ?>" class="action-link">
+                    <span class="action-link-title">Status Mapping</span>
+                    <span class="action-link-desc">Review status mapping and sync planning foundation</span>
+                </a>
             </div>
         </div>
     </div>
@@ -176,6 +180,16 @@
         <div class="card-body">
             <p>Owner/admin Return Receive &amp; Review Batch planning — separates Supplier Return from Lokkisona Return, pre-submit total confirmation, return batches, and payable adjustment review without return tables or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/return-receive')) ?>">Open Return Receive planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Status Mapping / Sync Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Status mapping and sync planning — source status to IBS workflow/return/courier rules, Test Sync preview counts, unmapped status safety, and independent IBS workflow after import without OpenCart connection or mapping writes.</p>
+            <p class="page-description"><a href="<?= e(url('/status-mapping')) ?>">Open Status Mapping planning foundation</a></p>
         </div>
     </div>
 </div>

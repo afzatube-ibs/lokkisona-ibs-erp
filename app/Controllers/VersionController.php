@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Status Mapping and Sync Planning foundation page and permissions without OpenCart connection or mapping writes',
+                'Source status to IBS workflow, Supplier Return, Lokkisona Return, and courier mapping rules documented',
+                'Independent IBS workflow after sync, skip Missing/status 0, unmapped status safety, and Test Sync preview rules',
+                'Sync preview counts, performance/sync safety limits, and planned mapping/sync preview/sync log fields documented',
                 'Return Receive & Review Batch planning foundation page and permissions, owner/admin controlled',
                 'Supplier Return vs Lokkisona Return separation with pre-submit total/cost-snapshot confirmation',
                 'Supplier Return may affect payable only after review; Lokkisona Return has no payable deduction',

@@ -119,6 +119,12 @@ class Permission
                 'permission' => 'return_receive.view',
                 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>',
             ],
+            [
+                'label' => 'Status Mapping',
+                'path' => '/status-mapping',
+                'permission' => 'status_mapping.view',
+                'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

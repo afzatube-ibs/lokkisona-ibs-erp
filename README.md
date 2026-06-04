@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.9 - Product Control Foundation**
+**Version 0.1.14 - Status Mapping and Sync Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -65,6 +65,11 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/suppliers` | Supplier foundation (auth) |
 | GET    | `/business-sources` | Business source and sales channel foundation (auth) |
 | GET    | `/product-control` | Product control foundation (auth) |
+| GET    | `/order-workflow` | Order workflow planning foundation (auth) |
+| GET    | `/dispatch-reports` | Dispatch report planning foundation (auth) |
+| GET    | `/supplier-payables` | Supplier payable planning foundation (auth) |
+| GET    | `/return-receive` | Return receive planning foundation (auth) |
+| GET    | `/status-mapping` | Status mapping and sync planning foundation (auth) |
 
 ## Database
 
@@ -111,6 +116,10 @@ Planned future tables are documented only:
 - orders
 - order_items
 - order_status_mappings
+- status_mappings
+- courier_status_mappings
+- sync_previews
+- sync_logs
 - dispatch_reports
 - dispatch_report_items
 - supplier_returns
@@ -162,7 +171,17 @@ Planned product fields documented only: product_id/source_product_id, product na
 
 Planned variant/option fields documented only: option/variant name, option value, source option id, source option value id, improved option model read-only, improved option stock read-only, supplier model, product cost, vendor stock, option image reference, POIP/PIT image reference note.
 
-No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.9. OpenCart sync is not connected in this release.
+No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.14. OpenCart sync is not connected in this release.
+
+## Status Mapping & Sync Planning
+
+The authenticated `/status-mapping` page documents the Status Mapping and Sync Planning Foundation only. It shows mapping purpose, source status to IBS workflow rules, Supplier Return and Lokkisona Return mapping rules, courier status mapping, independent IBS workflow after sync, skip Missing/status 0, unmapped status safety, Test Sync preview rules, performance/sync safety limits, manual/offline order support, and future mapping settings.
+
+Sync rules documented: read Settings/Status Mapping first; no import without valid mapping; use current source status only at first sync; IBS workflow stays independent afterward; unmapped statuses go to review/blocked preview; Test Sync visible later with preview counts; Full Sync hidden from normal UI; max 50 orders per request; no background loops or retry storms.
+
+Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
+
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.14. OpenCart is not connected in this release.
 
 ## Roles & Permissions
 
@@ -175,7 +194,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, product control, dispatch, returns, payable, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, payable, supplier payables, and settings.
 
 ## Activity Log
 
@@ -196,13 +215,14 @@ Logged foundation events include:
 - Suppliers page access
 - Business Sources page access
 - Product Control page access
+- Status Mapping page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.9
+- App Version v0.1.14
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

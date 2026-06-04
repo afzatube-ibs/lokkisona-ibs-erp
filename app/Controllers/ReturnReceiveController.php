@@ -97,10 +97,11 @@ class ReturnReceiveController extends Controller
             'title' => 'Sync Status Mapping Rule',
             'summary' => 'Normal Supplier Return and Lokkisona Return can later be mapped/imported by sync order status.',
             'points' => [
+                'Supplier Return and Lokkisona Return can later be created by source status mapping or manual entry.',
                 'Sync mapping should detect eligible source/order statuses.',
                 'Detected returns are placed into the correct return receive/review list.',
                 'Sync mapping is used only at import — it does not overwrite IBS workflow afterward.',
-                'No order sync is connected in this release.',
+                'No order sync is connected in this release — see Status Mapping planning foundation.',
             ],
         ];
     }

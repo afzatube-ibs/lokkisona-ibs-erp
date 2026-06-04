@@ -170,6 +170,7 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
+            <p class="page-description">Source status mapping is used only at import/sync time. IBS workflow remains independent after sync. See <a href="<?= e(url('/status-mapping')) ?>">Status Mapping planning foundation</a>.</p>
         </div>
     </div>
 
