@@ -28,6 +28,9 @@
 -- Planned order workflow tables:
 -- orders
 -- order_items
+-- manual_orders
+-- manual_order_items
+-- manual_order_audits
 -- order_status_mappings
 -- status_mappings
 -- courier_status_mappings

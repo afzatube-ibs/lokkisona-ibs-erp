@@ -33,6 +33,7 @@ $router->get('/status-mapping', 'StatusMappingController@index');
 $router->get('/sync-preview', 'SyncPreviewController@index');
 $router->get('/invoice-printing', 'InvoicePrintingController@index');
 $router->get('/supplier-tools', 'SupplierToolsController@index');
+$router->get('/manual-orders', 'ManualOrdersController@index');
 
 $router->setNotFound(function () {
     http_response_code(404);

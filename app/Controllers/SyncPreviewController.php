@@ -122,6 +122,7 @@ class SyncPreviewController extends Controller
                 'Manual/external orders must show in the normal ERP order list later.',
                 'Required future reference fields: business source, external order reference, external invoice reference, courier account, supplier, ERP product/variant, quantity, cost snapshot.',
                 'Later WooCommerce sync can replace/reduce manual entry without changing supplier/payable workflow.',
+                'Manual/external reference entry is the fallback before direct WooCommerce sync — see Manual Orders planning foundation.',
                 'Manual/offline order entry must remain available at all times.',
             ],
         ];

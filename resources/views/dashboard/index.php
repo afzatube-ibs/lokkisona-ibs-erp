@@ -117,6 +117,10 @@
                     <span class="action-link-title">Supplier Tools</span>
                     <span class="action-link-desc">Review independent supplier engagement tools planning</span>
                 </a>
+                <a href="<?= e(url('/manual-orders')) ?>" class="action-link">
+                    <span class="action-link-title">Manual Orders</span>
+                    <span class="action-link-desc">Review manual and external order planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -232,6 +236,16 @@
         <div class="card-body">
             <p>Independent supplier engagement tools planning — quick invoice generator and simple calculator, separated from official ERP invoices, payables, stock, orders, courier, returns, sync/import, and accounting.</p>
             <p class="page-description"><a href="<?= e(url('/supplier-tools')) ?>">Open Supplier Tools planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Manual / External Order Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Manual and external order planning — Sonamoni WooCommerce reference entry, offline/manual orders, product mapping, shared vendor stock, cost snapshots, confirmation, and workflow entry without creating orders or syncing channels.</p>
+            <p class="page-description"><a href="<?= e(url('/manual-orders')) ?>">Open Manual Orders planning foundation</a></p>
         </div>
     </div>
 </div>

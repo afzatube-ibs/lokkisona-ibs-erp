@@ -143,6 +143,12 @@ class Permission
                 'permission' => 'supplier_tools.view',
                 'icon' => '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.1 6.1a2.1 2.1 0 0 1-3-3l6.1-6.1a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/>',
             ],
+            [
+                'label' => 'Manual Orders',
+                'path' => '/manual-orders',
+                'permission' => 'manual_orders.view',
+                'icon' => '<path d="M9 12h6M9 16h6"/><path d="M8 2h8l4 4v16H4V2z"/><path d="M16 2v5h5"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

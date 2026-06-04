@@ -185,7 +185,7 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <p class="page-description">Sync Preview/import cannot overwrite existing IBS workflow. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
+            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. Sync Preview/import cannot overwrite existing IBS workflow. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders planning foundation</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
         </div>
     </div>
 </div>

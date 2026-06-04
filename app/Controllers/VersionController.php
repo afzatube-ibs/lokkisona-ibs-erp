@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Manual and External Order planning foundation page and permissions without order creation or sync writes',
+                'Sonamoni WooCommerce reference entry and offline/manual order planning before direct WooCommerce sync',
+                'Manual order product mapping, shared vendor stock, cost snapshot, duplicate reference, confirmation, and audit rules documented',
+                'Planned manual order, item, and audit fields documented without automatic table creation',
                 'Supplier Tools planning foundation page and permissions without generator, calculator, or supplier tool writes',
                 'Supplier Quick Invoice Generator planned as independent one-time supplier output with admin audit/history',
                 'Simple Calculator planned as standalone tool with no payable, settlement, product cost, courier, stock, order, or accounting impact',

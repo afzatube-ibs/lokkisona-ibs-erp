@@ -60,6 +60,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        <p class="page-description" style="padding: 1rem;">Manual/external orders use ERP source-aware invoice templates: Sonamoni reference orders use Sonamoni-style ERP invoice later, and offline orders use ERP manual invoice template later. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders planning foundation</a>.</p>
     </div>
 </div>
 

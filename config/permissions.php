@@ -60,6 +60,12 @@ return [
             'orders.view',
             'orders.manage',
         ],
+        'Manual Orders' => [
+            'manual_orders.view',
+            'manual_orders.manage',
+            'external_orders.view',
+            'external_orders.manage',
+        ],
         'Order Workflow' => [
             'order_workflow.view',
             'order_workflow.manage',
@@ -143,6 +149,10 @@ return [
             'business_sources.manage',
             'orders.view',
             'orders.manage',
+            'manual_orders.view',
+            'manual_orders.manage',
+            'external_orders.view',
+            'external_orders.manage',
             'order_workflow.view',
             'order_workflow.manage',
             'product_control.view',

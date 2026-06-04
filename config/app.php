@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.17',
-    'release_label' => 'Supplier Tools Planning Foundation',
+    'version' => '0.1.18',
+    'release_label' => 'Manual and External Order Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

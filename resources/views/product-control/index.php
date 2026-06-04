@@ -173,7 +173,7 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <p class="page-description">See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a> for multi-source stock impact.</p>
+            <p class="page-description">Manual/external order items must map to internal ERP product/variant for shared supplier stock and cost. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders planning foundation</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a> for multi-source stock impact.</p>
         </div>
     </div>
 </div>
