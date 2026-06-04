@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Database Safety</h1>
-    <p class="page-description">Manual migration rules, draft migration files, dry-run validation planning, migration runner planning, build automation boundaries, and future database planning.</p>
+    <p class="page-description">Manual migration rules, draft migration files, dry-run validation planning, approval gate planning, execution lock planning, migration runner planning, build automation boundaries, and future database planning.</p>
 </div>
 
 <div class="card-grid">
@@ -38,6 +38,7 @@
                 <li>Real migration drafts exist under <code>database/migrations/</code> but remain manual-only.</li>
                 <li>Dry-run validation is required before future migration apply.</li>
                 <li>Migration Approval Gate protects against unsafe database changes.</li>
+                <li>Migration Execution Lock protects against accidental database changes and duplicate apply attempts.</li>
                 <li>Future runner actions must be explicit owner/admin actions with dry-run/check-first review.</li>
                 <li>Build automation must never run migrations automatically.</li>
             </ul>
@@ -45,6 +46,7 @@
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Open Migration Dry Run planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-approval')) ?>">Open Migration Approval planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-execution-lock')) ?>">Open Migration Execution Lock planning</a></p>
         </div>
     </div>
 </div>
@@ -73,7 +75,7 @@
             <ul class="feature-list">
                 <li>Design migrations for multi-business, multi-channel operations.</li>
                 <li>Review SQL with owner/admin before production use.</li>
-                <li>Run future migrations only through a controlled CLI/web runner after successful dry-run output and backup confirmation.</li>
+                <li>Run future migrations only through a controlled CLI/web runner after successful dry-run output, approval gate completion, execution lock readiness, and backup confirmation.</li>
                 <li>Do not trigger migration apply from the Build Queue or semi-automation workflow.</li>
                 <li>Record the release, actor, timing, result, and Red Issues Summary for every future run.</li>
                 <li>Only then connect future ERP modules to the new tables.</li>

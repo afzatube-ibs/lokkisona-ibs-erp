@@ -38,6 +38,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Migration Execution Lock planning foundation page and sidebar item',
+                'Migration execution lock permissions for migration_execution_lock.view and migration_execution_lock.manage',
+                'Execution lock planning documents manual-only apply protection, wrong environment protection, dirty Git protection, failed dry-run protection, missing approval protection, backup missing protection, checksum mismatch protection, double-apply protection, emergency stop planning, and final lock state preview',
+                'Planned execution lock and lock audit fields documented without SQL execution, lock record writes, or migration execution code',
+                'Migration Runner, Approval, Dry Run, Files, Database Safety, Build Queue, Dashboard, README, and tools docs now describe the draft to dry-run to approval gate to execution lock workflow',
                 'Migration Apply Approval Gate planning foundation page and sidebar item',
                 'Migration approval and apply permissions for migration_approval.view, migration_approval.manage, migration_apply.view, and migration_apply.manage',
                 'Approval gate planning documents dry-run pass, database backup confirmation, environment confirmation, owner/admin approval, Red Issues clear state, checksum confirmation, apply order review, rollback plan review, production warning, and final apply lock planning',

@@ -25,6 +25,7 @@ $router->get('/migration-runner', 'MigrationRunnerController@index');
 $router->get('/migration-files', 'MigrationFilesController@index');
 $router->get('/migration-dry-run', 'MigrationDryRunController@index');
 $router->get('/migration-approval', 'MigrationApprovalController@index');
+$router->get('/migration-execution-lock', 'MigrationExecutionLockController@index');
 $router->get('/build-queue', 'BuildQueueController@index');
 $router->get('/users', 'UsersController@index');
 $router->get('/suppliers', 'SuppliersController@index');

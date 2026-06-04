@@ -179,6 +179,7 @@
                 <li>Migration tasks require owner approval, backup confirmation, and manual apply only.</li>
                 <li>Migration dry-run must pass before any migration-related build can move forward.</li>
                 <li>Build Queue must never trigger migration apply automatically; the approval gate is manual only.</li>
+                <li>Build Queue must never trigger migration execution or bypass the execution lock.</li>
             </ul>
         </div>
     </div>

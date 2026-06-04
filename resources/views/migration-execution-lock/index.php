@@ -1,6 +1,6 @@
 <div class="page-header">
-    <h1 class="page-title">Migration Dry Run Validator Planning</h1>
-    <p class="page-description">Future check layer for migration drafts. Planning only; no SQL is executed and no database changes are made.</p>
+    <h1 class="page-title">Migration Execution Lock Planning</h1>
+    <p class="page-description">Future final safety lock before any manual migration execution. Planning only; no SQL is executed and no lock records are written.</p>
 </div>
 
 <div class="card-grid">
@@ -19,12 +19,12 @@
                     <dd><span class="badge badge-ok"><?= e($accessMode['role']) ?></span></dd>
                 </div>
                 <div class="info-row">
-                    <dt>Execution</dt>
+                    <dt>Lock Mode</dt>
                     <dd><span class="badge badge-warn">Planning only</span></dd>
                 </div>
                 <div class="info-row">
-                    <dt>Database Write</dt>
-                    <dd>No SQL execution, no migration apply, and no schema changes.</dd>
+                    <dt>Execution</dt>
+                    <dd>No migration execution exists on this page.</dd>
                 </div>
             </dl>
         </div>
@@ -32,14 +32,14 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Dry-Run Purpose</h2>
+            <h2 class="card-title">Execution Lock Purpose</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <li>Scan migration draft files before any future real apply.</li>
-                <li>Validate safety, order, warnings, duplicate keys, and planned rollback references.</li>
-                <li>Show warnings and Red Issues Summary without touching the database.</li>
-                <li>Require owner/admin approval before any future real apply.</li>
+                <li>Lock future migration execution by default.</li>
+                <li>Require dry-run pass, approval gate, backup, clean Git, checksum confirmation, rollback confirmation, and zero Red Issues.</li>
+                <li>Protect against wrong environment, missing approval, duplicate apply, and emergency stop conditions.</li>
+                <li>Even ready state stays manual-only.</li>
             </ul>
         </div>
     </div>
@@ -47,7 +47,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Dry-Run Validator Rules</h2>
+        <h2 class="card-title">Execution Lock Rules</h2>
     </div>
     <div class="card-body">
         <div class="permission-grid">
@@ -68,12 +68,12 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Dry-Run Checks</h2>
+            <h2 class="card-title">Planned Lock States</h2>
         </div>
         <div class="card-body">
             <div class="planned-table-grid">
-                <?php foreach ($plannedChecks as $check): ?>
-                    <code><?= e($check) ?></code>
+                <?php foreach ($lockStates as $state): ?>
+                    <code><?= e($state) ?></code>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -81,23 +81,21 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Future Result Preview</h2>
+            <h2 class="card-title">Final Lock State Preview</h2>
         </div>
         <div class="card-body card-body-flush">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Migration File</th>
-                        <th>Group</th>
-                        <th>Status</th>
+                        <th>State</th>
+                        <th>Meaning</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($previewRows as $row): ?>
                     <tr>
-                        <td class="cell-name"><?= e($row['file']) ?></td>
-                        <td><?= e($row['group']) ?></td>
-                        <td><span class="badge badge-warn"><?= e($row['status']) ?></span></td>
+                        <td class="cell-name"><?= e($row['state']) ?></td>
+                        <td><?= e($row['meaning']) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -109,11 +107,11 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Dry-Run Result Fields</h2>
+            <h2 class="card-title">Planned Execution Lock Fields</h2>
         </div>
         <div class="card-body">
             <div class="planned-table-grid">
-                <?php foreach ($resultFields as $field): ?>
+                <?php foreach ($lockFields as $field): ?>
                     <code><?= e($field) ?></code>
                 <?php endforeach; ?>
             </div>
@@ -122,11 +120,11 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Dry-Run Issue Fields</h2>
+            <h2 class="card-title">Planned Lock Audit Fields</h2>
         </div>
         <div class="card-body">
             <div class="planned-table-grid">
-                <?php foreach ($issueFields as $field): ?>
+                <?php foreach ($auditFields as $field): ?>
                     <code><?= e($field) ?></code>
                 <?php endforeach; ?>
             </div>
@@ -137,30 +135,27 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Backup &amp; Owner Approval</h2>
+            <h2 class="card-title">Emergency Stop Planning</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <li>Dry-run pass is required before future migration apply planning can continue.</li>
-                <li>Successful dry-run is required before the Migration Approval Gate can continue.</li>
-                <li>Successful dry-run is required before Migration Execution Lock can become ready.</li>
-                <li>Backup reminder must still be shown before any future real apply.</li>
-                <li>Owner/admin approval remains required even after dry-run passes.</li>
-                <li>A passed dry-run never auto-applies a migration.</li>
+                <li>Emergency stop forces <code>emergency_locked</code> until owner/admin review.</li>
+                <li>Emergency stop should record actor, role, previous state, new state, note, and timestamp later.</li>
+                <li>Emergency stop must block build queue, sync/import, and migration apply paths.</li>
             </ul>
         </div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Red Issues Stop Rule</h2>
+            <h2 class="card-title">Manual-Only Boundary</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <li>Any red issue blocks future migration apply.</li>
-                <li>Issue summaries should include severity, file path, line number, issue detail, and suggested fix.</li>
-                <li>No next migration, build task, commit, push, sync, or import continues after a red issue.</li>
-                <li>This page documents the behavior only; no dry-run records are written.</li>
+                <li>Migration Runner requires approval gate plus execution lock before future apply.</li>
+                <li>Migration Approval does not mean automatic execution.</li>
+                <li>Build Queue must never trigger migration execution.</li>
+                <li>This foundation does not unlock, execute, apply, sync, import, commit, or push.</li>
             </ul>
         </div>
     </div>

@@ -26,7 +26,7 @@ Passing runs end with:
 
 ```text
 [OK] ALL GREEN
-Version: v0.1.24 Migration Apply Approval Gate Planning Foundation
+Version: v0.1.25 Migration Execution Lock Planning Foundation
 Checkpoint: passed
 Browser/Routes: passed
 Git: summary printed above
@@ -42,3 +42,17 @@ Failing runs keep the detailed error output above and end with:
    File/Page:
    What to fix:
 ```
+
+## Owner-Triggered Finish Build
+
+`tools/finish-build.ps1` is an owner-triggered helper only. Cursor builds must not run it automatically.
+
+Usage:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/finish-build.ps1 "v0.1.25 Migration Execution Lock Planning Foundation"
+```
+
+The finish script runs `tools/check-local.ps1` first. If the checkpoint fails, it stops without commit or push and prints `[FAIL] RED ISSUES SUMMARY` with `Commit: stopped` and `Push: stopped`.
+
+When the checkpoint passes, the script stages project folders, commits with the owner-provided message, pushes `origin main`, then verifies `git status -sb` and the last three decorated commits. It never applies database migrations, never syncs/imports orders, and never changes stock, payables, or invoices.

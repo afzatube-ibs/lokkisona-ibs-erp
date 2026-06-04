@@ -120,6 +120,7 @@
                 <li>Advanced database features and foreign key constraints are avoided for basic MySQL/MariaDB compatibility.</li>
                 <li>Logical relationships are planned for ERP service-layer enforcement first.</li>
                 <li>Migration files must be reviewed and checksum-confirmed before Migration Approval can continue.</li>
+                <li>Draft files remain manual-only until approval gate and execution lock are complete later.</li>
             </ul>
         </div>
     </div>
@@ -136,6 +137,7 @@
                 <li>No build queue task, commit, push, sync, import, or migration action continues after a red issue.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Review Migration Dry Run planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-execution-lock')) ?>">Review Migration Execution Lock planning</a></p>
         </div>
     </div>
 </div>

@@ -93,6 +93,12 @@
                     <span class="action-link-desc">Review apply approval gate planning and future checklist requirements</span>
                 </a>
                 <?php endif; ?>
+                <?php if (\App\Permission::can('migration_execution_lock.view')): ?>
+                <a href="<?= e(url('/migration-execution-lock')) ?>" class="action-link">
+                    <span class="action-link-title">Migration Execution Lock</span>
+                    <span class="action-link-desc">Review execution lock planning, emergency stop, and manual-only readiness</span>
+                </a>
+                <?php endif; ?>
                 <?php if (\App\Permission::can('build_queue.view')): ?>
                 <a href="<?= e(url('/build-queue')) ?>" class="action-link">
                     <span class="action-link-title">Build Queue</span>
@@ -169,6 +175,7 @@
                 <li>Draft migration files planning without automatic apply</li>
                 <li>Migration dry-run validator planning without database writes</li>
                 <li>Migration approval gate planning without apply execution</li>
+                <li>Migration execution lock planning without migration execution</li>
                 <li>Build queue and semi-automation planning without auto commit or push</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
@@ -228,6 +235,18 @@
         <div class="card-body">
             <p>Future apply approval gate planning — dry-run pass, backup confirmation, environment confirmation, checksum confirmation, rollback review, owner/admin approval, and Red Issues clear state before manual execution.</p>
             <p class="page-description"><a href="<?= e(url('/migration-approval')) ?>">Open Migration Approval planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('migration_execution_lock.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Migration Execution Lock Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Future execution lock planning — locked by default, waiting states for dry-run, backup, owner approval, clean Git, checksum, rollback review, Red Issues blocks, wrong environment blocks, emergency lock, and ready-but-manual-only status.</p>
+            <p class="page-description"><a href="<?= e(url('/migration-execution-lock')) ?>">Open Migration Execution Lock planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

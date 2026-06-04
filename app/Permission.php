@@ -96,6 +96,12 @@ class Permission
                 'icon' => '<path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-5"/>',
             ],
             [
+                'label' => 'Migration Execution Lock',
+                'path' => '/migration-execution-lock',
+                'permission' => 'migration_execution_lock.view',
+                'icon' => '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/>',
+            ],
+            [
                 'label' => 'Build Queue',
                 'path' => '/build-queue',
                 'permission' => 'build_queue.view',

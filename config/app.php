@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.24',
-    'release_label' => 'Migration Apply Approval Gate Planning Foundation',
+    'version' => '0.1.25',
+    'release_label' => 'Migration Execution Lock Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

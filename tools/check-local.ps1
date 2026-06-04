@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.1.24 Migration Apply Approval Gate Planning Foundation"
+$appVersionLabel = "v0.1.25 Migration Execution Lock Planning Foundation"
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -151,7 +151,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/migration-execution-lock", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
     $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
@@ -164,8 +164,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.24") {
-        Fail "Version check failed: /version does not contain v0.1.24." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.24."
+    if ($versionResponse.Content -notmatch "v0\.1\.25") {
+        Fail "Version check failed: /version does not contain v0.1.25." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.25."
     }
     Ok "Version"
 

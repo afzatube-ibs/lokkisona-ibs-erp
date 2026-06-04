@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Migration Apply Approval Gate Planning</h1>
-    <p class="page-description">Future owner/admin approval gate before real migration apply. Planning only; no SQL is executed and no approval records are written.</p>
+    <p class="page-description">Future owner/admin approval gate before real migration apply. Planning only; approval does not mean automatic execution, no SQL is executed, and no approval records are written.</p>
 </div>
 
 <div class="card-grid">
@@ -144,9 +144,11 @@
             <ul class="feature-list">
                 <li>Build Queue must never trigger migration apply automatically.</li>
                 <li>Migration Runner must require this approval gate before future apply.</li>
+                <li>Approval does not mean automatic execution; Migration Execution Lock must still be ready later.</li>
                 <li>Migration Files must be reviewed and checksum-confirmed before approval.</li>
                 <li>Migration Dry Run must pass before approval can continue.</li>
             </ul>
+            <p class="page-description"><a href="<?= e(url('/migration-execution-lock')) ?>">Review Migration Execution Lock planning</a></p>
         </div>
     </div>
 </div>
