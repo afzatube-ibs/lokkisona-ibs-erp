@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.15 - Sync Preview and Import Safety Planning Foundation**
+**Version 0.1.16 - ERP Invoice and Packing Print Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -71,6 +71,7 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/return-receive` | Return receive planning foundation (auth) |
 | GET    | `/status-mapping` | Status mapping and sync planning foundation (auth) |
 | GET    | `/sync-preview` | Sync preview and import safety planning foundation (auth) |
+| GET    | `/invoice-printing` | ERP invoice and packing print planning foundation (auth) |
 
 ## Database
 
@@ -125,7 +126,11 @@ Planned future tables are documented only:
 - sync_logs
 - source_product_mappings
 - courier_accounts
+- invoices
+- invoice_items
 - invoice_templates
+- packing_prints
+- print_logs
 - dispatch_reports
 - dispatch_report_items
 - supplier_returns
@@ -187,15 +192,31 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.15. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.16. OpenCart is not connected in this release.
 
 ## Sync Preview & Import Safety
 
-The authenticated `/sync-preview` page documents the Sync Preview and Import Safety Foundation only. It covers multi-source sync planning (Lokkisona/OpenCart, Sonamoni/WooCommerce, Manual/Offline), shared supplier stock, ERP invoice planning, mapping-first sync, preview-before-import, duplicate/existing order blocking, independent IBS workflow, return candidate separation, and import confirmation/audit rules.
+The authenticated `/sync-preview` page documents the Sync Preview and Import Safety Foundation only. It covers multi-source sync planning (Lokkisona/OpenCart, Sonamoni/WooCommerce, Manual/Offline), shared supplier stock, invoice reference/template preparation, mapping-first sync, preview-before-import, duplicate/existing order blocking, independent IBS workflow, return candidate separation, and import confirmation/audit rules.
+
+Sync/import should prepare source invoice reference and ERP invoice template type only. Full invoice and packing print planning lives on `/invoice-printing`.
 
 Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
 
-No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.15. OpenCart and WooCommerce are not connected in this release.
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.16. OpenCart and WooCommerce are not connected in this release.
+
+## ERP Invoice & Packing Print Planning
+
+The authenticated `/invoice-printing` page documents the ERP Invoice and Packing Print Planning Foundation only. ERP must have its own invoice print system: Lokkisona orders use an ERP Lokkisona-style invoice later, Sonamoni orders use an ERP Sonamoni-style invoice later, and manual/offline orders use an ERP manual invoice later.
+
+Source invoice references can be stored, but ERP print must be independent and must not depend on source admin login. The current invoice extension, real Lokkisona invoice sample, and PIT Order Manager are read-only business/layout references only; no old extension code is copied.
+
+Planned invoice layout sections: Header, Customer/Order block, Payment summary, Product table, Courier/tracking block, Footer. PIT courier reference fields: courier_account_id, courier_name, consignment_id, tracking_number, tracking_url, courier_status, courier_qr_reference.
+
+Print rules documented: customer invoice must not show supplier cost; supplier model/cost can be used in internal packing/dispatch documents only; ERP invoice prints from ERP order snapshot; print/download actions should be logged later; reprint rules are planned later.
+
+Planned document types: Customer Invoice, Packing Invoice / Packing Slip, Dispatch Batch Report, Supplier Product Summary, Return Receive Batch Print, Supplier Payable Settlement Summary.
+
+No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.16.
 
 ## Roles & Permissions
 
@@ -208,7 +229,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, payable, supplier payables, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
 
 ## Activity Log
 
@@ -231,13 +252,14 @@ Logged foundation events include:
 - Product Control page access
 - Status Mapping page access
 - Sync Preview page access
+- Invoice Printing page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.15
+- App Version v0.1.16
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

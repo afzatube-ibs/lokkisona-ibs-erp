@@ -73,6 +73,75 @@
     <?php endforeach; ?>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Lokkisona ERP Invoice Layout (Visual Reference)</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description">Planned Lokkisona-style customer invoice sections — layout follows the real Lokkisona invoice sample as visual reference only. No old extension code is used.</p>
+        <p class="page-description">Full ERP invoice and packing print planning now lives on <a href="<?= e(url('/invoice-printing')) ?>">Invoice Printing planning foundation</a>. Sync/import should prepare source invoice reference and ERP invoice template type only.</p>
+    </div>
+    <div class="card-body card-body-flush">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th>Planned Fields</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($lokkisonaInvoiceLayout as $block): ?>
+                <tr>
+                    <td class="cell-name"><?= e($block['section']) ?></td>
+                    <td class="cell-detail"><?= e(implode(' · ', $block['fields'])) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">ERP Invoice Print Rules</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <?php foreach ($erpInvoicePrintRules as $rule): ?>
+                    <li><?= e($rule) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Invoice Template Plan by Source</h2>
+        </div>
+        <div class="card-body card-body-flush">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Template</th>
+                        <th>Business Source</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($invoiceTemplatePlan as $row): ?>
+                    <tr>
+                        <td class="cell-name"><?= e($row['template']) ?></td>
+                        <td><?= e($row['source']) ?></td>
+                        <td class="cell-detail"><?= e($row['note']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="card-grid">
     <?php foreach ([$mappingFirstRule, $previewBeforeImportRule, $skipMissingRule, $unmappedBlockingRule] as $section): ?>
     <div class="card">

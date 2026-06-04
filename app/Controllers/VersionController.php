@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'ERP Invoice and Packing Print planning foundation page and permissions without invoice generation or print writes',
+                'Lokkisona-style, Sonamoni-style, and manual ERP invoice template planning from ERP order snapshots',
+                'Real Lokkisona invoice sample, current invoice extension, and PIT Order Manager documented as read-only references only',
+                'Customer invoice, packing slip, dispatch batch report, supplier product summary, return batch print, and payable settlement print types planned',
                 'Sync Preview and Import Safety planning foundation page and permissions without live source connection or sync writes',
                 'Multi-source plan for Lokkisona/OpenCart, Sonamoni/WooCommerce, and manual/external reference orders',
                 'Shared supplier stock, ERP invoice planning, preview-before-import, duplicate blocking, and return candidate separation',

@@ -155,9 +155,11 @@ class DispatchReportsController extends Controller
     {
         return [
             'Dispatch reports should later support print, export, and download.',
+            'Dispatch reports later support supplier product summary output for packing and supplier review.',
             'No real print, export, or download is implemented in this release.',
             'Output will use stored snapshot values, not live changing cost or stock.',
             'Output layout will stay channel-neutral and supplier-scoped.',
+            'Invoice Printing planning owns customer invoice, packing slip, dispatch batch report, and print log rules.',
         ];
     }
 

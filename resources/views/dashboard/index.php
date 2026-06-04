@@ -109,6 +109,10 @@
                     <span class="action-link-title">Sync Preview</span>
                     <span class="action-link-desc">Review sync preview and import safety planning</span>
                 </a>
+                <a href="<?= e(url('/invoice-printing')) ?>" class="action-link">
+                    <span class="action-link-title">Invoice Printing</span>
+                    <span class="action-link-desc">Review ERP invoice and packing print planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -204,6 +208,16 @@
         <div class="card-body">
             <p>Sync Preview and Import Safety planning — multi-source Lokkisona/Sonamoni/manual preview, shared vendor stock, ERP invoice planning, preview-before-import, duplicate blocking, and return candidate separation without live sync or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/sync-preview')) ?>">Open Sync Preview planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Invoice &amp; Packing Print Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>ERP invoice and packing print planning — source-aware customer invoice templates, internal packing/dispatch documents, PIT courier reference fields, print logs, and reprint rules without invoice generation or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/invoice-printing')) ?>">Open Invoice Printing planning foundation</a></p>
         </div>
     </div>
 </div>

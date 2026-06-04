@@ -34,7 +34,11 @@
 -- sync_logs
 -- source_product_mappings
 -- courier_accounts
+-- invoices
+-- invoice_items
 -- invoice_templates
+-- packing_prints
+-- print_logs
 
 -- Planned dispatch and return workflow tables:
 -- dispatch_reports

@@ -27,6 +27,9 @@ class SyncPreviewController extends Controller
             'manualExternalRule' => $this->manualExternalRule(),
             'sharedStockRule' => $this->sharedStockRule(),
             'erpInvoiceRule' => $this->erpInvoiceRule(),
+            'lokkisonaInvoiceLayout' => $this->lokkisonaInvoiceLayout(),
+            'erpInvoicePrintRules' => $this->erpInvoicePrintRules(),
+            'invoiceTemplatePlan' => $this->invoiceTemplatePlan(),
             'mappingFirstRule' => $this->mappingFirstRule(),
             'previewBeforeImportRule' => $this->previewBeforeImportRule(),
             'skipMissingRule' => $this->skipMissingRule(),
@@ -143,13 +146,118 @@ class SyncPreviewController extends Controller
     {
         return [
             'title' => 'ERP Invoice Planning Rule',
-            'summary' => 'ERP must generate/print its own source-aware invoice without depending on source admin login.',
+            'summary' => 'ERP must generate/print its own source-aware invoice from order snapshot data — visual/layout follows the real Lokkisona invoice sample as reference only, without copying old extension code.',
             'points' => [
                 'ERP must have its own invoice/print system later.',
                 'ERP should not depend on being logged into Lokkisona/Sonamoni admin.',
-                'Source invoices can be referenced, but ERP generates from imported/manual data.',
+                'Source invoices can be referenced, but ERP prints from imported/manual order snapshot.',
+                'Sync/import should prepare source invoice reference and ERP invoice template type for Invoice Printing planning.',
                 'Future fields: source_invoice_reference, invoice_template_type, business_source_invoice_style, invoice_print_source = ERP, source_order_reference.',
-                'Lokkisona order → ERP Lokkisona-style invoice; Sonamoni order → ERP Sonamoni-style invoice; Manual/offline → ERP manual invoice.',
+                'Real Lokkisona invoice sample is visual/layout reference only — no old OpenCart extension code.',
+            ],
+        ];
+    }
+
+    private function lokkisonaInvoiceLayout()
+    {
+        return [
+            [
+                'section' => 'Header',
+                'fields' => [
+                    'Lokkisona logo',
+                    'Store name/details',
+                    'Invoice title',
+                    'Order ID / ERP invoice number',
+                    'Invoice number/status',
+                    'Order date',
+                ],
+            ],
+            [
+                'section' => 'Customer / Order Block',
+                'fields' => [
+                    'Customer details',
+                    'Delivery address',
+                    'Order & shipping details',
+                    'Shipping method',
+                    'Payment method',
+                    'Payment status',
+                    'Order date',
+                ],
+            ],
+            [
+                'section' => 'Payment Summary',
+                'fields' => [
+                    'Due/Paid mark',
+                    'Sub-total',
+                    'Shipping/city charge',
+                    'Grand total',
+                ],
+            ],
+            [
+                'section' => 'Product Table',
+                'fields' => [
+                    'Item number',
+                    'Product image',
+                    'Product name',
+                    'Options/variation text',
+                    'Model/SKU',
+                    'Quantity',
+                    'Unit price',
+                    'Total',
+                ],
+            ],
+            [
+                'section' => 'Courier / Tracking Block',
+                'fields' => [
+                    'Consignment ID / tracking number',
+                    'Courier name/account',
+                    'Tracking QR/code reference',
+                    'Tracking URL reference if available',
+                ],
+            ],
+            [
+                'section' => 'Footer',
+                'fields' => [
+                    'Store/source name',
+                    'Thank-you message',
+                    'Support/contact number',
+                    'Return/replacement note',
+                ],
+            ],
+        ];
+    }
+
+    private function erpInvoicePrintRules()
+    {
+        return [
+            'Customer invoice must NOT show supplier cost.',
+            'Supplier model/cost can be used for internal packing/dispatch documents only.',
+            'ERP invoice must print from ERP order snapshot, not depend on Lokkisona admin login.',
+            'Lokkisona order uses Lokkisona-style ERP invoice template.',
+            'Sonamoni order later uses Sonamoni-style ERP invoice template.',
+            'Manual/offline order uses ERP manual invoice template.',
+            'Selling price, payment summary, and customer-facing product details come from order snapshot at print time.',
+            'Internal dispatch/packing documents may show supplier model and cost snapshot separately from customer invoice.',
+        ];
+    }
+
+    private function invoiceTemplatePlan()
+    {
+        return [
+            [
+                'template' => 'Lokkisona-style ERP Invoice',
+                'source' => 'Lokkisona.com / OpenCart',
+                'note' => 'Layout follows real Lokkisona invoice sample — header, customer block, payment summary, product table, courier/tracking, footer.',
+            ],
+            [
+                'template' => 'Sonamoni-style ERP Invoice',
+                'source' => 'Sonamoni.com.bd / WooCommerce',
+                'note' => 'Separate template planned later with Sonamoni branding and invoice style.',
+            ],
+            [
+                'template' => 'ERP Manual Invoice',
+                'source' => 'Manual / Offline Order',
+                'note' => 'Manual invoice template for external reference orders without source admin login.',
             ],
         ];
     }

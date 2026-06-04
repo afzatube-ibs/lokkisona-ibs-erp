@@ -131,6 +131,12 @@ class Permission
                 'permission' => 'sync_preview.view',
                 'icon' => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
             ],
+            [
+                'label' => 'Invoice Printing',
+                'path' => '/invoice-printing',
+                'permission' => 'invoice_printing.view',
+                'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

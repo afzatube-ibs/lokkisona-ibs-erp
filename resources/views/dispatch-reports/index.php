@@ -152,6 +152,7 @@
                     <li><?= e($item) ?></li>
                 <?php endforeach; ?>
             </ul>
+            <p class="page-description">See <a href="<?= e(url('/invoice-printing')) ?>">Invoice Printing planning foundation</a> for packing slip, dispatch batch report, supplier product summary, and print log rules.</p>
         </div>
     </div>
 </div>

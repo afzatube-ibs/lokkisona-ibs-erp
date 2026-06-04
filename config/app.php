@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.15',
-    'release_label' => 'Sync Preview and Import Safety Planning Foundation',
+    'version' => '0.1.16',
+    'release_label' => 'ERP Invoice and Packing Print Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

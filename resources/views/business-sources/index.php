@@ -111,7 +111,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <p class="page-description" style="padding: 1rem;">Lokkisona = OpenCart, Sonamoni = WooCommerce, Manual/Offline = external reference entry. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
+        <p class="page-description" style="padding: 1rem;">Lokkisona = OpenCart, Sonamoni = WooCommerce, Manual/Offline = external reference entry. Each Business Source can later have its own ERP invoice template/style. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a> and <a href="<?= e(url('/invoice-printing')) ?>">Invoice Printing planning foundation</a>.</p>
     </div>
 </div>
 
