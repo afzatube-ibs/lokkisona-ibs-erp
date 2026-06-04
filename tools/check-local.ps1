@@ -3,17 +3,59 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+$OutputEncoding = [System.Text.UTF8Encoding]::new()
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $serverProcess = $null
 $serverStarted = $false
+$redIssues = @()
+$checkpointFailed = $false
+$appVersionLabel = "v0.1.19 Checkpoint Footer and Red Issues Summary Foundation"
+$routeSmokeCount = 0
 
-function Fail($message) {
+function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
+    $script:redIssues += [PSCustomObject]@{
+        Issue = $issue
+        Area = $area
+        FilePage = $filePage
+        WhatToFix = $whatToFix
+    }
+}
+
+function Fail($message, $area = "Checkpoint", $filePage = "n/a", $whatToFix = $message) {
     Write-Host "[FAIL] $message"
-    exit 1
+    Add-RedIssue $message $area $filePage $whatToFix
+    throw $message
 }
 
 function Ok($message) {
     Write-Host "[OK] $message"
+}
+
+function Show-Footer {
+    Write-Host ""
+    Write-Host "========================================"
+    if ($script:redIssues.Count -eq 0) {
+        Write-Host "✅ ALL GREEN"
+        Write-Host "Version: $script:appVersionLabel"
+        Write-Host "Checkpoint: passed"
+        Write-Host "Browser/Routes: passed ($script:routeSmokeCount routes)"
+        Write-Host "Git: summary printed above"
+        Write-Host "Red Issues: none"
+        Write-Host "Next recommended build:"
+        Write-Host "v0.1.20 Real Database Migration Runner Planning Foundation"
+    } else {
+        Write-Host "❌ RED ISSUES SUMMARY"
+        $index = 1
+        foreach ($redIssue in $script:redIssues) {
+            Write-Host "$index. Issue: $($redIssue.Issue)"
+            Write-Host "   Area: $($redIssue.Area)"
+            Write-Host "   File/Page: $($redIssue.FilePage)"
+            Write-Host "   What to fix: $($redIssue.WhatToFix)"
+            $index++
+        }
+    }
+    Write-Host "========================================"
 }
 
 function Find-Php {
@@ -34,7 +76,7 @@ function Find-Php {
         return $cmd.Source
     }
 
-    Fail "PHP executable not found. Expected D:\xampp\php\php.exe, E:\xampp\php\php.exe, C:\xampp\php\php.exe, or php in PATH."
+    Fail "PHP executable not found. Expected D:\xampp\php\php.exe, E:\xampp\php\php.exe, C:\xampp\php\php.exe, or php in PATH." "PHP auto-detect" "tools/check-local.ps1" "Install PHP in one of the configured XAMPP paths or add php to PATH."
 }
 
 function Invoke-HttpStatus($url, $session = $null) {
@@ -80,18 +122,18 @@ function Wait-ForServer($baseUrl) {
         }
     }
 
-    Fail "Temporary PHP server did not start on $baseUrl."
+    Fail "Temporary PHP server did not start on $baseUrl." "Browser/Routes" $baseUrl "Check that PHP can start the built-in server and that port is available."
 }
 
 Set-Location $root
-$php = Find-Php
 
 try {
+    $php = Find-Php
     $phpFiles = Get-ChildItem -Path @("app", "config", "public", "resources", "routes") -Filter "*.php" -Recurse -File
     foreach ($file in $phpFiles) {
         & $php -l $file.FullName | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Fail "PHP lint failed: $($file.FullName)"
+            Fail "PHP lint failed: $($file.FullName)" "PHP lint" $file.FullName "Fix the PHP syntax error reported above."
         }
     }
     Ok "PHP lint"
@@ -112,10 +154,11 @@ try {
     }
 
     $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
         if ($status -notin @(200, 301, 302, 303)) {
-            Fail "Route smoke failed for $route with HTTP $status."
+            Fail "Route smoke failed for $route with HTTP $status." "Browser/Routes" $route "Fix the controller, route, auth redirect, or view causing this route to return HTTP $status."
         }
     }
     Ok "Route smoke"
@@ -123,8 +166,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.18") {
-        Fail "Version check failed: /version does not contain v0.1.18."
+    if ($versionResponse.Content -notmatch "v0\.1\.19") {
+        Fail "Version check failed: /version does not contain v0.1.19." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.19."
     }
     Ok "Version"
 
@@ -139,10 +182,10 @@ try {
     foreach ($file in $scanFiles) {
         $content = Get-Content -Raw -Path $file.FullName
         if ($content -match "PHP 7\.4\+") {
-            Fail "Forbidden text found in $($file.FullName): PHP 7.4+"
+            Fail "Forbidden text found in $($file.FullName): PHP 7.4+" "Forbidden text" $file.FullName "Replace legacy PHP 7.4+ wording with current PHP 8.2+ wording."
         }
         if ($content -match "Lokkisona IBS ERP") {
-            Fail "Forbidden branding found in $($file.FullName): Lokkisona IBS ERP"
+            Fail "Forbidden branding found in $($file.FullName): Lokkisona IBS ERP" "Forbidden text" $file.FullName "Use IBS-LK Business Manager branding."
         }
     }
     Ok "Forbidden text"
@@ -153,12 +196,12 @@ try {
         foreach ($line in $lines) {
             if ($line -match "(?i)CREATE\s+TABLE|ALTER\s+TABLE") {
                 if ($line -notmatch "(?i)No .*CREATE\s+TABLE|No .*ALTER\s+TABLE|CREATE\s+TABLE.*during page load|ALTER\s+TABLE.*during page load") {
-                    Fail "Runtime schema statement found in $($file.FullName)."
+                    Fail "Runtime schema statement found in $($file.FullName)." "Database safety" $file.FullName "Remove runtime CREATE TABLE / ALTER TABLE. Schema changes must be manual migrations only."
                 }
             }
             if ($line -match "(?i)schema\s+repair|repair\s+schema") {
                 if ($line -notmatch "(?i)No .*schema\s+repair|No .*repair\s+schema") {
-                    Fail "Suspicious page-load schema repair wording found in $($file.FullName)."
+                    Fail "Suspicious page-load schema repair wording found in $($file.FullName)." "Database safety" $file.FullName "Remove schema repair behavior/wording from runtime page-load code."
                 }
             }
         }
@@ -167,8 +210,17 @@ try {
 
     git status --short
     Ok "Git summary"
+} catch {
+    $checkpointFailed = $true
+    if ($redIssues.Count -eq 0) {
+        Add-RedIssue $_.Exception.Message "Checkpoint" "tools/check-local.ps1" "Review the detailed error above and fix the failing checkpoint step."
+    }
 } finally {
     if ($serverStarted -and $serverProcess -and -not $serverProcess.HasExited) {
         Stop-Process -Id $serverProcess.Id -Force
+    }
+    Show-Footer
+    if ($checkpointFailed) {
+        exit 1
     }
 }

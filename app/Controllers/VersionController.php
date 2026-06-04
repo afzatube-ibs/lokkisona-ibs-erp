@@ -37,6 +37,9 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Local checkpoint final footer with ALL GREEN or RED ISSUES SUMMARY output',
+                'Copy/paste-friendly red issue summary including issue, area, file/page, and what to fix',
+                'Checkpoint footer shows version, checkpoint status, route status, git status note, and next recommended build',
                 'Manual and External Order planning foundation page and permissions without order creation or sync writes',
                 'Sonamoni WooCommerce reference entry and offline/manual order planning before direct WooCommerce sync',
                 'Manual order product mapping, shared vendor stock, cost snapshot, duplicate reference, confirmation, and audit rules documented',

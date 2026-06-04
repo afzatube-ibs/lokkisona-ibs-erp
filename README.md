@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.18 - Manual and External Order Planning Foundation**
+**Version 0.1.19 - Checkpoint Footer and Red Issues Summary Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -94,6 +94,8 @@ powershell -ExecutionPolicy Bypass -File tools/check-local.ps1
 ```
 
 The checkpoint runs PHP lint, route smoke tests, version checks, forbidden text checks, database safety checks, and a git status summary. It does not commit or push.
+
+Every checkpoint ends with a compact footer. Passing runs show `✅ ALL GREEN`, version, checkpoint status, browser/route status, git summary note, `Red Issues: none`, and the next recommended build. Failing runs keep detailed error output and end with `❌ RED ISSUES SUMMARY` listing each issue, area, file/page, and what to fix for easy copy/paste into ChatGPT.
 
 ## Business Architecture Direction
 
@@ -200,7 +202,7 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.18. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.19. OpenCart is not connected in this release.
 
 ## Sync Preview & Import Safety
 
@@ -210,7 +212,7 @@ Sync/import should prepare source invoice reference and ERP invoice template typ
 
 Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
 
-No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.18. OpenCart and WooCommerce are not connected in this release.
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.19. OpenCart and WooCommerce are not connected in this release.
 
 ## ERP Invoice & Packing Print Planning
 
@@ -224,7 +226,7 @@ Print rules documented: customer invoice must not show supplier cost; supplier m
 
 Planned document types: Customer Invoice, Packing Invoice / Packing Slip, Dispatch Batch Report, Supplier Product Summary, Return Receive Batch Print, Supplier Payable Settlement Summary.
 
-No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.18.
+No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.19.
 
 ## Supplier Tools Planning
 
@@ -236,7 +238,7 @@ Supplier Quick Invoice Generator rules: independent tool only; does not create E
 
 Simple Calculator rules: basic standalone calculator only; no payable calculation; no settlement helper; no product cost calculation; no courier charge calculation; no save to ERP accounting; no system impact; no database write required for calculator.
 
-Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.18.
+Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.19.
 
 ## Manual & External Order Planning
 
@@ -246,7 +248,7 @@ Manual / External Orders must behave like normal IBS orders after entry while cl
 
 Safety rules documented: business source selection, external reference preservation, product/variant mapping, shared vendor stock, cost snapshot capture, workflow entry after confirmation, source-aware ERP invoice template planning, confirmation/audit, duplicate external reference blocking, and future direct WooCommerce sync upgrade.
 
-Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.18.
+Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.19.
 
 ## Roles & Permissions
 
@@ -291,7 +293,7 @@ Logged foundation events include:
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.18
+- App Version v0.1.19
 - PHP Version
 - Database Connection Status
 - Storage Writable Status
