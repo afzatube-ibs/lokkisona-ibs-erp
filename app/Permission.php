@@ -90,6 +90,12 @@ class Permission
                 'icon' => '<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/><path d="M16 17l2 2 4-4"/>',
             ],
             [
+                'label' => 'Migration Approval',
+                'path' => '/migration-approval',
+                'permission' => 'migration_approval.view',
+                'icon' => '<path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-5"/>',
+            ],
+            [
                 'label' => 'Build Queue',
                 'path' => '/build-queue',
                 'permission' => 'build_queue.view',

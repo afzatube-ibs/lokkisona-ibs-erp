@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Migration Runner Planning</h1>
-    <p class="page-description">Owner/admin foundation for future controlled database migrations. Future real apply must require successful dry-run first; no SQL execution is available in this release.</p>
+    <p class="page-description">Owner/admin foundation for future controlled database migrations. Future real apply must require successful dry-run and Migration Approval Gate first; no SQL execution is available in this release.</p>
 </div>
 
 <div class="card-grid">
@@ -40,6 +40,7 @@
                 <li>No automatic SQL execution in v<?= e($appVersion) ?>.</li>
                 <li>Dry-run/check-first and backup-before-apply are mandatory for the future runner.</li>
                 <li>Future real apply must require successful Migration Dry Run validation first.</li>
+                <li>Future real apply must require Migration Approval Gate before any manual execution.</li>
                 <li>Staff and supplier pages must never manage migrations.</li>
                 <li>Draft files under <code>database/migrations/</code> are manual review files only.</li>
             </ul>
@@ -138,6 +139,7 @@
             <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Review Database Safety rules</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Review Migration Files planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Review Migration Dry Run planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-approval')) ?>">Review Migration Approval planning</a></p>
         </div>
     </div>
 </div>

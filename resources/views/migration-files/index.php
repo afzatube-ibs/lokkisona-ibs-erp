@@ -119,6 +119,7 @@
                 <li>Status fields, created timestamps, reference numbers, and batch numbers are indexed for future lists and audits.</li>
                 <li>Advanced database features and foreign key constraints are avoided for basic MySQL/MariaDB compatibility.</li>
                 <li>Logical relationships are planned for ERP service-layer enforcement first.</li>
+                <li>Migration files must be reviewed and checksum-confirmed before Migration Approval can continue.</li>
             </ul>
         </div>
     </div>

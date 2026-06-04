@@ -142,6 +142,7 @@
         <div class="card-body">
             <ul class="feature-list">
                 <li>Dry-run pass is required before future migration apply planning can continue.</li>
+                <li>Successful dry-run is required before the Migration Approval Gate can continue.</li>
                 <li>Backup reminder must still be shown before any future real apply.</li>
                 <li>Owner/admin approval remains required even after dry-run passes.</li>
                 <li>A passed dry-run never auto-applies a migration.</li>

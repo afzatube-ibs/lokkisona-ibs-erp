@@ -38,6 +38,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Migration Apply Approval Gate planning foundation page and sidebar item',
+                'Migration approval and apply permissions for migration_approval.view, migration_approval.manage, migration_apply.view, and migration_apply.manage',
+                'Approval gate planning documents dry-run pass, database backup confirmation, environment confirmation, owner/admin approval, Red Issues clear state, checksum confirmation, apply order review, rollback plan review, production warning, and final apply lock planning',
+                'Planned migration approval, approval checklist, and approval audit fields documented without SQL execution or approval record writes',
+                'Migration Runner, Dry Run, Files, Database Safety, and Build Queue pages now state that future migration apply requires the manual approval gate',
                 'Migration Dry Run Validator planning foundation page and sidebar item',
                 'Migration dry-run permissions for migration_dry_run.view and migration_dry_run.manage',
                 'Dry-run planning documents migration file scanning, SQL safety scanning, apply-order validation, duplicate migration key checks, checksum planning, environment safety, backup reminder, owner approval, and Red Issues Summary behavior',

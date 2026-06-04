@@ -37,12 +37,14 @@
                 <li>Apply SQL manually through a trusted database client or controlled deployment process.</li>
                 <li>Real migration drafts exist under <code>database/migrations/</code> but remain manual-only.</li>
                 <li>Dry-run validation is required before future migration apply.</li>
+                <li>Migration Approval Gate protects against unsafe database changes.</li>
                 <li>Future runner actions must be explicit owner/admin actions with dry-run/check-first review.</li>
                 <li>Build automation must never run migrations automatically.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Open Migration Dry Run planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-approval')) ?>">Open Migration Approval planning</a></p>
         </div>
     </div>
 </div>

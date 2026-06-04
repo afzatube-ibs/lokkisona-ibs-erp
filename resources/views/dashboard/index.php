@@ -87,6 +87,12 @@
                     <span class="action-link-desc">Review migration dry-run validator planning and Red Issues behavior</span>
                 </a>
                 <?php endif; ?>
+                <?php if (\App\Permission::can('migration_approval.view')): ?>
+                <a href="<?= e(url('/migration-approval')) ?>" class="action-link">
+                    <span class="action-link-title">Migration Approval</span>
+                    <span class="action-link-desc">Review apply approval gate planning and future checklist requirements</span>
+                </a>
+                <?php endif; ?>
                 <?php if (\App\Permission::can('build_queue.view')): ?>
                 <a href="<?= e(url('/build-queue')) ?>" class="action-link">
                     <span class="action-link-title">Build Queue</span>
@@ -162,6 +168,7 @@
                 <li>Migration runner planning foundation without SQL execution</li>
                 <li>Draft migration files planning without automatic apply</li>
                 <li>Migration dry-run validator planning without database writes</li>
+                <li>Migration approval gate planning without apply execution</li>
                 <li>Build queue and semi-automation planning without auto commit or push</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
@@ -209,6 +216,18 @@
         <div class="card-body">
             <p>Future dry-run validator planning — scan migration files, validate safety and order, show warnings/red issues, and require owner approval before any future real apply.</p>
             <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Open Migration Dry Run planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('migration_approval.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Migration Approval Gate Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Future apply approval gate planning — dry-run pass, backup confirmation, environment confirmation, checksum confirmation, rollback review, owner/admin approval, and Red Issues clear state before manual execution.</p>
+            <p class="page-description"><a href="<?= e(url('/migration-approval')) ?>">Open Migration Approval planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

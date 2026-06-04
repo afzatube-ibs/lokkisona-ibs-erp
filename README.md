@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.23 - Migration Dry Run Validator Planning Foundation**
+**Version 0.1.24 - Migration Apply Approval Gate Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -64,6 +64,7 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/migration-runner` | Real database migration runner planning foundation (auth) |
 | GET    | `/migration-files` | Draft migration files planning foundation (auth) |
 | GET    | `/migration-dry-run` | Migration dry-run validator planning foundation (auth) |
+| GET    | `/migration-approval` | Migration apply approval gate planning foundation (auth) |
 | GET    | `/build-queue` | Build queue and semi-automation planning foundation (auth) |
 | GET    | `/users` | User management foundation (auth) |
 | GET    | `/suppliers` | Supplier foundation (auth) |
@@ -83,7 +84,7 @@ Change credentials in `config/app.php` under the `auth` key.
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.23.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.24.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`, or schema repair during page loads.
 
@@ -93,7 +94,9 @@ The authenticated `/migration-runner` page is planning-only. It documents the fu
 
 The authenticated `/migration-files` page documents draft SQL migration files. The SQL files under `database/migrations/` are manual drafts only and are not executed by application page load.
 
-The authenticated `/migration-dry-run` page documents the future dry-run/check layer. It will scan files, validate safety, show warnings/red issues, and require owner approval before any future real apply. v0.1.23 does not execute SQL, write dry-run records, or change the database.
+The authenticated `/migration-dry-run` page documents the future dry-run/check layer. It will scan files, validate safety, show warnings/red issues, and require owner approval before any future real apply. v0.1.24 does not execute SQL, write dry-run records, or change the database.
+
+The authenticated `/migration-approval` page documents the future apply approval gate. It requires migration file drafts, successful dry-run validation, backup confirmation, owner/admin approval, apply gate review, future manual execution only, audit trail planning, and rollback plan confirmation. It does not execute SQL, approve records, or apply migrations.
 
 Draft migration files:
 
@@ -121,6 +124,17 @@ Migration dry-run workflow:
 4. Make no database changes.
 5. Require owner approval and backup confirmation before any future real apply.
 
+Migration apply approval workflow:
+
+1. Confirm migration file drafts and checksums.
+2. Confirm dry-run validation passed.
+3. Confirm database backup and backup reference.
+4. Confirm target environment and production warning if needed.
+5. Confirm Red Issues count is zero.
+6. Capture owner/admin approval and operator confirmation later.
+7. Keep audit trail and rollback plan reference.
+8. Future execution remains manual only.
+
 ## Local Checkpoint
 
 Run the local checkpoint after every build or foundation change:
@@ -141,7 +155,7 @@ PHP path notes:
 
 ## Build Queue & Semi-Automation
 
-The authenticated `/build-queue` page documents safe build queue planning only. v0.1.23 does not create build queue tables, write build queue records, auto-run next tasks, commit, or push.
+The authenticated `/build-queue` page documents safe build queue planning only. v0.1.24 does not create build queue tables, write build queue records, auto-run next tasks, commit, or push.
 
 Safe build workflow:
 
@@ -159,7 +173,7 @@ Semi-automation levels:
 - Level 2: Build queue suggests the next task, checkpoint footer is shown, commit/push stay manual.
 - Level 3: Small safe batch of 2-3 related planning pages, checkpoint, then manual owner review.
 
-Blocked automation: automatic commit, automatic push, automatic database migration apply, automatic OpenCart/WooCommerce sync, automatic order import, automatic payable mutation, automatic stock deduction, and automatic invoice generation. Migration dry-run must pass before migration-related build work can move forward.
+Blocked automation: automatic commit, automatic push, automatic database migration apply, automatic OpenCart/WooCommerce sync, automatic order import, automatic payable mutation, automatic stock deduction, and automatic invoice generation. Migration dry-run and approval gate planning must pass before migration-related build work can move forward later.
 
 Planned build queue fields are documented only: `build_queue_id`, `build_version`, `build_title`, `build_type`, `module_area`, `priority`, `status`, `depends_on_version`, `expected_routes`, `expected_permissions`, `checkpoint_required`, `browser_check_required`, `owner_approval_required`, `created_by`, `created_at`, `completed_at`.
 
@@ -173,7 +187,7 @@ IBS-LK Business Manager starts with Iqbal & Brothers supplier operations and Lok
 
 ## Database Safety
 
-The authenticated `/database-safety` page reports the current database connection, manual migration rules, draft migration files, dry-run validation planning, no page-load schema rules, migration runner planning, build automation boundaries, and pending planned tables.
+The authenticated `/database-safety` page reports the current database connection, manual migration rules, draft migration files, dry-run validation planning, approval gate planning, no page-load schema rules, migration runner planning, build automation boundaries, and pending planned tables.
 
 The authenticated `/migration-runner` page documents the future controlled runner. Current scope is planning only:
 
@@ -188,6 +202,7 @@ The authenticated `/migration-runner` page documents the future controlled runne
 - Build Queue and semi-automation must never trigger migration apply automatically.
 - Draft migration files exist under `database/migrations/` but remain manual-only.
 - Dry-run validation must pass before future migration apply planning can continue.
+- Migration Approval Gate must confirm backup, environment, checksum, apply order, rollback plan, owner/admin approval, and Red Issues clear state before future manual execution.
 
 Planned migration groups are documented only:
 
@@ -266,7 +281,7 @@ The current release keeps the configured single-admin login in `config/app.php` 
 
 The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
 
-No users table is created automatically and no database user records are written in v0.1.23.
+No users table is created automatically and no database user records are written in v0.1.24.
 
 ## Supplier Management
 
@@ -278,7 +293,7 @@ Planned supplier fields documented only: supplier name, contact person, phone, e
 
 Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
 
-No suppliers table is created automatically and no supplier records are written in v0.1.23.
+No suppliers table is created automatically and no supplier records are written in v0.1.24.
 
 ## Business Source & Sales Channel Management
 
@@ -288,7 +303,7 @@ The first source is Lokkisona.com, but the architecture is not hard-coded to one
 
 Planned business/source fields documented only: business name, channel name, source type, website/domain, order source label, status, default supplier, default workflow, created at, updated at.
 
-No business, source, or sales channel tables are created automatically and no database records are written in v0.1.23.
+No business, source, or sales channel tables are created automatically and no database records are written in v0.1.24.
 
 ## Product Control
 
@@ -300,7 +315,7 @@ Planned product fields documented only: product_id/source_product_id, product na
 
 Planned variant/option fields documented only: option/variant name, option value, source option id, source option value id, improved option model read-only, improved option stock read-only, supplier model, product cost, vendor stock, option image reference, POIP/PIT image reference note.
 
-No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.23. OpenCart sync is not connected in this release.
+No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.24. OpenCart sync is not connected in this release.
 
 ## Status Mapping & Sync Planning
 
@@ -310,7 +325,7 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.23. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.24. OpenCart is not connected in this release.
 
 ## Sync Preview & Import Safety
 
@@ -320,7 +335,7 @@ Sync/import should prepare source invoice reference and ERP invoice template typ
 
 Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
 
-No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.23. OpenCart and WooCommerce are not connected in this release.
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.24. OpenCart and WooCommerce are not connected in this release.
 
 ## ERP Invoice & Packing Print Planning
 
@@ -334,7 +349,7 @@ Print rules documented: customer invoice must not show supplier cost; supplier m
 
 Planned document types: Customer Invoice, Packing Invoice / Packing Slip, Dispatch Batch Report, Supplier Product Summary, Return Receive Batch Print, Supplier Payable Settlement Summary.
 
-No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.23.
+No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.24.
 
 ## Supplier Tools Planning
 
@@ -346,7 +361,7 @@ Supplier Quick Invoice Generator rules: independent tool only; does not create E
 
 Simple Calculator rules: basic standalone calculator only; no payable calculation; no settlement helper; no product cost calculation; no courier charge calculation; no save to ERP accounting; no system impact; no database write required for calculator.
 
-Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.23.
+Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.24.
 
 ## Manual & External Order Planning
 
@@ -356,7 +371,7 @@ Manual / External Orders must behave like normal IBS orders after entry while cl
 
 Safety rules documented: business source selection, external reference preservation, product/variant mapping, shared vendor stock, cost snapshot capture, workflow entry after confirmation, source-aware ERP invoice template planning, confirmation/audit, duplicate external reference blocking, and future direct WooCommerce sync upgrade.
 
-Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.23.
+Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.24.
 
 ## Roles & Permissions
 
@@ -369,9 +384,9 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, migration runner, migration files, migration dry-run, build queue, users, suppliers, supplier tools, business sources, orders, manual orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, migration runner, migration files, migration dry-run, migration approval, build queue, users, suppliers, supplier tools, business sources, orders, manual orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
 
-Migration planning permissions are prepared as `migrations.view`, `migrations.manage`, `migration_runner.view`, `migration_runner.manage`, `migration_files.view`, `migration_files.manage`, `migration_dry_run.view`, and `migration_dry_run.manage`. Owner has full access; admin has migration planning access; staff and supplier do not manage migrations.
+Migration planning permissions are prepared as `migrations.view`, `migrations.manage`, `migration_runner.view`, `migration_runner.manage`, `migration_files.view`, `migration_files.manage`, `migration_dry_run.view`, `migration_dry_run.manage`, `migration_approval.view`, `migration_approval.manage`, `migration_apply.view`, and `migration_apply.manage`. Owner has full access; admin has migration planning access; staff and supplier do not manage migrations.
 
 Build queue planning permissions are prepared as `build_queue.view`, `build_queue.manage`, `build_automation.view`, and `build_automation.manage`. Owner has full access; admin has build planning access; staff and supplier do not manage build automation.
 
@@ -393,6 +408,7 @@ Logged foundation events include:
 - Migration Runner page access
 - Migration Files page access
 - Migration Dry Run page access
+- Migration Approval page access
 - Build Queue page access
 - Users page access
 - Suppliers page access
@@ -409,7 +425,7 @@ Logged foundation events include:
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.23
+- App Version v0.1.24
 - PHP Version
 - Database Connection Status
 - Storage Writable Status
