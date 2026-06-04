@@ -167,4 +167,14 @@
             <p class="page-description">No payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected.</p>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Launch Cutover Boundary</h2>
+        </div>
+        <div class="card-body">
+            <p>Manual orders after ERP launch are normal ERP transactions, not supplier opening balance entries.</p>
+            <p class="page-description">Old manual payable belongs in Supplier Opening Balance planning before launch lock.</p>
+        </div>
+    </div>
 </div>

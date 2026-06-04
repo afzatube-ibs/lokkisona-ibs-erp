@@ -180,6 +180,7 @@
                 <li>Migration dry-run must pass before any migration-related build can move forward.</li>
                 <li>Build Queue must never trigger migration apply automatically; the approval gate is manual only.</li>
                 <li>Build Queue must never trigger migration execution or bypass the execution lock.</li>
+                <li>After the opening balance and launch cutover foundation, the next major phase should move toward v0.2 real database/model foundation planning.</li>
             </ul>
         </div>
     </div>

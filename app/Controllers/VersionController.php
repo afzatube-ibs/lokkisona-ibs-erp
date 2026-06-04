@@ -38,6 +38,12 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Supplier Opening Balance and Launch Cutover planning foundation page and sidebar item',
+                'Supplier opening balance permissions for supplier_opening_balances.view, supplier_opening_balances.manage, and supplier_opening_balances.approve',
+                'Opening balance planning documents payable-to-supplier, advance-from-supplier, neutral-zero-start, cut-off date, supplier/source selection, reference notes, proof attachment planning, owner approval, audit logging, and adjustment safety',
+                'Example opening payable for Iqbal & Brothers documents estimated 1,200,000 BDT as a launch starting balance, not normal order payable',
+                'Launch Cutover checklist documents go-live date, cut-off date, old manual payable confirmation, supplier/source confirmation, proof support, owner approval, lock after launch, and separation from new ERP transactions',
+                'Supplier Payables, Suppliers, Manual Orders, Dispatch Reports, Return Receive, Build Queue, Dashboard, README, tools, and database docs now describe old manual balance vs new ERP ledger boundaries',
                 'Migration Execution Lock planning foundation page and sidebar item',
                 'Migration execution lock permissions for migration_execution_lock.view and migration_execution_lock.manage',
                 'Execution lock planning documents manual-only apply protection, wrong environment protection, dirty Git protection, failed dry-run protection, missing approval protection, backup missing protection, checksum mismatch protection, double-apply protection, emergency stop planning, and final lock state preview',

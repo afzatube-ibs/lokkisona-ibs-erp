@@ -105,6 +105,18 @@
 
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">Opening Balance Summary Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Supplier profile will later show opening balance summary, approval status, cut-off date, and launch lock status.</p>
+            <p class="page-description"><a href="<?= e(url('/supplier-opening-balances')) ?>">Review Supplier Opening Balances planning</a></p>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">Manual Migration Required</h2>
         </div>
         <div class="card-body">

@@ -150,6 +150,12 @@ class Permission
                 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>',
             ],
             [
+                'label' => 'Supplier Opening Balances',
+                'path' => '/supplier-opening-balances',
+                'permission' => 'supplier_opening_balances.view',
+                'icon' => '<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/><path d="M18 3v6M21 6h-6"/>',
+            ],
+            [
                 'label' => 'Return Receive',
                 'path' => '/return-receive',
                 'permission' => 'return_receive.view',

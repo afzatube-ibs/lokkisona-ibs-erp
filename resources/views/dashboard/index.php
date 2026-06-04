@@ -133,6 +133,12 @@
                     <span class="action-link-title">Supplier Payables</span>
                     <span class="action-link-desc">Review supplier payable and settlement planning</span>
                 </a>
+                <?php if (\App\Permission::can('supplier_opening_balances.view')): ?>
+                <a href="<?= e(url('/supplier-opening-balances')) ?>" class="action-link">
+                    <span class="action-link-title">Supplier Opening Balances</span>
+                    <span class="action-link-desc">Review opening balance and launch cutover planning</span>
+                </a>
+                <?php endif; ?>
                 <a href="<?= e(url('/return-receive')) ?>" class="action-link">
                     <span class="action-link-title">Return Receive</span>
                     <span class="action-link-desc">Review return receive and review batch planning</span>
@@ -181,6 +187,7 @@
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
                 <li>Business source and sales channel foundation without database writes</li>
                 <li>Product control foundation without database writes — supplier cost/stock planning ready</li>
+                <li>Supplier opening balance and launch cutover planning without payable writes</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>
@@ -247,6 +254,18 @@
         <div class="card-body">
             <p>Future execution lock planning — locked by default, waiting states for dry-run, backup, owner approval, clean Git, checksum, rollback review, Red Issues blocks, wrong environment blocks, emergency lock, and ready-but-manual-only status.</p>
             <p class="page-description"><a href="<?= e(url('/migration-execution-lock')) ?>">Open Migration Execution Lock planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('supplier_opening_balances.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Opening Balance / Launch Cutover Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Supplier opening balance planning for old/manual payable before ERP launch — estimated 1,200,000 BDT payable to Iqbal &amp; Brothers, owner approval, proof planning, cut-off date, lock-after-launch, and separation from new ERP ledger transactions.</p>
+            <p class="page-description"><a href="<?= e(url('/supplier-opening-balances')) ?>">Open Supplier Opening Balances planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

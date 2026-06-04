@@ -174,6 +174,18 @@
 
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">Launch Cutover Return Boundary</h2>
+        </div>
+        <div class="card-body">
+            <p>Old return deductions are included in Supplier Opening Balance planning before launch.</p>
+            <p class="page-description">New returns after launch go through the normal Return Receive workflow and payable adjustment review.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">Future Report / Export Plan</h2>
         </div>
         <div class="card-body">

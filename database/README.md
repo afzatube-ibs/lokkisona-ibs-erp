@@ -8,7 +8,18 @@ Manual migration notes live in `database/migrations/`.
 
 Database changes must be reviewed and applied by an owner/admin action outside page load. The application must not automatically create, alter, or repair schema while serving ERP pages.
 
-v0.1.25 adds Migration Execution Lock planning only. The `/migration-execution-lock` page documents future locked-by-default behavior, wrong environment protection, dirty Git protection, failed dry-run protection, missing approval protection, backup missing protection, checksum mismatch protection, duplicate apply protection, emergency stop planning, and final lock state preview. It does not execute SQL or change the database.
+v0.1.26 adds Supplier Opening Balance and Launch Cutover planning only. The `/supplier-opening-balances` page documents old/manual supplier payable as a controlled ERP starting balance with cut-off date, supplier/source selection, reference note, proof planning, owner approval, audit requirement, adjustment safety, and launch cutover checklist. It does not create payable ledger records, change stock, upload files, or write opening balance records.
+
+Opening balance workflow:
+
+1. Confirm the old/manual payable calculation.
+2. Select supplier, business source, or all sources.
+3. Choose payable-to-supplier, advance-from-supplier, or neutral-zero-start.
+4. Set cut-off date as the day before ERP real launch.
+5. Require owner approval and audit trail before launch lock.
+6. Start new ERP ledger transactions after cut-off only.
+
+The `/migration-execution-lock` page documents future locked-by-default behavior, wrong environment protection, dirty Git protection, failed dry-run protection, missing approval protection, backup missing protection, checksum mismatch protection, duplicate apply protection, emergency stop planning, and final lock state preview. It does not execute SQL or change the database.
 
 The `/migration-approval` page documents future backup confirmation, environment confirmation, dry-run pass requirement, Red Issues clear state, checksum confirmation, apply order review, rollback planning, owner/admin approval, audit trail, and future manual execution only. It does not execute SQL or change the database.
 
@@ -25,4 +36,4 @@ Draft migration files:
 - `database/migrations/0006_dispatch_returns_payables.sql`
 - `database/migrations/0007_invoices_printing_supplier_tools.sql`
 
-These files are not executed by application page load, Build Queue, Migration Runner, Migration Dry Run, Migration Approval, Migration Execution Lock, sync/import, staff pages, or supplier pages. Apply manually only after dry-run passes, approval gate is complete, execution lock is ready, owner approval is captured, rollback plan is reviewed, and database backup is confirmed.
+These files are not executed by application page load, Build Queue, Migration Runner, Migration Dry Run, Migration Approval, Migration Execution Lock, Supplier Opening Balances, sync/import, staff pages, or supplier pages. Apply manually only after dry-run passes, approval gate is complete, execution lock is ready, owner approval is captured, rollback plan is reviewed, and database backup is confirmed.

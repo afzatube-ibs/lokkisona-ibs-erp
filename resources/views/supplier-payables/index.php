@@ -71,6 +71,21 @@
 
 <div class="card">
     <div class="card-header">
+        <h2 class="card-title">Opening Balance and Launch Cutover</h2>
+    </div>
+    <div class="card-body">
+        <ul class="feature-list">
+            <li>Supplier Opening Balance is the starting ledger balance at ERP launch.</li>
+            <li>Old manual payable must not be entered as normal order payable.</li>
+            <li>Product Cost Payable starts after the launch cut-off date only.</li>
+            <li>Payment Made, Return Deduction, Additional Payable, and Advance Received affect balance after opening.</li>
+        </ul>
+        <p class="page-description"><a href="<?= e(url('/supplier-opening-balances')) ?>">Review Supplier Opening Balances planning</a></p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
         <h2 class="card-title">Supplier Tools Separation Rule</h2>
     </div>
     <div class="card-body">

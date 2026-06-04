@@ -173,6 +173,18 @@
 
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">Launch Cutover Payable Boundary</h2>
+        </div>
+        <div class="card-body">
+            <p>Dispatch payable begins only after the ERP launch cut-off date.</p>
+            <p class="page-description">Old supplier payable before launch belongs in Supplier Opening Balance planning, not dispatch batches.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">Current Access Mode</h2>
         </div>
         <div class="card-body">
