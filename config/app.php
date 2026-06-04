@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.22',
-    'release_label' => 'Real Migration Files Planning Foundation',
+    'version' => '0.1.23',
+    'release_label' => 'Migration Dry Run Validator Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

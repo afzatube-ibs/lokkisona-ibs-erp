@@ -8,7 +8,9 @@ Manual migration notes live in `database/migrations/`.
 
 Database changes must be reviewed and applied by an owner/admin action outside page load. The application must not automatically create, alter, or repair schema while serving ERP pages.
 
-v0.1.22 adds real migration SQL draft files for planning only. The `/migration-files` page documents the draft files, manual apply rule, backup-before-apply rule, dry-run/check-first rule, apply order, rollback planning, and Red Issues Summary behavior.
+v0.1.23 adds Migration Dry Run Validator planning only. The `/migration-dry-run` page documents future file scanning, safety validation, warnings/red issues, checksum planning, and owner approval before any future real apply. It does not execute SQL or change the database.
+
+The migration file foundation added real SQL draft files for planning only. The `/migration-files` page documents the draft files, manual apply rule, backup-before-apply rule, dry-run/check-first rule, apply order, rollback planning, and Red Issues Summary behavior.
 
 Draft migration files:
 
@@ -19,4 +21,4 @@ Draft migration files:
 - `database/migrations/0006_dispatch_returns_payables.sql`
 - `database/migrations/0007_invoices_printing_supplier_tools.sql`
 
-These files are not executed by application page load, Build Queue, Migration Runner, sync/import, staff pages, or supplier pages. Apply manually only after owner approval and database backup.
+These files are not executed by application page load, Build Queue, Migration Runner, Migration Dry Run, sync/import, staff pages, or supplier pages. Apply manually only after dry-run passes, owner approval, and database backup.

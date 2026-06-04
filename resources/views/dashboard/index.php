@@ -81,6 +81,12 @@
                     <span class="action-link-desc">Review draft SQL migration files and manual apply rules</span>
                 </a>
                 <?php endif; ?>
+                <?php if (\App\Permission::can('migration_dry_run.view')): ?>
+                <a href="<?= e(url('/migration-dry-run')) ?>" class="action-link">
+                    <span class="action-link-title">Migration Dry Run</span>
+                    <span class="action-link-desc">Review migration dry-run validator planning and Red Issues behavior</span>
+                </a>
+                <?php endif; ?>
                 <?php if (\App\Permission::can('build_queue.view')): ?>
                 <a href="<?= e(url('/build-queue')) ?>" class="action-link">
                     <span class="action-link-title">Build Queue</span>
@@ -155,6 +161,7 @@
                 <li>Manual migration and database safety foundation</li>
                 <li>Migration runner planning foundation without SQL execution</li>
                 <li>Draft migration files planning without automatic apply</li>
+                <li>Migration dry-run validator planning without database writes</li>
                 <li>Build queue and semi-automation planning without auto commit or push</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
@@ -190,6 +197,18 @@
         <div class="card-body">
             <p>Manual SQL draft planning — real migration files under database/migrations for owner/admin review, backup-first manual apply, dry-run/check-first review, rollback planning, and Red Issues behavior.</p>
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('migration_dry_run.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Migration Dry Run Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Future dry-run validator planning — scan migration files, validate safety and order, show warnings/red issues, and require owner approval before any future real apply.</p>
+            <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Open Migration Dry Run planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

@@ -14,9 +14,9 @@ Migrations in this directory are manual owner-action files. The application must
 - Future production apply must show a backup reminder and require extra confirmation.
 - Failed future runs must show a clear Red Issues Summary.
 
-## v0.1.22 Real Migration Files Planning
+## Migration Files and Dry Run Planning
 
-The `/migration-files` page documents manual SQL draft files. The `/migration-runner` page still does not execute SQL, write migration records, or create migration tracking tables.
+The `/migration-files` page documents manual SQL draft files. The `/migration-dry-run` page documents future dry-run validation before any real apply. The `/migration-runner` page still does not execute SQL, write migration records, or create migration tracking tables.
 
 Draft files in this directory:
 

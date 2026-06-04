@@ -26,7 +26,7 @@ Passing runs end with:
 
 ```text
 [OK] ALL GREEN
-Version: v0.1.22 Real Migration Files Planning Foundation
+Version: v0.1.23 Migration Dry Run Validator Planning Foundation
 Checkpoint: passed
 Browser/Routes: passed
 Git: summary printed above

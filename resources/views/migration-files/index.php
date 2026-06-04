@@ -38,6 +38,7 @@
             <ul class="feature-list">
                 <li>Draft SQL files live under <code>database/migrations/</code> for review.</li>
                 <li>No application page loads, parses, or applies the draft files.</li>
+                <li>Draft SQL files should be validated by Migration Dry Run before any owner/admin manual apply.</li>
                 <li>Back up the database before any future manual apply.</li>
                 <li>Use dry-run/check-first review before any future production apply.</li>
             </ul>
@@ -133,6 +134,7 @@
                 <li>Red Issues Summary should show severity, area, file path, route, issue detail, suggested fix, and status.</li>
                 <li>No build queue task, commit, push, sync, import, or migration action continues after a red issue.</li>
             </ul>
+            <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Review Migration Dry Run planning</a></p>
         </div>
     </div>
 </div>

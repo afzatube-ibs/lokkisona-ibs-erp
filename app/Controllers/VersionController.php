@@ -38,6 +38,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Migration Dry Run Validator planning foundation page and sidebar item',
+                'Migration dry-run permissions for migration_dry_run.view and migration_dry_run.manage',
+                'Dry-run planning documents migration file scanning, SQL safety scanning, apply-order validation, duplicate migration key checks, checksum planning, environment safety, backup reminder, owner approval, and Red Issues Summary behavior',
+                'Planned dry-run result and issue fields documented without executing SQL or writing records',
+                'Migration Runner, Migration Files, Database Safety, and Build Queue pages require dry-run before future migration apply planning',
                 'Real Migration Files planning foundation page and sidebar item',
                 'Migration files permissions for migration_files.view and migration_files.manage',
                 'Manual-only draft SQL migration files added under database/migrations for core users, business sources, products, status mapping, sync, orders, dispatch, returns, payables, invoices, printing, and supplier tools',

@@ -1,6 +1,6 @@
 # Build Queue and Semi-Automation Planning
 
-v0.1.21 is planning/foundation only. It documents a safe build queue workflow for IBS-LK Business Manager and does not create build queue tables, write build queue records, auto-run tasks, commit, or push.
+This is planning/foundation only. It documents a safe build queue workflow for IBS-LK Business Manager and does not create build queue tables, write build queue records, auto-run tasks, commit, or push.
 
 ## Safe Workflow
 
@@ -12,7 +12,7 @@ v0.1.21 is planning/foundation only. It documents a safe build queue workflow fo
 6. Wait for owner approval before commit or push.
 7. Start the next build only after Git is synced with `origin/main`.
 
-Migration-related build tasks require owner approval, backup confirmation, and manual apply only. The Build Queue must never apply migration SQL automatically.
+Migration-related build tasks require successful dry-run, owner approval, backup confirmation, and manual apply only. The Build Queue must never apply migration SQL automatically.
 
 ## Semi-Automation Levels
 

@@ -84,6 +84,12 @@ class Permission
                 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/>',
             ],
             [
+                'label' => 'Migration Dry Run',
+                'path' => '/migration-dry-run',
+                'permission' => 'migration_dry_run.view',
+                'icon' => '<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/><path d="M16 17l2 2 4-4"/>',
+            ],
+            [
                 'label' => 'Build Queue',
                 'path' => '/build-queue',
                 'permission' => 'build_queue.view',

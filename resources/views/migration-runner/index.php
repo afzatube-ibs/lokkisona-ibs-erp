@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Migration Runner Planning</h1>
-    <p class="page-description">Owner/admin foundation for future controlled database migrations. v0.1.22 adds draft migration files, but no SQL execution is available in this release.</p>
+    <p class="page-description">Owner/admin foundation for future controlled database migrations. Future real apply must require successful dry-run first; no SQL execution is available in this release.</p>
 </div>
 
 <div class="card-grid">
@@ -39,6 +39,7 @@
                 <li>No page-load migration, installer, or self-healing database behavior.</li>
                 <li>No automatic SQL execution in v<?= e($appVersion) ?>.</li>
                 <li>Dry-run/check-first and backup-before-apply are mandatory for the future runner.</li>
+                <li>Future real apply must require successful Migration Dry Run validation first.</li>
                 <li>Staff and supplier pages must never manage migrations.</li>
                 <li>Draft files under <code>database/migrations/</code> are manual review files only.</li>
             </ul>
@@ -136,6 +137,7 @@
             </ul>
             <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Review Database Safety rules</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Review Migration Files planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-dry-run')) ?>">Review Migration Dry Run planning</a></p>
         </div>
     </div>
 </div>
