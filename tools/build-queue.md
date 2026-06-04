@@ -12,6 +12,8 @@ v0.1.21 is planning/foundation only. It documents a safe build queue workflow fo
 6. Wait for owner approval before commit or push.
 7. Start the next build only after Git is synced with `origin/main`.
 
+Migration-related build tasks require owner approval, backup confirmation, and manual apply only. The Build Queue must never apply migration SQL automatically.
+
 ## Semi-Automation Levels
 
 - Level 1: Manual task prompt plus manual checkpoint plus manual commit/push.

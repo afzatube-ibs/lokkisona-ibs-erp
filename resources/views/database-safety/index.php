@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Database Safety</h1>
-    <p class="page-description">Manual migration rules, migration runner planning, build automation boundaries, and future database planning.</p>
+    <p class="page-description">Manual migration rules, draft migration files, migration runner planning, build automation boundaries, and future database planning.</p>
 </div>
 
 <div class="card-grid">
@@ -35,10 +35,12 @@
                 <li>Migrations are owner/admin-reviewed files under <code>database/migrations/</code>.</li>
                 <li>Back up the database before applying any schema changes.</li>
                 <li>Apply SQL manually through a trusted database client or controlled deployment process.</li>
+                <li>Real migration drafts exist under <code>database/migrations/</code> but remain manual-only.</li>
                 <li>Future runner actions must be explicit owner/admin actions with dry-run/check-first review.</li>
                 <li>Build automation must never run migrations automatically.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning</a></p>
+            <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a></p>
         </div>
     </div>
 </div>

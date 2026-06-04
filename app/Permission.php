@@ -78,6 +78,12 @@ class Permission
                 'icon' => '<path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/><path d="M8 7h.01M8 17h.01"/><path d="M12 7h4M12 17h4"/>',
             ],
             [
+                'label' => 'Migration Files',
+                'path' => '/migration-files',
+                'permission' => 'migration_files.view',
+                'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/>',
+            ],
+            [
                 'label' => 'Build Queue',
                 'path' => '/build-queue',
                 'permission' => 'build_queue.view',

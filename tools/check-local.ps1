@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.1.21 Build Queue and Semi-Automation Planning Foundation"
+$appVersionLabel = "v0.1.22 Real Migration Files Planning Foundation"
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -151,7 +151,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/migration-files", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
     $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
@@ -164,8 +164,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.21") {
-        Fail "Version check failed: /version does not contain v0.1.21." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.21."
+    if ($versionResponse.Content -notmatch "v0\.1\.22") {
+        Fail "Version check failed: /version does not contain v0.1.22." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.22."
     }
     Ok "Version"
 
@@ -192,15 +192,25 @@ try {
     foreach ($file in $runtimeFiles) {
         $lines = Get-Content -Path $file.FullName
         foreach ($line in $lines) {
-            if ($line -match "(?i)CREATE\s+TABLE|ALTER\s+TABLE") {
-                if ($line -notmatch "(?i)No .*CREATE\s+TABLE|No .*ALTER\s+TABLE|CREATE\s+TABLE.*during page load|ALTER\s+TABLE.*during page load") {
-                    Fail "Runtime schema statement found in $($file.FullName)." "Database safety" $file.FullName "Remove runtime CREATE TABLE / ALTER TABLE. Schema changes must be manual migrations only."
+            if ($line -match "(?i)CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE") {
+                if ($line -notmatch "(?i)No .*CREATE\s+TABLE|No .*ALTER\s+TABLE|No .*DROP\s+TABLE|CREATE\s+TABLE.*during page load|ALTER\s+TABLE.*during page load|DROP\s+TABLE.*during page load") {
+                    Fail "Runtime schema statement found in $($file.FullName)." "Database safety" $file.FullName "Remove runtime CREATE TABLE / ALTER TABLE / DROP TABLE. Schema changes must be manual migrations only."
                 }
             }
             if ($line -match "(?i)schema\s+repair|repair\s+schema") {
                 if ($line -notmatch "(?i)No .*schema\s+repair|No .*repair\s+schema") {
                     Fail "Suspicious page-load schema repair wording found in $($file.FullName)." "Database safety" $file.FullName "Remove schema repair behavior/wording from runtime page-load code."
                 }
+            }
+        }
+    }
+
+    $migrationSqlFiles = Get-ChildItem -Path "database/migrations" -Filter "*.sql" -File -ErrorAction SilentlyContinue
+    foreach ($file in $migrationSqlFiles) {
+        $content = Get-Content -Raw -Path $file.FullName
+        foreach ($requiredWarning in @("DRAFT ONLY", "DO NOT AUTO RUN", "APPLY MANUALLY ONLY AFTER OWNER APPROVAL", "BACKUP DATABASE FIRST", "NOT EXECUTED BY APPLICATION PAGE LOAD")) {
+            if ($content -notmatch [regex]::Escape($requiredWarning)) {
+                Fail "Migration draft warning missing in $($file.FullName): $requiredWarning" "Database safety" $file.FullName "Add the required manual-only warning header to the migration draft."
             }
         }
     }

@@ -14,9 +14,26 @@ Migrations in this directory are manual owner-action files. The application must
 - Future production apply must show a backup reminder and require extra confirmation.
 - Failed future runs must show a clear Red Issues Summary.
 
-## v0.1.20 Migration Runner Planning
+## v0.1.22 Real Migration Files Planning
 
-The `/migration-runner` page documents the future controlled runner only. It does not execute SQL, write migration records, or create migration tracking tables.
+The `/migration-files` page documents manual SQL draft files. The `/migration-runner` page still does not execute SQL, write migration records, or create migration tracking tables.
+
+Draft files in this directory:
+
+- `0002_core_users_roles_activity.sql`
+- `0003_business_sources_suppliers_products.sql`
+- `0004_status_mapping_sync_preview.sql`
+- `0005_orders_manual_orders_workflow.sql`
+- `0006_dispatch_returns_payables.sql`
+- `0007_invoices_printing_supplier_tools.sql`
+
+Each draft must keep this header:
+
+- DRAFT ONLY
+- DO NOT AUTO RUN
+- APPLY MANUALLY ONLY AFTER OWNER APPROVAL
+- BACKUP DATABASE FIRST
+- NOT EXECUTED BY APPLICATION PAGE LOAD
 
 Planned future runner responsibilities:
 

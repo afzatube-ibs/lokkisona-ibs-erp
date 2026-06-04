@@ -1,3 +1,8 @@
+-- DRAFT ONLY
+-- DO NOT AUTO RUN
+-- APPLY MANUALLY ONLY AFTER OWNER APPROVAL
+-- BACKUP DATABASE FIRST
+-- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- IBS-LK Business Manager planned database foundation.
 -- Documentation only: do not execute as an install script.
 -- Future real migrations must be reviewed, backed up, and applied manually.

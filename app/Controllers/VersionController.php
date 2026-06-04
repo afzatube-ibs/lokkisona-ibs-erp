@@ -38,6 +38,12 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Real Migration Files planning foundation page and sidebar item',
+                'Migration files permissions for migration_files.view and migration_files.manage',
+                'Manual-only draft SQL migration files added under database/migrations for core users, business sources, products, status mapping, sync, orders, dispatch, returns, payables, invoices, printing, and supplier tools',
+                'Draft SQL files include owner approval, backup-first, do-not-auto-run, and no page-load execution warnings',
+                'Migration Files page documents file purpose, draft-only warning, manual apply, backup-before-apply, dry-run/check-first, apply order, rollback planning, and Red Issues Summary behavior',
+                'Checkpoint database safety scan allows schema draft statements only in database/migrations SQL files and documentation while runtime code remains blocked',
                 'Build Queue and Semi-Automation planning foundation page and sidebar item',
                 'Build queue permissions for build_queue.view, build_queue.manage, build_automation.view, and build_automation.manage',
                 'Safe one-build-at-a-time workflow documented: read queue, apply one task or small safe batch, run checkpoint, then stop for owner approval',

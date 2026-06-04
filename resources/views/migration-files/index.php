@@ -1,0 +1,138 @@
+<div class="page-header">
+    <h1 class="page-title">Migration Files Planning</h1>
+    <p class="page-description">Manual SQL draft inventory for future real database setup. Draft files are review material only and are not executed by the application.</p>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Current Safety Status</h2>
+        </div>
+        <div class="card-body">
+            <dl class="info-list">
+                <div class="info-row">
+                    <dt>Access Mode</dt>
+                    <dd><?= e($accessMode['mode']) ?></dd>
+                </div>
+                <div class="info-row">
+                    <dt>Current Role</dt>
+                    <dd><span class="badge badge-ok"><?= e($accessMode['role']) ?></span></dd>
+                </div>
+                <div class="info-row">
+                    <dt>File Status</dt>
+                    <dd><span class="badge badge-warn">Draft only</span></dd>
+                </div>
+                <div class="info-row">
+                    <dt>Apply Mode</dt>
+                    <dd>Manual owner-approved database client or deployment process only.</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Draft-Only Warning</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <li>Draft SQL files live under <code>database/migrations/</code> for review.</li>
+                <li>No application page loads, parses, or applies the draft files.</li>
+                <li>Back up the database before any future manual apply.</li>
+                <li>Use dry-run/check-first review before any future production apply.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Migration Safety Rules</h2>
+    </div>
+    <div class="card-body">
+        <div class="permission-grid">
+            <?php foreach ($safetyRules as $rule): ?>
+            <div class="permission-group">
+                <h3><?= e($rule['title']) ?></h3>
+                <ul>
+                    <?php foreach ($rule['points'] as $point): ?>
+                    <li><?= e($point) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Draft Files</h2>
+        </div>
+        <div class="card-body">
+            <p class="page-description">Manual draft files only. Review in order before any future owner-approved apply.</p>
+            <div class="planned-table-grid">
+                <?php foreach ($draftFiles as $file): ?>
+                    <code><?= e($file) ?></code>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Apply Order</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <?php foreach ($applyOrder as $step): ?>
+                <li><?= e($step) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Migration Groups</h2>
+    </div>
+    <div class="card-body">
+        <div class="planned-table-grid">
+            <?php foreach ($migrationGroups as $group): ?>
+                <code><?= e($group) ?></code>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Index Planning</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <li>Source order references, business source, supplier, product, and variant lookups are indexed in draft files where useful.</li>
+                <li>Status fields, created timestamps, reference numbers, and batch numbers are indexed for future lists and audits.</li>
+                <li>Advanced database features and foreign key constraints are avoided for basic MySQL/MariaDB compatibility.</li>
+                <li>Logical relationships are planned for ERP service-layer enforcement first.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Rollback &amp; Red Issues</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <li>Rollback planning is required before future production apply.</li>
+                <li>Any failed future check or apply stops immediately.</li>
+                <li>Red Issues Summary should show severity, area, file path, route, issue detail, suggested fix, and status.</li>
+                <li>No build queue task, commit, push, sync, import, or migration action continues after a red issue.</li>
+            </ul>
+        </div>
+    </div>
+</div>

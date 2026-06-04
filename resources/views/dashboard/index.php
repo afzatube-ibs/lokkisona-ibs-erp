@@ -75,6 +75,12 @@
                     <span class="action-link-desc">Review real database migration runner planning and safety rules</span>
                 </a>
                 <?php endif; ?>
+                <?php if (\App\Permission::can('migration_files.view')): ?>
+                <a href="<?= e(url('/migration-files')) ?>" class="action-link">
+                    <span class="action-link-title">Migration Files</span>
+                    <span class="action-link-desc">Review draft SQL migration files and manual apply rules</span>
+                </a>
+                <?php endif; ?>
                 <?php if (\App\Permission::can('build_queue.view')): ?>
                 <a href="<?= e(url('/build-queue')) ?>" class="action-link">
                     <span class="action-link-title">Build Queue</span>
@@ -148,6 +154,7 @@
                 <li>Config-backed role and permission foundation</li>
                 <li>Manual migration and database safety foundation</li>
                 <li>Migration runner planning foundation without SQL execution</li>
+                <li>Draft migration files planning without automatic apply</li>
                 <li>Build queue and semi-automation planning without auto commit or push</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
@@ -171,6 +178,18 @@
         <div class="card-body">
             <p>Safe database migration runner planning — manual-only, dry-run/check-first, backup-before-apply, owner/admin confirmation, audit logging, rollback planning, production safety, and Red Issues Summary behavior without executing migration SQL.</p>
             <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('migration_files.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Migration Files Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Manual SQL draft planning — real migration files under database/migrations for owner/admin review, backup-first manual apply, dry-run/check-first review, rollback planning, and Red Issues behavior.</p>
+            <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

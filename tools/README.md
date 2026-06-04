@@ -14,7 +14,7 @@ The checkpoint:
 - Smoke tests all planned foundation routes.
 - Confirms `/version` contains the current release version.
 - Checks for forbidden legacy branding/runtime text.
-- Checks runtime code for unsafe schema changes.
+- Checks runtime code for unsafe schema changes and allows draft schema statements only in `database/migrations/*.sql` or documentation.
 - Prints `git status --short` without committing or pushing.
 - Supports the Build Queue safety workflow by stopping on Red Issues Summary and leaving commit/push for manual owner approval.
 
@@ -26,7 +26,7 @@ Passing runs end with:
 
 ```text
 [OK] ALL GREEN
-Version: v0.1.21 Build Queue and Semi-Automation Planning Foundation
+Version: v0.1.22 Real Migration Files Planning Foundation
 Checkpoint: passed
 Browser/Routes: passed
 Git: summary printed above

@@ -36,6 +36,7 @@ class MigrationRunnerController extends Controller
                     'Provide an owner/admin-controlled place to review future database migration plans.',
                     'Keep database structure changes controlled, manual, auditable, and separate from normal ERP pages.',
                     'Document the future runner before any SQL execution capability is added.',
+                    'v0.1.22 adds draft migration files, but the runner still does not execute them.',
                 ],
             ],
             [
@@ -44,6 +45,7 @@ class MigrationRunnerController extends Controller
                     'No migration will run from page load, staff pages, supplier pages, background loops, or hidden installers.',
                     'Future apply actions must require an explicit owner/admin decision.',
                     'This release does not execute migration SQL.',
+                    'Draft SQL files under database/migrations are review material until manually applied later.',
                 ],
             ],
             [
