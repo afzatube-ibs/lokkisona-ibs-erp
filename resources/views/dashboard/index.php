@@ -81,6 +81,10 @@
                     <span class="action-link-title">Business Sources</span>
                     <span class="action-link-desc">Review business source and sales channel foundation</span>
                 </a>
+                <a href="<?= e(url('/product-control')) ?>" class="action-link">
+                    <span class="action-link-title">Product Control</span>
+                    <span class="action-link-desc">Review product, cost, and stock control foundation</span>
+                </a>
             </div>
         </div>
     </div>
@@ -98,11 +102,24 @@
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
                 <li>Business source and sales channel foundation without database writes</li>
+                <li>Product control foundation without database writes — supplier cost/stock planning ready</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>
                 <li>Git-ready repository structure</li>
             </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Product Control Foundation</h2>
+        </div>
+        <div class="card-body">
+            <p>Supplier product, cost, and stock planning for Iqbal &amp; Brothers — read-only platform fields, editable supplier model/cost/stock, cost/stock history, and low-stock warnings without OpenCart sync.</p>
+            <p class="page-description"><a href="<?= e(url('/product-control')) ?>">Open Product Control foundation</a></p>
         </div>
     </div>
 </div>

@@ -19,6 +19,8 @@
 -- products
 -- product_variants
 -- supplier_product_costs
+-- product_stock_histories
+-- product_cost_histories
 
 -- Planned order workflow tables:
 -- orders

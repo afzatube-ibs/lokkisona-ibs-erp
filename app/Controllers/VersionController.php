@@ -37,6 +37,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Product Control foundation page and permissions without database writes or OpenCart sync',
+                'Current supplier context Iqbal & Brothers with channel-neutral product/cost/stock planning',
+                'Read-only platform fields and supplier-editable model, cost, and stock rules documented',
+                'Cost/stock history, low-stock warning, option image, and dispatch/payable cost snapshot rules',
+                'Planned product and variant fields for future sync and supplier operations',
                 'Business Source and Sales Channel foundation page and permissions without database writes',
                 'Current primary source Lokkisona.com documented without hard-coding future channels',
                 'Manual, offline, ecommerce, marketplace, wholesale, and other source types prepared',

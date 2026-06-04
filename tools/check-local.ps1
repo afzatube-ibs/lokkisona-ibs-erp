@@ -4,7 +4,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
-$phpPreferred = "E:\xampp\php\php.exe"
 $serverProcess = $null
 $serverStarted = $false
 
@@ -18,8 +17,16 @@ function Ok($message) {
 }
 
 function Find-Php {
-    if (Test-Path $phpPreferred) {
-        return $phpPreferred
+    $candidates = @(
+        "D:\xampp\php\php.exe",
+        "E:\xampp\php\php.exe",
+        "C:\xampp\php\php.exe"
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) {
+            return $candidate
+        }
     }
 
     $cmd = Get-Command php -ErrorAction SilentlyContinue
@@ -27,7 +34,7 @@ function Find-Php {
         return $cmd.Source
     }
 
-    Fail "PHP executable not found. Expected $phpPreferred or php in PATH."
+    Fail "PHP executable not found. Expected D:\xampp\php\php.exe, E:\xampp\php\php.exe, C:\xampp\php\php.exe, or php in PATH."
 }
 
 function Invoke-HttpStatus($url, $session = $null) {
@@ -104,7 +111,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/health", "/version", "/users", "/suppliers", "/business-sources")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control")
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
         if ($status -notin @(200, 301, 302, 303)) {
@@ -116,8 +123,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.8") {
-        Fail "Version check failed: /version does not contain v0.1.8."
+    if ($versionResponse.Content -notmatch "v0\.1\.9") {
+        Fail "Version check failed: /version does not contain v0.1.9."
     }
     Ok "Version"
 

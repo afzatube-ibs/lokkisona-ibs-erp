@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.8 - Business Source and Sales Channel Foundation**
+**Version 0.1.9 - Product Control Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -64,12 +64,13 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/users` | User management foundation (auth) |
 | GET    | `/suppliers` | Supplier foundation (auth) |
 | GET    | `/business-sources` | Business source and sales channel foundation (auth) |
+| GET    | `/product-control` | Product control foundation (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.8.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.9.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
@@ -105,6 +106,8 @@ Planned future tables are documented only:
 - products
 - product_variants
 - supplier_product_costs
+- product_stock_histories
+- product_cost_histories
 - orders
 - order_items
 - order_status_mappings
@@ -125,7 +128,7 @@ The current release keeps the configured single-admin login in `config/app.php` 
 
 The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
 
-No users table is created automatically and no database user records are written in v0.1.8.
+No users table is created automatically and no database user records are written in v0.1.9.
 
 ## Supplier Management
 
@@ -137,7 +140,7 @@ Planned supplier fields documented only: supplier name, contact person, phone, e
 
 Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
 
-No suppliers table is created automatically and no supplier records are written in v0.1.8.
+No suppliers table is created automatically and no supplier records are written in v0.1.9.
 
 ## Business Source & Sales Channel Management
 
@@ -147,7 +150,19 @@ The first source is Lokkisona.com, but the architecture is not hard-coded to one
 
 Planned business/source fields documented only: business name, channel name, source type, website/domain, order source label, status, default supplier, default workflow, created at, updated at.
 
-No business, source, or sales channel tables are created automatically and no database records are written in v0.1.8.
+No business, source, or sales channel tables are created automatically and no database records are written in v0.1.9.
+
+## Product Control
+
+The authenticated `/product-control` page documents the Product Control Foundation only. It shows the current supplier context (Iqbal & Brothers), product control purpose, future synced product structure, supplier-editable fields, read-only platform fields, cost/stock history rules, low stock warning rules, option/image reference rules, and the future payable/dispatch cost snapshot rule.
+
+Business rules documented: OpenCart/improved option model and stock are read-only when synced later; supplier model, product cost, and vendor stock are editable with history; low warning is alert-only and does not auto-block workflows; option images should follow POIP/PIT Order Manager image reference logic; dispatch and payable must use cost snapshots, not live changing cost.
+
+Planned product fields documented only: product_id/source_product_id, product name, image, source/channel, supplier, OC/source model read-only, OC/source stock read-only, supplier model, product cost, vendor stock, low warning threshold, status, last synced at, updated at.
+
+Planned variant/option fields documented only: option/variant name, option value, source option id, source option value id, improved option model read-only, improved option stock read-only, supplier model, product cost, vendor stock, option image reference, POIP/PIT image reference note.
+
+No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.9. OpenCart sync is not connected in this release.
 
 ## Roles & Permissions
 
@@ -180,13 +195,14 @@ Logged foundation events include:
 - Users page access
 - Suppliers page access
 - Business Sources page access
+- Product Control page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.8
+- App Version v0.1.9
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

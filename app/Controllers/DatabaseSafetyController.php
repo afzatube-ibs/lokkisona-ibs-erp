@@ -36,6 +36,8 @@ class DatabaseSafetyController extends Controller
             'products',
             'product_variants',
             'supplier_product_costs',
+            'product_stock_histories',
+            'product_cost_histories',
             'orders',
             'order_items',
             'order_status_mappings',

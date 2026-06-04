@@ -24,6 +24,7 @@ $router->get('/database-safety', 'DatabaseSafetyController@index');
 $router->get('/users', 'UsersController@index');
 $router->get('/suppliers', 'SuppliersController@index');
 $router->get('/business-sources', 'BusinessSourcesController@index');
+$router->get('/product-control', 'ProductControlController@index');
 
 $router->setNotFound(function () {
     http_response_code(404);
