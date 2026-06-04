@@ -97,6 +97,10 @@
                     <span class="action-link-title">Supplier Payables</span>
                     <span class="action-link-desc">Review supplier payable and settlement planning</span>
                 </a>
+                <a href="<?= e(url('/return-receive')) ?>" class="action-link">
+                    <span class="action-link-title">Return Receive</span>
+                    <span class="action-link-desc">Review return receive and review batch planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -162,6 +166,16 @@
         <div class="card-body">
             <p>Supplier payable &amp; settlement planning for Iqbal &amp; Brothers — Product Cost Payable from dispatch snapshots, supplier invoices, additional payable, return/damage deductions, payments, advances, and net payable without payable tables or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/supplier-payables')) ?>">Open Supplier Payable planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Return Receive / Review Batch Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Owner/admin Return Receive &amp; Review Batch planning — separates Supplier Return from Lokkisona Return, pre-submit total confirmation, return batches, and payable adjustment review without return tables or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/return-receive')) ?>">Open Return Receive planning foundation</a></p>
         </div>
     </div>
 </div>

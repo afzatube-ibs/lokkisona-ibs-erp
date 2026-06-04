@@ -73,9 +73,9 @@ class OrderWorkflowController extends Controller
         return [
             ['code' => 'hold', 'label' => 'Hold', 'description' => 'Temporary pause before shipping. Can return to Order Received or Packaging, or be Cancelled.'],
             ['code' => 'cancelled', 'label' => 'Cancelled', 'description' => 'Order stopped before fulfillment completes. Terminal exception state.'],
-            ['code' => 'delivery_stop', 'label' => 'Delivery Stop', 'description' => 'Post-shipping stop. Will later require reason/note/user/time. Leads to Hub Return.'],
-            ['code' => 'courier_return', 'label' => 'Hub Return', 'description' => 'Returned to hub. Will later require received confirmation, quantity check, and condition note. Routes to vendor/return handling — no normal fulfillment action.'],
-            ['code' => 'order_returning', 'label' => 'Order Returning', 'description' => 'Return handling in progress toward vendor returns. No normal fulfillment action.'],
+            ['code' => 'delivery_stop', 'label' => 'Delivery Stop', 'description' => 'Post-shipping stop. Will later require reason/note/user/time. Leads to Hub Return and later enters Return Receive / Review Batch.'],
+            ['code' => 'courier_return', 'label' => 'Hub Return', 'description' => 'Returned to hub. Will later require received confirmation, quantity check, and condition note. Later enters Return Receive / Review Batch — no normal fulfillment action.'],
+            ['code' => 'order_returning', 'label' => 'Order Returning', 'description' => 'Return handling in progress. Later enters Return Receive / Review Batch. No normal fulfillment action.'],
         ];
     }
 
@@ -103,7 +103,7 @@ class OrderWorkflowController extends Controller
             ['from' => 'Dispatch Report Created', 'to' => 'Delivery Stop (exception only)', 'note' => 'Batch/report locked. Normal fulfillment status cannot change.'],
             ['from' => 'Out For Delivery', 'to' => 'Delivery Stop (exception only)', 'note' => 'Delivered or Delivery Stop are the only outcomes.'],
             ['from' => 'Delivery Stop', 'to' => 'Hub Return', 'note' => 'Post-shipping exception path only.'],
-            ['from' => 'Hub Return', 'to' => 'Vendor Returns / return handling', 'note' => 'No normal fulfillment action from this point.'],
+            ['from' => 'Hub Return', 'to' => 'Vendor Returns / return handling', 'note' => 'Hub Return and Order Returning later enter Return Receive / Review Batch. No normal fulfillment action from this point.'],
         ];
     }
 

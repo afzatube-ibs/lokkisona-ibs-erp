@@ -113,6 +113,12 @@ class Permission
                 'permission' => 'supplier_payables.view',
                 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>',
             ],
+            [
+                'label' => 'Return Receive',
+                'path' => '/return-receive',
+                'permission' => 'return_receive.view',
+                'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

@@ -28,6 +28,7 @@ $router->get('/product-control', 'ProductControlController@index');
 $router->get('/order-workflow', 'OrderWorkflowController@index');
 $router->get('/dispatch-reports', 'DispatchReportsController@index');
 $router->get('/supplier-payables', 'SupplierPayablesController@index');
+$router->get('/return-receive', 'ReturnReceiveController@index');
 
 $router->setNotFound(function () {
     http_response_code(404);

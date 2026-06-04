@@ -73,6 +73,12 @@ return [
             'returns.view',
             'returns.manage',
         ],
+        'Return Receive' => [
+            'return_receive.view',
+            'return_receive.manage',
+            'return_batches.view',
+            'return_batches.manage',
+        ],
         'Payable' => [
             'payable.view',
             'payable.manage',
@@ -111,6 +117,10 @@ return [
             'dispatch_reports.manage',
             'returns.view',
             'returns.manage',
+            'return_receive.view',
+            'return_receive.manage',
+            'return_batches.view',
+            'return_batches.manage',
             'payable.view',
             'payable.manage',
             'payables.view',

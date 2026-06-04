@@ -37,6 +37,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Return Receive & Review Batch planning foundation page and permissions, owner/admin controlled',
+                'Supplier Return vs Lokkisona Return separation with pre-submit total/cost-snapshot confirmation',
+                'Supplier Return may affect payable only after review; Lokkisona Return has no payable deduction',
+                'Return batch planning, payable adjustment review, remark/note, and optional image proof planned',
+                'Planned return receive, return batch, return item, and payable adjustment fields documented',
                 'Supplier Payable & Settlement planning foundation page and permissions without payable writes',
                 'Product Cost Payable from dispatch cost snapshot, based on product cost only, not selling price',
                 'Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment, and Advance wording planned',

@@ -102,11 +102,12 @@ class SupplierPayablesController extends Controller
     {
         return [
             'title' => 'Return / Damage Deduction',
-            'summary' => 'Returns and damages can reduce payable later.',
+            'summary' => 'Returns and damages can reduce payable later, but only after owner/admin review.',
             'points' => [
                 'Return/Damage Deduction can reduce payable later.',
-                'Deductions link to a return and capture condition status and reason.',
-                'Deductions reduce net payable and require owner/admin approval.',
+                'Supplier Return may affect Net Payable to Supplier only after owner/admin approval.',
+                'Lokkisona Return records do not deduct supplier payable.',
+                'Supplier return/damage-related charges are added manually as Additional Payable / Payable Adjustment only after review.',
             ],
         ];
     }
