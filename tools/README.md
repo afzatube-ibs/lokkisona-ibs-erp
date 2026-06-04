@@ -8,7 +8,7 @@ powershell -ExecutionPolicy Bypass -File tools/check-local.ps1
 
 The checkpoint:
 
-- Auto-detects PHP, checking `D:\xampp\php\php.exe`, `E:\xampp\php\php.exe`, `C:\xampp\php\php.exe`, then `php` from PATH.
+- Auto-detects PHP, checking `D:\xampp\php\php.exe` (Office PC), `E:\xampp\php\php.exe` (Home PC), `C:\xampp\php\php.exe`, then `php` from PATH.
 - Lints PHP files in `app`, `config`, `public`, `resources`, and `routes`.
 - Starts a temporary PHP server on `127.0.0.1:8020` when needed.
 - Smoke tests all planned foundation routes.
@@ -16,6 +16,7 @@ The checkpoint:
 - Checks for forbidden legacy branding/runtime text.
 - Checks runtime code for unsafe schema changes.
 - Prints `git status --short` without committing or pushing.
+- Supports the Build Queue safety workflow by stopping on Red Issues Summary and leaving commit/push for manual owner approval.
 
 ## Final Footer
 
@@ -25,7 +26,7 @@ Passing runs end with:
 
 ```text
 [OK] ALL GREEN
-Version: v0.1.20 Real Database Migration Runner Planning Foundation
+Version: v0.1.21 Build Queue and Semi-Automation Planning Foundation
 Checkpoint: passed
 Browser/Routes: passed
 Git: summary printed above

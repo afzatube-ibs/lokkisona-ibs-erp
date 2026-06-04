@@ -100,6 +100,7 @@ class MigrationRunnerController extends Controller
                     'A future CLI command can provide dry-run and controlled apply for deployment use.',
                     'A future web page can show the same plan to owner/admin users with stronger confirmation.',
                     'Both paths must share one audited safety model and must not run from normal ERP pages.',
+                    'Build Queue or semi-automation must never trigger migration apply automatically.',
                 ],
             ],
             [

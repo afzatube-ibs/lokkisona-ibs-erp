@@ -75,6 +75,12 @@
                     <span class="action-link-desc">Review real database migration runner planning and safety rules</span>
                 </a>
                 <?php endif; ?>
+                <?php if (\App\Permission::can('build_queue.view')): ?>
+                <a href="<?= e(url('/build-queue')) ?>" class="action-link">
+                    <span class="action-link-title">Build Queue</span>
+                    <span class="action-link-desc">Review semi-automation planning, checkpoint gates, and owner approval rules</span>
+                </a>
+                <?php endif; ?>
                 <a href="<?= e(url('/users')) ?>" class="action-link">
                     <span class="action-link-title">Users</span>
                     <span class="action-link-desc">Review user management foundation planning</span>
@@ -142,6 +148,7 @@
                 <li>Config-backed role and permission foundation</li>
                 <li>Manual migration and database safety foundation</li>
                 <li>Migration runner planning foundation without SQL execution</li>
+                <li>Build queue and semi-automation planning without auto commit or push</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
                 <li>Business source and sales channel foundation without database writes</li>
@@ -164,6 +171,18 @@
         <div class="card-body">
             <p>Safe database migration runner planning — manual-only, dry-run/check-first, backup-before-apply, owner/admin confirmation, audit logging, rollback planning, production safety, and Red Issues Summary behavior without executing migration SQL.</p>
             <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (\App\Permission::can('build_queue.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Build Queue / Semi-Automation Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Safe build queue planning — one task or one small approved batch, checkpoint-first, Red Issues stop rule, Git sync before next build, and manual owner approval before commit or push.</p>
+            <p class="page-description"><a href="<?= e(url('/build-queue')) ?>">Open Build Queue planning foundation</a></p>
         </div>
     </div>
     <?php endif; ?>

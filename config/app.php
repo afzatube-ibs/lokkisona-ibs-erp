@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.20',
-    'release_label' => 'Real Database Migration Runner Planning Foundation',
+    'version' => '0.1.21',
+    'release_label' => 'Build Queue and Semi-Automation Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

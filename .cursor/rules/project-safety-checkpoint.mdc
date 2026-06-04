@@ -7,6 +7,9 @@ alwaysApply: true
 
 - Run `powershell -ExecutionPolicy Bypass -File tools/check-local.ps1` after every build or foundation change.
 - Do not commit or push automatically; show changed files and summary first.
+- Stop immediately on `[FAIL] RED ISSUES SUMMARY`; do not continue to the next build task.
+- Confirm Git is synced with `origin/main` before starting the next build.
+- Home PC PHP path: `E:\xampp\php\php.exe`; Office PC PHP path: `D:\xampp\php\php.exe`.
 - Do not change the Git remote unless explicitly requested.
 - Do not add page-load `CREATE TABLE`, `ALTER TABLE`, or schema repair code.
 - Do not connect to OpenCart or use old OpenCart extension code.

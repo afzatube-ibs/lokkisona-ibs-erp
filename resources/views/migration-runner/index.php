@@ -130,6 +130,7 @@
                 <li>Future CLI/web runner must show what will change before apply.</li>
                 <li>Future migration logs must include actor, environment, timing, result, and Red Issues Summary.</li>
                 <li>Future rollback plans must be approved before execution.</li>
+                <li>Build Queue or semi-automation must never trigger migration apply automatically.</li>
                 <li>This foundation does not write migration records or run migration files.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Review Database Safety rules</a></p>

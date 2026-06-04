@@ -78,6 +78,12 @@ class Permission
                 'icon' => '<path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/><path d="M8 7h.01M8 17h.01"/><path d="M12 7h4M12 17h4"/>',
             ],
             [
+                'label' => 'Build Queue',
+                'path' => '/build-queue',
+                'permission' => 'build_queue.view',
+                'icon' => '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v4M12 10v4M16 16v4"/>',
+            ],
+            [
                 'label' => 'Users',
                 'path' => '/users',
                 'permission' => 'users.view',
