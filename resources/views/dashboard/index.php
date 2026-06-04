@@ -73,6 +73,10 @@
                     <span class="action-link-title">Users</span>
                     <span class="action-link-desc">Review user management foundation planning</span>
                 </a>
+                <a href="<?= e(url('/suppliers')) ?>" class="action-link">
+                    <span class="action-link-title">Suppliers</span>
+                    <span class="action-link-desc">Review supplier foundation — primary supplier Iqbal &amp; Brothers</span>
+                </a>
             </div>
         </div>
     </div>
@@ -88,6 +92,7 @@
                 <li>Config-backed role and permission foundation</li>
                 <li>Manual migration and database safety foundation</li>
                 <li>User management foundation without database writes</li>
+                <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
                 <li>Simple router with MVC-style controllers</li>
                 <li>Responsive admin layout with IBS-LK branding</li>
                 <li>File-backed activity log foundation</li>

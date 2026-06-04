@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-03',
+            'release_date' => '2026-06-04',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
             'environment' => config('app.env'),
@@ -37,6 +37,9 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Supplier foundation page and permissions without database writes',
+                'Primary supplier Iqbal & Brothers documented with channel-neutral architecture',
+                'Planned supplier fields and clean supplier accounting wording',
                 'User Management foundation page and permission',
                 'Future database user planning without writes',
                 'Local checkpoint runner for PHP lint, route smoke, and safety checks',

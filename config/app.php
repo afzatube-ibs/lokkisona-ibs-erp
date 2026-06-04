@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.6',
-    'release_label' => 'User Management Foundation',
+    'version' => '0.1.7',
+    'release_label' => 'Supplier Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

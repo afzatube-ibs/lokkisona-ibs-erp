@@ -30,12 +30,18 @@ return [
             'database_safety.view',
             'users.view',
             'users.manage',
+            'suppliers.view',
+            'suppliers.manage',
             'settings.view',
             'settings.manage',
         ],
         'User Management' => [
             'users.view',
             'users.manage',
+        ],
+        'Supplier Management' => [
+            'suppliers.view',
+            'suppliers.manage',
         ],
         'Orders' => [
             'orders.view',
@@ -69,6 +75,8 @@ return [
             'database_safety.view',
             'users.view',
             'users.manage',
+            'suppliers.view',
+            'suppliers.manage',
             'orders.view',
             'orders.manage',
             'product_control.view',

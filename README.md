@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.6 - User Management Foundation**
+**Version 0.1.7 - Supplier Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -62,12 +62,13 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/roles-permissions` | Role and permission foundation (auth) |
 | GET    | `/database-safety` | Database safety and manual migration rules (auth) |
 | GET    | `/users` | User management foundation (auth) |
+| GET    | `/suppliers` | Supplier foundation (auth) |
 
 ## Database
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.6.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.7.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
@@ -123,7 +124,19 @@ The current release keeps the configured single-admin login in `config/app.php` 
 
 The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
 
-No users table is created automatically and no database user records are written in v0.1.6.
+No users table is created automatically and no database user records are written in v0.1.7.
+
+## Supplier Management
+
+The authenticated `/suppliers` page documents the Supplier Foundation only. It shows the current primary supplier (Iqbal & Brothers), supplier operation purpose, future supplier account structure, future payable/settlement, product cost/stock, order fulfillment and return/damage deduction links, and multi-supplier/multi-business readiness.
+
+Operations begin with Iqbal & Brothers and the Lokkisona order workflow, but the architecture is channel-neutral and not hard-coded to a single supplier or sales channel.
+
+Planned supplier fields documented only: supplier name, contact person, phone, email, address, payment terms, payable balance, status, linked business/channel, created at, updated at.
+
+Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
+
+No suppliers table is created automatically and no supplier records are written in v0.1.7.
 
 ## Roles & Permissions
 
@@ -136,7 +149,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, orders, product control, dispatch, returns, payable, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, orders, product control, dispatch, returns, payable, and settings.
 
 ## Activity Log
 
@@ -154,13 +167,14 @@ Logged foundation events include:
 - Roles and permissions page access
 - Database safety page access
 - Users page access
+- Suppliers page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.6
+- App Version v0.1.7
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

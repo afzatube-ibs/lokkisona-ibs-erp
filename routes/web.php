@@ -22,6 +22,7 @@ $router->get('/activity-log', 'ActivityLogController@index');
 $router->get('/roles-permissions', 'RolesPermissionsController@index');
 $router->get('/database-safety', 'DatabaseSafetyController@index');
 $router->get('/users', 'UsersController@index');
+$router->get('/suppliers', 'SuppliersController@index');
 
 $router->setNotFound(function () {
     http_response_code(404);
