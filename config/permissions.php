@@ -53,6 +53,10 @@ return [
             'orders.view',
             'orders.manage',
         ],
+        'Order Workflow' => [
+            'order_workflow.view',
+            'order_workflow.manage',
+        ],
         'Product Control' => [
             'product_control.view',
             'product_control.manage',
@@ -87,6 +91,8 @@ return [
             'business_sources.manage',
             'orders.view',
             'orders.manage',
+            'order_workflow.view',
+            'order_workflow.manage',
             'product_control.view',
             'product_control.manage',
             'dispatch.view',
@@ -101,6 +107,7 @@ return [
         'staff' => [
             'dashboard.view',
             'orders.view',
+            'order_workflow.view',
             'product_control.view',
             'dispatch.view',
             'returns.view',

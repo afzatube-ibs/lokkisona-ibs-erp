@@ -41,6 +41,7 @@ class DatabaseSafetyController extends Controller
             'orders',
             'order_items',
             'order_status_mappings',
+            'order_workflow_histories',
             'dispatch_reports',
             'dispatch_report_items',
             'supplier_returns',

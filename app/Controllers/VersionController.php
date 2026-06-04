@@ -37,6 +37,12 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Order Workflow planning foundation page and permissions without order sync or database writes',
+                'Independent IBS workflow with main fulfillment stages and exception stages documented',
+                'Allowed transition matrix, no move back to New Order, and dispatch report gate after Shipped',
+                'Source/status mapping used only at import, IBS workflow stays independent after sync',
+                'Cost snapshot for payable, action confirmation/activity log, and performance/safety rules planned',
+                'Channel-neutral order workflow ready for other suppliers, sources, and manual/offline orders',
                 'Product Control foundation page and permissions without database writes or OpenCart sync',
                 'Current supplier context Iqbal & Brothers with channel-neutral product/cost/stock planning',
                 'Read-only platform fields and supplier-editable model, cost, and stock rules documented',

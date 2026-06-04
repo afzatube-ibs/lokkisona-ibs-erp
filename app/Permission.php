@@ -95,6 +95,12 @@ class Permission
                 'permission' => 'product_control.view',
                 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
             ],
+            [
+                'label' => 'Order Workflow',
+                'path' => '/order-workflow',
+                'permission' => 'order_workflow.view',
+                'icon' => '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {

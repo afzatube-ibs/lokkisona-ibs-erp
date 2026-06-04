@@ -85,6 +85,10 @@
                     <span class="action-link-title">Product Control</span>
                     <span class="action-link-desc">Review product, cost, and stock control foundation</span>
                 </a>
+                <a href="<?= e(url('/order-workflow')) ?>" class="action-link">
+                    <span class="action-link-title">Order Workflow</span>
+                    <span class="action-link-desc">Review independent order workflow and dispatch gate planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -120,6 +124,16 @@
         <div class="card-body">
             <p>Supplier product, cost, and stock planning for Iqbal &amp; Brothers — read-only platform fields, editable supplier model/cost/stock, cost/stock history, and low-stock warnings without OpenCart sync.</p>
             <p class="page-description"><a href="<?= e(url('/product-control')) ?>">Open Product Control foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Order Workflow Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Independent IBS order workflow planning — main and exception stages, allowed transition matrix, dispatch report gate, cost snapshot, and source mapping rules without order sync or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/order-workflow')) ?>">Open Order Workflow planning foundation</a></p>
         </div>
     </div>
 </div>

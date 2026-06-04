@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.9',
-    'release_label' => 'Product Control Foundation',
+    'version' => '0.1.10',
+    'release_label' => 'Order Workflow Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',
