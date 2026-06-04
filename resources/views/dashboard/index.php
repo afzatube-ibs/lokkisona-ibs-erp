@@ -69,6 +69,12 @@
                     <span class="action-link-title">Database Safety</span>
                     <span class="action-link-desc">Review manual migration rules and planned tables</span>
                 </a>
+                <?php if (\App\Permission::can('migration_runner.view')): ?>
+                <a href="<?= e(url('/migration-runner')) ?>" class="action-link">
+                    <span class="action-link-title">Migration Runner</span>
+                    <span class="action-link-desc">Review real database migration runner planning and safety rules</span>
+                </a>
+                <?php endif; ?>
                 <a href="<?= e(url('/users')) ?>" class="action-link">
                     <span class="action-link-title">Users</span>
                     <span class="action-link-desc">Review user management foundation planning</span>
@@ -135,6 +141,7 @@
                 <li>Session-based authentication ready for future owner, admin, and staff roles</li>
                 <li>Config-backed role and permission foundation</li>
                 <li>Manual migration and database safety foundation</li>
+                <li>Migration runner planning foundation without SQL execution</li>
                 <li>User management foundation without database writes</li>
                 <li>Supplier foundation without database writes — channel-neutral and multi-supplier ready</li>
                 <li>Business source and sales channel foundation without database writes</li>
@@ -149,6 +156,18 @@
 </div>
 
 <div class="card-grid">
+    <?php if (\App\Permission::can('migration_runner.view')): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Migration Runner Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Safe database migration runner planning — manual-only, dry-run/check-first, backup-before-apply, owner/admin confirmation, audit logging, rollback planning, production safety, and Red Issues Summary behavior without executing migration SQL.</p>
+            <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning foundation</a></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">Product Control Foundation</h2>

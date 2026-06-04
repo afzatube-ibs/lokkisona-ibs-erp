@@ -21,6 +21,7 @@ $router->get('/version', 'VersionController@index');
 $router->get('/activity-log', 'ActivityLogController@index');
 $router->get('/roles-permissions', 'RolesPermissionsController@index');
 $router->get('/database-safety', 'DatabaseSafetyController@index');
+$router->get('/migration-runner', 'MigrationRunnerController@index');
 $router->get('/users', 'UsersController@index');
 $router->get('/suppliers', 'SuppliersController@index');
 $router->get('/business-sources', 'BusinessSourcesController@index');

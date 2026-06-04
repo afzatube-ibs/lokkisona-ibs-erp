@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Database Safety</h1>
-    <p class="page-description">Manual migration rules and future database planning.</p>
+    <p class="page-description">Manual migration rules, migration runner planning, and future database planning.</p>
 </div>
 
 <div class="card-grid">
@@ -35,7 +35,9 @@
                 <li>Migrations are owner/admin-reviewed files under <code>database/migrations/</code>.</li>
                 <li>Back up the database before applying any schema changes.</li>
                 <li>Apply SQL manually through a trusted database client or controlled deployment process.</li>
+                <li>Future runner actions must be explicit owner/admin actions with dry-run/check-first review.</li>
             </ul>
+            <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning</a></p>
         </div>
     </div>
 </div>
@@ -49,6 +51,7 @@
             <ul class="feature-list">
                 <li>No <code>CREATE TABLE</code> during page load.</li>
                 <li>No <code>ALTER TABLE</code> during page load.</li>
+                <li>No <code>DROP TABLE</code> during page load.</li>
                 <li>No automatic schema repair or installer execution.</li>
                 <li>No OpenCart database dependency in this foundation.</li>
             </ul>
@@ -63,7 +66,8 @@
             <ul class="feature-list">
                 <li>Design migrations for multi-business, multi-channel operations.</li>
                 <li>Review SQL with owner/admin before production use.</li>
-                <li>Apply migrations manually and record the release that introduced them.</li>
+                <li>Run future migrations only through a controlled CLI/web runner after dry-run output and backup confirmation.</li>
+                <li>Record the release, actor, timing, result, and Red Issues Summary for every future run.</li>
                 <li>Only then connect future ERP modules to the new tables.</li>
             </ul>
         </div>

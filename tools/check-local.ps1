@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.1.19 Checkpoint Footer and Red Issues Summary Foundation"
+$appVersionLabel = "v0.1.20 Real Database Migration Runner Planning Foundation"
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -36,16 +36,14 @@ function Show-Footer {
     Write-Host ""
     Write-Host "========================================"
     if ($script:redIssues.Count -eq 0) {
-        Write-Host "✅ ALL GREEN"
+        Write-Host "[OK] ALL GREEN"
         Write-Host "Version: $script:appVersionLabel"
         Write-Host "Checkpoint: passed"
         Write-Host "Browser/Routes: passed ($script:routeSmokeCount routes)"
         Write-Host "Git: summary printed above"
         Write-Host "Red Issues: none"
-        Write-Host "Next recommended build:"
-        Write-Host "v0.1.20 Real Database Migration Runner Planning Foundation"
     } else {
-        Write-Host "❌ RED ISSUES SUMMARY"
+        Write-Host "[FAIL] RED ISSUES SUMMARY"
         $index = 1
         foreach ($redIssue in $script:redIssues) {
             Write-Host "$index. Issue: $($redIssue.Issue)"
@@ -153,7 +151,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
     $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
@@ -166,8 +164,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.19") {
-        Fail "Version check failed: /version does not contain v0.1.19." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.19."
+    if ($versionResponse.Content -notmatch "v0\.1\.20") {
+        Fail "Version check failed: /version does not contain v0.1.20." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.20."
     }
     Ok "Version"
 

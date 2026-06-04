@@ -24,20 +24,18 @@ Every run ends with a compact footer so the result is easy to copy into ChatGPT.
 Passing runs end with:
 
 ```text
-✅ ALL GREEN
-Version: v0.1.19 Checkpoint Footer and Red Issues Summary Foundation
+[OK] ALL GREEN
+Version: v0.1.20 Real Database Migration Runner Planning Foundation
 Checkpoint: passed
 Browser/Routes: passed
 Git: summary printed above
 Red Issues: none
-Next recommended build:
-v0.1.20 Real Database Migration Runner Planning Foundation
 ```
 
 Failing runs keep the detailed error output above and end with:
 
 ```text
-❌ RED ISSUES SUMMARY
+[FAIL] RED ISSUES SUMMARY
 1. Issue:
    Area:
    File/Page:

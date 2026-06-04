@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.1.19',
-    'release_label' => 'Checkpoint Footer and Red Issues Summary Foundation',
+    'version' => '0.1.20',
+    'release_label' => 'Real Database Migration Runner Planning Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

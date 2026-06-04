@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.19 - Checkpoint Footer and Red Issues Summary Foundation**
+**Version 0.1.20 - Real Database Migration Runner Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -61,6 +61,7 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/activity-log` | Activity log (auth) |
 | GET    | `/roles-permissions` | Role and permission foundation (auth) |
 | GET    | `/database-safety` | Database safety and manual migration rules (auth) |
+| GET    | `/migration-runner` | Real database migration runner planning foundation (auth) |
 | GET    | `/users` | User management foundation (auth) |
 | GET    | `/suppliers` | Supplier foundation (auth) |
 | GET    | `/business-sources` | Business source and sales channel foundation (auth) |
@@ -79,11 +80,13 @@ Change credentials in `config/app.php` under the `auth` key.
 
 Edit `config/database.php` with your MySQL credentials. The Health Check page reports connection status without blocking the application.
 
-The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.9.
+The application uses PHP PDO directly through `App\Database`; no OpenCart database layer or ERP modules are included in v0.1.20.
 
 Database schema changes must be explicit and manual. The application does not run `CREATE TABLE`, `ALTER TABLE`, or schema repair during page loads.
 
 Manual migration notes and planned schema files live in `database/migrations/`. They are owner/admin action files only; the application does not execute them automatically.
+
+The authenticated `/migration-runner` page is planning-only in v0.1.20. It documents the future real migration runner workflow, including manual-only execution, dry-run/check-first review, backup-before-apply, owner/admin confirmation, audit/log requirements, rollback planning, production safety, and Red Issues Summary behavior. It does not run SQL, write migration records, or create migration tables.
 
 ## Local Checkpoint
 
@@ -95,7 +98,7 @@ powershell -ExecutionPolicy Bypass -File tools/check-local.ps1
 
 The checkpoint runs PHP lint, route smoke tests, version checks, forbidden text checks, database safety checks, and a git status summary. It does not commit or push.
 
-Every checkpoint ends with a compact footer. Passing runs show `✅ ALL GREEN`, version, checkpoint status, browser/route status, git summary note, `Red Issues: none`, and the next recommended build. Failing runs keep detailed error output and end with `❌ RED ISSUES SUMMARY` listing each issue, area, file/page, and what to fix for easy copy/paste into ChatGPT.
+Every checkpoint ends with a compact plain text footer. Passing runs show `[OK] ALL GREEN`, version, checkpoint status, browser/route status, git summary note, and `Red Issues: none`. Failing runs keep detailed error output and end with `[FAIL] RED ISSUES SUMMARY` listing each issue, area, file/page, and what to fix for easy copy/paste into ChatGPT.
 
 ## Business Architecture Direction
 
@@ -103,7 +106,42 @@ IBS-LK Business Manager starts with Iqbal & Brothers supplier operations and Lok
 
 ## Database Safety
 
-The authenticated `/database-safety` page reports the current database connection, manual migration rules, no page-load schema rules, and pending planned tables.
+The authenticated `/database-safety` page reports the current database connection, manual migration rules, no page-load schema rules, migration runner planning, and pending planned tables.
+
+The authenticated `/migration-runner` page documents the future controlled runner. Current v0.1.20 scope is planning only:
+
+- No SQL migration execution.
+- No migration tables or migration records.
+- No page-load schema changes.
+- No hidden installer or automatic self-healing database code.
+- Future apply must be explicit owner/admin action only.
+- Future apply must show dry-run/check-first output and a backup reminder first.
+- Future production apply must require extra confirmation.
+- Future failed runs must show a clear Red Issues Summary.
+
+Planned migration groups are documented only:
+
+- Core users and roles
+- Activity logs
+- Business sources
+- Suppliers
+- Products and variants
+- Product cost and stock histories
+- Status mappings
+- Sync previews and imports
+- Orders and order items
+- Manual/external orders
+- Dispatch reports
+- Supplier payables and settlements
+- Return receive and return batches
+- Invoice and print logs
+- Supplier tools audit
+
+Planned migration runner fields are documented only: `migration_id`, `migration_key`, `migration_name`, `migration_group`, `file_path`, `checksum`, `status`, `applied_by`, `applied_at`, `execution_time_ms`, `error_message`, `created_at`.
+
+Planned migration run log fields are documented only: `migration_run_id`, `run_type`, `environment`, `total_pending`, `total_applied`, `total_failed`, `started_by`, `started_at`, `finished_at`, `result_status`, `red_issues_summary`.
+
+Planned rollback fields are documented only: `rollback_id`, `migration_id`, `rollback_plan`, `rollback_file_path`, `approved_by`, `executed_by`, `executed_at`, `status`.
 
 Planned future tables are documented only:
 
@@ -158,7 +196,7 @@ The current release keeps the configured single-admin login in `config/app.php` 
 
 The authenticated `/users` page documents the User Management foundation only. It shows the current config-based admin login mode, planned roles, planned user fields, security rules, and the manual migration requirement before real database users are enabled.
 
-No users table is created automatically and no database user records are written in v0.1.9.
+No users table is created automatically and no database user records are written in v0.1.20.
 
 ## Supplier Management
 
@@ -170,7 +208,7 @@ Planned supplier fields documented only: supplier name, contact person, phone, e
 
 Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
 
-No suppliers table is created automatically and no supplier records are written in v0.1.9.
+No suppliers table is created automatically and no supplier records are written in v0.1.20.
 
 ## Business Source & Sales Channel Management
 
@@ -180,7 +218,7 @@ The first source is Lokkisona.com, but the architecture is not hard-coded to one
 
 Planned business/source fields documented only: business name, channel name, source type, website/domain, order source label, status, default supplier, default workflow, created at, updated at.
 
-No business, source, or sales channel tables are created automatically and no database records are written in v0.1.9.
+No business, source, or sales channel tables are created automatically and no database records are written in v0.1.20.
 
 ## Product Control
 
@@ -192,7 +230,7 @@ Planned product fields documented only: product_id/source_product_id, product na
 
 Planned variant/option fields documented only: option/variant name, option value, source option id, source option value id, improved option model read-only, improved option stock read-only, supplier model, product cost, vendor stock, option image reference, POIP/PIT image reference note.
 
-No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.14. OpenCart sync is not connected in this release.
+No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.20. OpenCart sync is not connected in this release.
 
 ## Status Mapping & Sync Planning
 
@@ -202,7 +240,7 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.19. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.20. OpenCart is not connected in this release.
 
 ## Sync Preview & Import Safety
 
@@ -212,7 +250,7 @@ Sync/import should prepare source invoice reference and ERP invoice template typ
 
 Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
 
-No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.19. OpenCart and WooCommerce are not connected in this release.
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.20. OpenCart and WooCommerce are not connected in this release.
 
 ## ERP Invoice & Packing Print Planning
 
@@ -226,7 +264,7 @@ Print rules documented: customer invoice must not show supplier cost; supplier m
 
 Planned document types: Customer Invoice, Packing Invoice / Packing Slip, Dispatch Batch Report, Supplier Product Summary, Return Receive Batch Print, Supplier Payable Settlement Summary.
 
-No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.19.
+No invoice, invoice item, packing print, print log, or invoice template tables are created automatically and no invoice/print records are written in v0.1.20.
 
 ## Supplier Tools Planning
 
@@ -238,7 +276,7 @@ Supplier Quick Invoice Generator rules: independent tool only; does not create E
 
 Simple Calculator rules: basic standalone calculator only; no payable calculation; no settlement helper; no product cost calculation; no courier charge calculation; no save to ERP accounting; no system impact; no database write required for calculator.
 
-Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.19.
+Planned supplier tool fields are documented only for supplier_quick_invoices, supplier_quick_invoice_items, and supplier_quick_invoice_audits. No supplier tools tables are created automatically, no supplier quick invoice records are written, no real invoice generator form is built, and no real calculator is built in v0.1.20.
 
 ## Manual & External Order Planning
 
@@ -248,7 +286,7 @@ Manual / External Orders must behave like normal IBS orders after entry while cl
 
 Safety rules documented: business source selection, external reference preservation, product/variant mapping, shared vendor stock, cost snapshot capture, workflow entry after confirmation, source-aware ERP invoice template planning, confirmation/audit, duplicate external reference blocking, and future direct WooCommerce sync upgrade.
 
-Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.19.
+Planned manual order, manual order item, and manual order audit fields are documented only. No manual order tables are created automatically, no manual/external order records are written, no payable records are created, no stock is deducted, no invoice is generated, and no OpenCart/WooCommerce sync is connected in v0.1.20.
 
 ## Roles & Permissions
 
@@ -261,7 +299,9 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, supplier tools, business sources, orders, manual orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, migration runner, users, suppliers, supplier tools, business sources, orders, manual orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, invoice printing, payable, supplier payables, and settings.
+
+Migration planning permissions are prepared as `migrations.view`, `migrations.manage`, `migration_runner.view`, and `migration_runner.manage`. Owner has full access; admin has migration planning access; staff and supplier do not manage migrations.
 
 ## Activity Log
 
@@ -278,6 +318,7 @@ Logged foundation events include:
 - Activity log access
 - Roles and permissions page access
 - Database safety page access
+- Migration Runner page access
 - Users page access
 - Suppliers page access
 - Business Sources page access
@@ -293,7 +334,7 @@ Logged foundation events include:
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.19
+- App Version v0.1.20
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

@@ -72,6 +72,12 @@ class Permission
                 'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M9 12l2 2 4-4"/>',
             ],
             [
+                'label' => 'Migration Runner',
+                'path' => '/migration-runner',
+                'permission' => 'migration_runner.view',
+                'icon' => '<path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/><path d="M8 7h.01M8 17h.01"/><path d="M12 7h4M12 17h4"/>',
+            ],
+            [
                 'label' => 'Users',
                 'path' => '/users',
                 'permission' => 'users.view',
