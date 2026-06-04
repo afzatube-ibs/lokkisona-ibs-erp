@@ -24,6 +24,7 @@ class BusinessSourcesController extends Controller
             'foundationSections' => $this->foundationSections(),
             'plannedFields' => $this->plannedFields(),
             'sourceTypes' => $this->sourceTypes(),
+            'plannedBusinessSources' => $this->plannedBusinessSources(),
         ]);
     }
 
@@ -101,6 +102,27 @@ class BusinessSourcesController extends Controller
             'Marketplace',
             'Wholesale',
             'Other',
+        ];
+    }
+
+    private function plannedBusinessSources()
+    {
+        return [
+            [
+                'name' => 'Lokkisona.com',
+                'platform' => 'OpenCart',
+                'note' => 'Primary ecommerce source — Lokkisona-specific courier mapping and ERP Lokkisona-style invoice later.',
+            ],
+            [
+                'name' => 'Sonamoni.com.bd',
+                'platform' => 'WooCommerce',
+                'note' => 'Future WooCommerce source — separate courier mapping; manual/external reference entry first; direct sync later.',
+            ],
+            [
+                'name' => 'Manual / Offline Order',
+                'platform' => 'Manual',
+                'note' => 'External reference order entry — ERP manual invoice later; same supplier workflow/payable/stock logic.',
+            ],
         ];
     }
 }

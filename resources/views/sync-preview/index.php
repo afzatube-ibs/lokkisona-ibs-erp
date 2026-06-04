@@ -1,12 +1,12 @@
 <div class="page-header">
-    <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Status Mapping and Sync Planning Foundation — planning only. No OpenCart connection, no order sync, no mapping tables, and no mapping/sync records are written in this release.</p>
+    <h1 class="page-title">Sync Preview</h1>
+    <p class="page-description">Sync Preview and Import Safety Planning Foundation — planning only. No OpenCart, WooCommerce, or live source connection; no order sync/import, no sync tables, and no sync/import records are written in this release.</p>
 </div>
 
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Current Mapping Context</h2>
+            <h2 class="card-title">Current Sync Context</h2>
         </div>
         <div class="card-body">
             <dl class="info-list">
@@ -15,8 +15,8 @@
                     <dd><?= e($currentContext['supplier']) ?></dd>
                 </div>
                 <div class="info-row">
-                    <dt>Primary Source</dt>
-                    <dd><?= e($currentContext['source']) ?></dd>
+                    <dt>Planned Sources</dt>
+                    <dd><?= e($currentContext['sources']) ?></dd>
                 </div>
             </dl>
             <p class="page-description"><?= e($currentContext['summary']) ?></p>
@@ -25,7 +25,7 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Status Mapping Purpose</h2>
+            <h2 class="card-title">Sync Preview Purpose</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
@@ -38,59 +38,7 @@
 </div>
 
 <div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Planned Mapping Types</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($mappingTypes as $type): ?>
-                    <li><?= e($type) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">IBS Workflow Mapping Examples</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($ibsWorkflowExamples as $example): ?>
-                    <li><?= e($example) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Return Mapping Examples</h2>
-    </div>
-    <div class="card-body card-body-flush">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Return Type</th>
-                    <th>Rule</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($returnMappingExamples as $example): ?>
-                <tr>
-                    <td class="cell-name"><?= e($example['type']) ?></td>
-                    <td class="cell-detail"><?= e($example['rule']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card-grid">
-    <?php foreach ([$workflowMappingRule, $supplierReturnRule, $lokkisonaReturnRule, $courierMappingRule] as $section): ?>
+    <?php foreach ([$multiSourcePlan, $lokkisonaSourcePlan, $sonamoniSourcePlan, $manualExternalRule] as $section): ?>
     <div class="card">
         <div class="card-header">
             <h2 class="card-title"><?= e($section['title']) ?></h2>
@@ -108,7 +56,7 @@
 </div>
 
 <div class="card-grid">
-    <?php foreach ([$independentWorkflowRule, $skipMissingRule, $unmappedSafetyRule, $testSyncPreviewRule] as $section): ?>
+    <?php foreach ([$sharedStockRule, $erpInvoiceRule] as $section): ?>
     <div class="card">
         <div class="card-header">
             <h2 class="card-title"><?= e($section['title']) ?></h2>
@@ -120,9 +68,42 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <?php if ($section['title'] === 'Unmapped Status Safety Rule'): ?>
-            <p class="page-description">Sync Preview must read mapping first and block unmapped statuses. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
-            <?php endif; ?>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<div class="card-grid">
+    <?php foreach ([$mappingFirstRule, $previewBeforeImportRule, $skipMissingRule, $unmappedBlockingRule] as $section): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><?= e($section['title']) ?></h2>
+        </div>
+        <div class="card-body">
+            <p><?= e($section['summary']) ?></p>
+            <ul class="feature-list">
+                <?php foreach ($section['points'] as $point): ?>
+                    <li><?= e($point) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<div class="card-grid">
+    <?php foreach ([$duplicateExistingRule, $independentWorkflowRule, $returnCandidateRule, $importConfirmationRule] as $section): ?>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><?= e($section['title']) ?></h2>
+        </div>
+        <div class="card-body">
+            <p><?= e($section['summary']) ?></p>
+            <ul class="feature-list">
+                <?php foreach ($section['points'] as $point): ?>
+                    <li><?= e($point) ?></li>
+                <?php endforeach; ?>
+            </ul>
         </div>
     </div>
     <?php endforeach; ?>
@@ -144,13 +125,12 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><?= e($manualOfflineRule['title']) ?></h2>
+            <h2 class="card-title">Import Safety Behavior</h2>
         </div>
         <div class="card-body">
-            <p><?= e($manualOfflineRule['summary']) ?></p>
             <ul class="feature-list">
-                <?php foreach ($manualOfflineRule['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
+                <?php foreach ($importSafetyBehavior as $item): ?>
+                    <li><?= e($item) ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -160,12 +140,12 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Future Mapping Settings Plan</h2>
+            <h2 class="card-title">Preview Totals (Before Import)</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <?php foreach ($futureMappingSettings as $item): ?>
-                    <li><?= e($item) ?></li>
+                <?php foreach ($previewTotals as $total): ?>
+                    <li><?= e($total) ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -173,11 +153,11 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Order / Sync List Columns</h2>
+            <h2 class="card-title">Planned Preview Table Columns</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <?php foreach ($plannedOrderSyncColumns as $column): ?>
+                <?php foreach ($previewTableColumns as $column): ?>
                     <li><?= e($column) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -188,11 +168,39 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Status Mapping Fields</h2>
+            <h2 class="card-title">Future Preview Table Plan</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <?php foreach ($plannedMappingFields as $field): ?>
+                <?php foreach ($futurePreviewTablePlan as $item): ?>
+                    <li><?= e($item) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Future Import Approval Plan</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <?php foreach ($futureImportApprovalPlan as $item): ?>
+                    <li><?= e($item) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Planned Sync Preview Fields</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <?php foreach ($plannedPreviewFields as $field): ?>
                     <li><?= e($field) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -201,11 +209,11 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Sync Preview Fields</h2>
+            <h2 class="card-title">Planned Sync Preview Item Fields</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <?php foreach ($plannedSyncPreviewFields as $field): ?>
+                <?php foreach ($plannedPreviewItemFields as $field): ?>
                     <li><?= e($field) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -216,11 +224,11 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Planned Sync Log Fields</h2>
+            <h2 class="card-title">Planned Import Approval Fields</h2>
         </div>
         <div class="card-body">
             <ul class="feature-list">
-                <?php foreach ($plannedSyncLogFields as $field): ?>
+                <?php foreach ($plannedImportApprovalFields as $field): ?>
                     <li><?= e($field) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -242,7 +250,7 @@
                     <dd><?= e($accessMode['role']) ?></dd>
                 </div>
             </dl>
-            <p class="page-description">Owner and admin can view Status Mapping planning now. Staff may view later based on permission. Supplier role does not manage global status mapping.</p>
+            <p class="page-description">Owner and admin can view Sync Preview planning now. Staff may view/manage later based on permission. Supplier role does not manage global sync/import.</p>
         </div>
     </div>
 </div>
@@ -253,8 +261,8 @@
             <h2 class="card-title">Manual Migration Required</h2>
         </div>
         <div class="card-body">
-            <p>No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in this release.</p>
-            <p class="page-description">Real status mapping and sync data requires an owner/admin-reviewed manual migration before activation. No table creation, alteration, or schema repair runs on page load. OpenCart is not connected in this release.</p>
+            <p>No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in this release.</p>
+            <p class="page-description">Real sync preview and import data requires an owner/admin-reviewed manual migration before activation. No table creation, alteration, or schema repair runs on page load. OpenCart and WooCommerce are not connected in this release.</p>
         </div>
     </div>
 </div>

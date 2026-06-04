@@ -51,7 +51,7 @@
                 <?php endforeach; ?>
             </ul>
             <?php if ($section['title'] === 'Sync Status Mapping Rule'): ?>
-            <p class="page-description">Supplier Return and Lokkisona Return can later be created by source status mapping or manual entry. See <a href="<?= e(url('/status-mapping')) ?>">Status Mapping planning foundation</a>.</p>
+            <p class="page-description">Supplier Return and Lokkisona Return candidates must be separated during Sync Preview. See <a href="<?= e(url('/status-mapping')) ?>">Status Mapping</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a> planning foundations.</p>
             <?php endif; ?>
         </div>
     </div>

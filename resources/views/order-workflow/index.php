@@ -185,6 +185,7 @@
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
+            <p class="page-description">Sync Preview/import cannot overwrite existing IBS workflow. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
         </div>
     </div>
 </div>

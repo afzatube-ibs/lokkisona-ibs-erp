@@ -29,6 +29,7 @@ class ProductControlController extends Controller
             'lowStockRules' => $this->lowStockRules(),
             'optionImageRules' => $this->optionImageRules(),
             'costSnapshotRule' => $this->costSnapshotRule(),
+            'sharedStockRule' => $this->sharedStockRule(),
             'plannedProductFields' => $this->plannedProductFields(),
             'plannedVariantFields' => $this->plannedVariantFields(),
         ]);
@@ -165,6 +166,20 @@ class ProductControlController extends Controller
                 'Live product cost remains editable for planning and future orders.',
                 'Dispatch report items and payable calculations must store the cost value used at that moment.',
                 'Historical cost changes must remain visible through product_cost_histories without rewriting past dispatch or payable records.',
+            ],
+        ];
+    }
+
+    private function sharedStockRule()
+    {
+        return [
+            'title' => 'Shared ERP Product / Vendor Stock Rule',
+            'summary' => 'Lokkisona and Sonamoni source products can map to the same ERP product/variant with shared supplier cost and vendor stock.',
+            'points' => [
+                'Vendor Stock belongs to internal ERP product/variant, not to each website/source.',
+                'Lokkisona.com (OpenCart) and Sonamoni.com.bd (WooCommerce) source products may map to the same ERP product/variant.',
+                'Same supplier cost can be shared across mapped source products.',
+                'Stock deduction later combines demand from all business sources — see Sync Preview planning foundation.',
             ],
         ];
     }

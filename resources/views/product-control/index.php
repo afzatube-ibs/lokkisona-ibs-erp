@@ -164,6 +164,23 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title"><?= e($sharedStockRule['title']) ?></h2>
+        </div>
+        <div class="card-body">
+            <p><?= e($sharedStockRule['summary']) ?></p>
+            <ul class="feature-list">
+                <?php foreach ($sharedStockRule['points'] as $point): ?>
+                    <li><?= e($point) ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <p class="page-description">See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a> for multi-source stock impact.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">Planned Product Fields</h2>
         </div>
         <div class="card-body">

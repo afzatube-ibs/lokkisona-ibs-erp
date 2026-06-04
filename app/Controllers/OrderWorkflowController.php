@@ -145,6 +145,7 @@ class OrderWorkflowController extends Controller
             'points' => [
                 'IBS workflow status is owned and advanced only by IBS actions.',
                 'No background process may rewrite IBS status from a source/channel after import.',
+                'Sync Preview/import cannot overwrite existing IBS workflow.',
                 'Do not allow moving back to New Order under any condition.',
                 'Workflow transitions are limited to the allowed transition matrix above.',
             ],

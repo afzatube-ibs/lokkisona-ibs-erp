@@ -29,7 +29,12 @@
 -- status_mappings
 -- courier_status_mappings
 -- sync_previews
+-- sync_preview_items
+-- sync_imports
 -- sync_logs
+-- source_product_mappings
+-- courier_accounts
+-- invoice_templates
 
 -- Planned dispatch and return workflow tables:
 -- dispatch_reports

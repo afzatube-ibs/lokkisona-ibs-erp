@@ -105,6 +105,10 @@
                     <span class="action-link-title">Status Mapping</span>
                     <span class="action-link-desc">Review status mapping and sync planning foundation</span>
                 </a>
+                <a href="<?= e(url('/sync-preview')) ?>" class="action-link">
+                    <span class="action-link-title">Sync Preview</span>
+                    <span class="action-link-desc">Review sync preview and import safety planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -190,6 +194,16 @@
         <div class="card-body">
             <p>Status mapping and sync planning — source status to IBS workflow/return/courier rules, Test Sync preview counts, unmapped status safety, and independent IBS workflow after import without OpenCart connection or mapping writes.</p>
             <p class="page-description"><a href="<?= e(url('/status-mapping')) ?>">Open Status Mapping planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Sync Preview / Import Safety</h2>
+        </div>
+        <div class="card-body">
+            <p>Sync Preview and Import Safety planning — multi-source Lokkisona/Sonamoni/manual preview, shared vendor stock, ERP invoice planning, preview-before-import, duplicate blocking, and return candidate separation without live sync or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/sync-preview')) ?>">Open Sync Preview planning foundation</a></p>
         </div>
     </div>
 </div>

@@ -88,6 +88,33 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Planned Business Sources</h2>
+    </div>
+    <div class="card-body card-body-flush">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Platform</th>
+                    <th>Planning Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($plannedBusinessSources as $source): ?>
+                <tr>
+                    <td class="cell-name"><?= e($source['name']) ?></td>
+                    <td><?= e($source['platform']) ?></td>
+                    <td class="cell-detail"><?= e($source['note']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="page-description" style="padding: 1rem;">Lokkisona = OpenCart, Sonamoni = WooCommerce, Manual/Offline = external reference entry. See <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
+    </div>
+</div>
+
 <div class="card-grid">
     <div class="card">
         <div class="card-header">

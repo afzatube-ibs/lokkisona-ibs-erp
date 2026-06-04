@@ -1,6 +1,6 @@
 # IBS-LK Business Manager
 
-**Version 0.1.14 - Status Mapping and Sync Planning Foundation**
+**Version 0.1.15 - Sync Preview and Import Safety Planning Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
@@ -70,6 +70,7 @@ Change credentials in `config/app.php` under the `auth` key.
 | GET    | `/supplier-payables` | Supplier payable planning foundation (auth) |
 | GET    | `/return-receive` | Return receive planning foundation (auth) |
 | GET    | `/status-mapping` | Status mapping and sync planning foundation (auth) |
+| GET    | `/sync-preview` | Sync preview and import safety planning foundation (auth) |
 
 ## Database
 
@@ -119,7 +120,12 @@ Planned future tables are documented only:
 - status_mappings
 - courier_status_mappings
 - sync_previews
+- sync_preview_items
+- sync_imports
 - sync_logs
+- source_product_mappings
+- courier_accounts
+- invoice_templates
 - dispatch_reports
 - dispatch_report_items
 - supplier_returns
@@ -181,7 +187,15 @@ Sync rules documented: read Settings/Status Mapping first; no import without val
 
 Planned status mapping fields, sync preview fields, sync log fields, and order/sync list columns are documented only.
 
-No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.14. OpenCart is not connected in this release.
+No status mapping, sync preview, or sync log tables are created automatically and no mapping/sync records are written in v0.1.15. OpenCart is not connected in this release.
+
+## Sync Preview & Import Safety
+
+The authenticated `/sync-preview` page documents the Sync Preview and Import Safety Foundation only. It covers multi-source sync planning (Lokkisona/OpenCart, Sonamoni/WooCommerce, Manual/Offline), shared supplier stock, ERP invoice planning, mapping-first sync, preview-before-import, duplicate/existing order blocking, independent IBS workflow, return candidate separation, and import confirmation/audit rules.
+
+Preview totals, preview table columns, and planned sync preview, preview item, and import approval fields are documented only.
+
+No sync preview, sync import, sync log, or order tables are created automatically and no sync/import records are written in v0.1.15. OpenCart and WooCommerce are not connected in this release.
 
 ## Roles & Permissions
 
@@ -194,7 +208,7 @@ Prepared roles:
 - staff
 - supplier
 
-Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, payable, supplier payables, and settings.
+Prepared permission groups include dashboard, health, version, activity log, roles and permissions, database safety, users, suppliers, business sources, orders, order workflow, product control, dispatch, dispatch reports, returns, return receive, status mapping, sync, sync preview, sync import, payable, supplier payables, and settings.
 
 ## Activity Log
 
@@ -216,13 +230,14 @@ Logged foundation events include:
 - Business Sources page access
 - Product Control page access
 - Status Mapping page access
+- Sync Preview page access
 - Denied permission checks
 
 ## Health Check
 
 The authenticated `/health` page reports:
 
-- App Version v0.1.14
+- App Version v0.1.15
 - PHP Version
 - Database Connection Status
 - Storage Writable Status

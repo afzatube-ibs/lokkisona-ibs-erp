@@ -199,6 +199,7 @@ class StatusMappingController extends Controller
             'summary' => 'Unmapped source statuses must not enter IBS as imported orders.',
             'points' => [
                 'Unmapped source status goes to mapping review / blocked preview.',
+                'Sync Preview must read mapping first and block unmapped statuses — see Sync Preview planning foundation.',
                 'No orders should be imported without valid mapping.',
                 'Sync preview must show total unmapped orders before any import action.',
                 'Owner/admin resolves mapping before retrying import.',

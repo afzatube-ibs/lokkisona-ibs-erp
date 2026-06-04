@@ -87,6 +87,14 @@ return [
             'sync.view',
             'sync.manage',
         ],
+        'Sync Preview' => [
+            'sync_preview.view',
+            'sync_preview.manage',
+        ],
+        'Sync Import' => [
+            'sync_import.view',
+            'sync_import.manage',
+        ],
         'Payable' => [
             'payable.view',
             'payable.manage',
@@ -133,6 +141,10 @@ return [
             'status_mapping.manage',
             'sync.view',
             'sync.manage',
+            'sync_preview.view',
+            'sync_preview.manage',
+            'sync_import.view',
+            'sync_import.manage',
             'payable.view',
             'payable.manage',
             'payables.view',
@@ -151,6 +163,7 @@ return [
             'returns.view',
             'status_mapping.view',
             'sync.view',
+            'sync_preview.view',
         ],
         'supplier' => [
             'dashboard.view',

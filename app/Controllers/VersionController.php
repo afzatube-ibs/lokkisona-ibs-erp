@@ -37,6 +37,10 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Sync Preview and Import Safety planning foundation page and permissions without live source connection or sync writes',
+                'Multi-source plan for Lokkisona/OpenCart, Sonamoni/WooCommerce, and manual/external reference orders',
+                'Shared supplier stock, ERP invoice planning, preview-before-import, duplicate blocking, and return candidate separation',
+                'Planned sync preview, preview item, and import approval fields with preview totals and table columns documented',
                 'Status Mapping and Sync Planning foundation page and permissions without OpenCart connection or mapping writes',
                 'Source status to IBS workflow, Supplier Return, Lokkisona Return, and courier mapping rules documented',
                 'Independent IBS workflow after sync, skip Missing/status 0, unmapped status safety, and Test Sync preview rules',

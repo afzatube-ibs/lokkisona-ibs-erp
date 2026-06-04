@@ -125,6 +125,12 @@ class Permission
                 'permission' => 'status_mapping.view',
                 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>',
             ],
+            [
+                'label' => 'Sync Preview',
+                'path' => '/sync-preview',
+                'permission' => 'sync_preview.view',
+                'icon' => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+            ],
         ];
 
         return array_values(array_filter($items, function ($item) {
