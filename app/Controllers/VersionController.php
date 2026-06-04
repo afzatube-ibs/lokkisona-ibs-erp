@@ -37,6 +37,11 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'Dispatch Batch / Dispatch Report planning foundation page and permissions without dispatch writes',
+                'Locked dispatch gate after Shipped with single-supplier batches and batch locking documented',
+                'Batch reference format DDMMYYYY(COUNT_ORDER) and cost snapshot for Product Cost Payable planned',
+                'Delivery Stop exception, future print/export/download output, and dispatch performance rules planned',
+                'Planned dispatch report and dispatch report item fields documented without database writes',
                 'Order Workflow planning foundation page and permissions without order sync or database writes',
                 'Independent IBS workflow with main fulfillment stages and exception stages documented',
                 'Allowed transition matrix, no move back to New Order, and dispatch report gate after Shipped',

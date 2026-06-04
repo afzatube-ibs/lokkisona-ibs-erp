@@ -89,6 +89,10 @@
                     <span class="action-link-title">Order Workflow</span>
                     <span class="action-link-desc">Review independent order workflow and dispatch gate planning</span>
                 </a>
+                <a href="<?= e(url('/dispatch-reports')) ?>" class="action-link">
+                    <span class="action-link-title">Dispatch Reports</span>
+                    <span class="action-link-desc">Review dispatch batch, lock, and cost snapshot planning</span>
+                </a>
             </div>
         </div>
     </div>
@@ -134,6 +138,16 @@
         <div class="card-body">
             <p>Independent IBS order workflow planning — main and exception stages, allowed transition matrix, dispatch report gate, cost snapshot, and source mapping rules without order sync or database writes.</p>
             <p class="page-description"><a href="<?= e(url('/order-workflow')) ?>">Open Order Workflow planning foundation</a></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Dispatch Report Planning</h2>
+        </div>
+        <div class="card-body">
+            <p>Dispatch batch / dispatch report planning — the locked gate after Shipped, single-supplier batches, batch reference format, batch locking, and cost snapshots for payable without dispatch tables or database writes.</p>
+            <p class="page-description"><a href="<?= e(url('/dispatch-reports')) ?>">Open Dispatch Report planning foundation</a></p>
         </div>
     </div>
 </div>

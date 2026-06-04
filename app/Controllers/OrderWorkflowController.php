@@ -99,7 +99,7 @@ class OrderWorkflowController extends Controller
             ['from' => 'Order Received', 'to' => 'Packaging / Hold / Cancelled', 'note' => 'Invoice/print allowed here. Packaging requires invoice/packing confirmation.'],
             ['from' => 'Packaging', 'to' => 'Shipped / Hold / Cancelled', 'note' => 'Shipped requires shipped/handover confirmation.'],
             ['from' => 'Hold', 'to' => 'Order Received / Packaging / Cancelled', 'note' => 'Resume to a pre-shipping stage or cancel only.'],
-            ['from' => 'Shipped', 'to' => 'Dispatch Report Created / Delivery Stop', 'note' => 'Cannot move forward without creating a Dispatch Report.'],
+            ['from' => 'Shipped', 'to' => 'Dispatch Report Created / Delivery Stop', 'note' => 'Locked gate: cannot move forward without creating and locking a Dispatch Report.'],
             ['from' => 'Dispatch Report Created', 'to' => 'Delivery Stop (exception only)', 'note' => 'Batch/report locked. Normal fulfillment status cannot change.'],
             ['from' => 'Out For Delivery', 'to' => 'Delivery Stop (exception only)', 'note' => 'Delivered or Delivery Stop are the only outcomes.'],
             ['from' => 'Delivery Stop', 'to' => 'Hub Return', 'note' => 'Post-shipping exception path only.'],
@@ -113,7 +113,7 @@ class OrderWorkflowController extends Controller
             'title' => 'Dispatch Report Gate',
             'summary' => 'After Shipped, orders must not move forward without creating a Dispatch Report. The report is the gate between supplier handover and last-mile delivery.',
             'points' => [
-                'After Shipped, a Dispatch Report must be created before any forward movement.',
+                'Shipped → Dispatch Report Created is a locked gate before any forward movement.',
                 'Dispatch Report Created means the batch/report is locked.',
                 'Report-created / batch-locked orders cannot change normal fulfillment status.',
                 'The dispatch report must capture a cost snapshot for payable at creation time.',

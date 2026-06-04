@@ -65,6 +65,10 @@ return [
             'dispatch.view',
             'dispatch.manage',
         ],
+        'Dispatch Reports' => [
+            'dispatch_reports.view',
+            'dispatch_reports.manage',
+        ],
         'Returns' => [
             'returns.view',
             'returns.manage',
@@ -97,6 +101,8 @@ return [
             'product_control.manage',
             'dispatch.view',
             'dispatch.manage',
+            'dispatch_reports.view',
+            'dispatch_reports.manage',
             'returns.view',
             'returns.manage',
             'payable.view',
