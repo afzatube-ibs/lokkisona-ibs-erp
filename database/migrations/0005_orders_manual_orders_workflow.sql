@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 orders, manual orders, and workflow history draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE IF NOT EXISTS ibs_orders (
     order_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_source_id INT UNSIGNED NULL,
     supplier_id INT UNSIGNED NULL,
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS orders (
     KEY idx_orders_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS order_items (
+CREATE TABLE IF NOT EXISTS ibs_order_items (
     order_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NOT NULL,
     product_id INT UNSIGNED NULL,
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     KEY idx_order_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS manual_orders (
+CREATE TABLE IF NOT EXISTS ibs_manual_orders (
     manual_order_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_source_id INT UNSIGNED NULL,
     supplier_id INT UNSIGNED NULL,
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS manual_orders (
     KEY idx_manual_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS manual_order_items (
+CREATE TABLE IF NOT EXISTS ibs_manual_order_items (
     manual_order_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     manual_order_id BIGINT UNSIGNED NOT NULL,
     product_id INT UNSIGNED NULL,
@@ -102,7 +103,7 @@ CREATE TABLE IF NOT EXISTS manual_order_items (
     KEY idx_manual_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS order_workflow_histories (
+CREATE TABLE IF NOT EXISTS ibs_order_workflow_histories (
     order_workflow_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NULL,
     manual_order_id BIGINT UNSIGNED NULL,

@@ -38,6 +38,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'v0.4.2.4 Migration Table Prefix Safety: database/migrations/*.sql draft table names use ibs_* prefix matching config/database.php; Dev DB Activation warns on non-prefixed table mismatch',
                 'v0.4.2.3 Write Form Table-Gate UI: write/action forms hidden with warning until all required ibs_* tables exist; read inventory and planning content always visible',
                 'v0.4.2.2 Dev DB Activation Helper: /dev-db-activation shows read-only table verification for Groups A–F, migration apply order, after-apply test flow, and blocked actions — no SQL execution',
                 'v0.4.2.1 Sprint Merge QA: /database-safety shows sprint merge checklist, dev DB activation guide, and write module QA matrix — no live production activation yet',

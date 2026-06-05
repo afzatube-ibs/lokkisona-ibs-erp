@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 business source, supplier, product, variant, cost, and stock draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS businesses (
+CREATE TABLE IF NOT EXISTS ibs_businesses (
     business_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_name VARCHAR(160) NOT NULL,
     business_code VARCHAR(80) NULL,
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     KEY idx_businesses_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS business_sources (
+CREATE TABLE IF NOT EXISTS ibs_business_sources (
     business_source_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_id INT UNSIGNED NULL,
     source_name VARCHAR(160) NOT NULL,
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS business_sources (
     KEY idx_business_sources_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS suppliers (
+CREATE TABLE IF NOT EXISTS ibs_suppliers (
     supplier_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_name VARCHAR(180) NOT NULL,
     contact_person VARCHAR(160) NULL,
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     KEY idx_suppliers_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS ibs_products (
     product_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     source_product_id VARCHAR(120) NULL,
     product_name VARCHAR(255) NOT NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS products (
     KEY idx_products_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS product_variants (
+CREATE TABLE IF NOT EXISTS ibs_product_variants (
     product_variant_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id INT UNSIGNED NOT NULL,
     option_name VARCHAR(160) NULL,
@@ -104,7 +105,7 @@ CREATE TABLE IF NOT EXISTS product_variants (
     KEY idx_variants_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_product_costs (
+CREATE TABLE IF NOT EXISTS ibs_supplier_product_costs (
     supplier_product_cost_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     product_id INT UNSIGNED NOT NULL,
@@ -121,7 +122,7 @@ CREATE TABLE IF NOT EXISTS supplier_product_costs (
     KEY idx_supplier_cost_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS product_stock_histories (
+CREATE TABLE IF NOT EXISTS ibs_product_stock_histories (
     product_stock_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id INT UNSIGNED NOT NULL,
     product_variant_id INT UNSIGNED NULL,
@@ -141,7 +142,7 @@ CREATE TABLE IF NOT EXISTS product_stock_histories (
     KEY idx_stock_history_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS product_cost_histories (
+CREATE TABLE IF NOT EXISTS ibs_product_cost_histories (
     product_cost_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id INT UNSIGNED NOT NULL,
     product_variant_id INT UNSIGNED NULL,

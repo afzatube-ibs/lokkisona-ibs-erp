@@ -8,11 +8,13 @@ use App\Database\QueryGuard;
 use PDO;
 
 /**
- * Dev database activation helper and table verification (v0.4.2.2).
+ * Dev database activation helper and table verification (v0.4.2.2, v0.4.2.4).
  * Read-only INFORMATION_SCHEMA checks only — no migration apply, no schema changes.
  */
 class DevDatabaseActivation
 {
+    public const PREFIX_MISMATCH_MESSAGE = 'Non-prefixed dev tables detected. ERP expects ibs_* tables. Rename/drop dev test tables or reset dev DB before continuing.';
+
     public static function tableGroups(): array
     {
         return [
@@ -167,16 +169,76 @@ class DevDatabaseActivation
             }
         }
 
+        $prefixCheck = self::prefixMismatchCheck();
+
         return [
             'connected' => $connected,
             'database_message' => $databaseStatus['message'] ?? 'Unknown',
             'database_detail' => $databaseStatus['detail'] ?? '',
+            'table_prefix' => config('database.prefix', ''),
             'group_count' => count($groups),
             'ready_groups' => $readyGroups,
             'total_tables' => $totalTables,
             'ready_tables' => $readyTables,
             'overall_status' => $overall,
+            'prefix_mismatch' => $prefixCheck['detected'],
+            'prefix_mismatch_message' => self::PREFIX_MISMATCH_MESSAGE,
+            'prefix_mismatch_tables' => $prefixCheck['tables'],
         ];
+    }
+
+    public static function prefixMismatchCheck(): array
+    {
+        $connected = (bool) (Database::check()['connected'] ?? false);
+        if (!$connected) {
+            return ['detected' => false, 'tables' => []];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+        } catch (\Throwable $e) {
+            return ['detected' => false, 'tables' => []];
+        }
+
+        $prefix = (string) config('database.prefix', '');
+        $mismatches = [];
+
+        foreach (self::allRequiredLogicalTableNames() as $logical) {
+            $expected = $prefix . $logical;
+            $prefixedExists = self::physicalTableExists($pdo, $expected);
+            $unprefixedExists = $logical !== $expected && self::physicalTableExists($pdo, $logical);
+
+            if (!$prefixedExists && $unprefixedExists) {
+                $mismatches[] = [
+                    'logical' => $logical,
+                    'found' => $logical,
+                    'expected' => $expected,
+                ];
+            }
+        }
+
+        return [
+            'detected' => $mismatches !== [],
+            'tables' => $mismatches,
+        ];
+    }
+
+    public static function allRequiredLogicalTableNames(): array
+    {
+        $prefix = (string) config('database.prefix', '');
+        $names = [];
+
+        foreach (self::tableGroups() as $group) {
+            foreach ($group['required_tables'] as $physical) {
+                if ($prefix !== '' && str_starts_with($physical, $prefix)) {
+                    $names[] = substr($physical, strlen($prefix));
+                } else {
+                    $names[] = $physical;
+                }
+            }
+        }
+
+        return array_values(array_unique($names));
     }
 
     public static function tableGroupsWithReadiness(?bool $connected = null): array

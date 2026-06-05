@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 invoice, printing, and supplier tool draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS invoices (
+CREATE TABLE IF NOT EXISTS ibs_invoices (
     invoice_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     invoice_reference VARCHAR(160) NOT NULL,
     order_id BIGINT UNSIGNED NULL,
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     KEY idx_invoices_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS invoice_items (
+CREATE TABLE IF NOT EXISTS ibs_invoice_items (
     invoice_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     invoice_id BIGINT UNSIGNED NOT NULL,
     product_id INT UNSIGNED NULL,
@@ -45,7 +46,7 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     KEY idx_invoice_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS invoice_templates (
+CREATE TABLE IF NOT EXISTS ibs_invoice_templates (
     invoice_template_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     template_key VARCHAR(120) NOT NULL,
     template_name VARCHAR(160) NOT NULL,
@@ -61,7 +62,7 @@ CREATE TABLE IF NOT EXISTS invoice_templates (
     KEY idx_invoice_templates_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS packing_prints (
+CREATE TABLE IF NOT EXISTS ibs_packing_prints (
     packing_print_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     packing_reference VARCHAR(160) NOT NULL,
     order_id BIGINT UNSIGNED NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS packing_prints (
     KEY idx_packing_prints_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS print_logs (
+CREATE TABLE IF NOT EXISTS ibs_print_logs (
     print_log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     print_reference VARCHAR(160) NOT NULL,
     printable_type VARCHAR(80) NOT NULL,
@@ -97,7 +98,7 @@ CREATE TABLE IF NOT EXISTS print_logs (
     KEY idx_print_logs_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_quick_invoices (
+CREATE TABLE IF NOT EXISTS ibs_supplier_quick_invoices (
     supplier_quick_invoice_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NULL,
     quick_invoice_reference VARCHAR(160) NOT NULL,
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS supplier_quick_invoices (
     KEY idx_supplier_quick_invoices_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_quick_invoice_items (
+CREATE TABLE IF NOT EXISTS ibs_supplier_quick_invoice_items (
     supplier_quick_invoice_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_quick_invoice_id BIGINT UNSIGNED NOT NULL,
     item_name VARCHAR(255) NOT NULL,
@@ -127,7 +128,7 @@ CREATE TABLE IF NOT EXISTS supplier_quick_invoice_items (
     KEY idx_quick_invoice_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_quick_invoice_audits (
+CREATE TABLE IF NOT EXISTS ibs_supplier_quick_invoice_audits (
     supplier_quick_invoice_audit_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_quick_invoice_id BIGINT UNSIGNED NULL,
     action VARCHAR(80) NOT NULL,

@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 status mapping, sync preview, import, and sync log draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS status_mappings (
+CREATE TABLE IF NOT EXISTS ibs_status_mappings (
     status_mapping_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_source_id INT UNSIGNED NULL,
     source_status VARCHAR(120) NOT NULL,
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS status_mappings (
     KEY idx_status_mapping_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS courier_status_mappings (
+CREATE TABLE IF NOT EXISTS ibs_courier_status_mappings (
     courier_status_mapping_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     courier_name VARCHAR(120) NULL,
     source_courier_status VARCHAR(120) NOT NULL,
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS courier_status_mappings (
     KEY idx_courier_mapping_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sync_previews (
+CREATE TABLE IF NOT EXISTS ibs_sync_previews (
     sync_preview_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_source_id INT UNSIGNED NULL,
     preview_reference VARCHAR(120) NOT NULL,
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS sync_previews (
     KEY idx_sync_preview_requested_at (requested_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sync_preview_items (
+CREATE TABLE IF NOT EXISTS ibs_sync_preview_items (
     sync_preview_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     sync_preview_id BIGINT UNSIGNED NOT NULL,
     source_order_id VARCHAR(120) NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS sync_preview_items (
     KEY idx_preview_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sync_imports (
+CREATE TABLE IF NOT EXISTS ibs_sync_imports (
     sync_import_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     sync_preview_id BIGINT UNSIGNED NULL,
     business_source_id INT UNSIGNED NULL,
@@ -103,7 +104,7 @@ CREATE TABLE IF NOT EXISTS sync_imports (
     KEY idx_sync_import_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sync_logs (
+CREATE TABLE IF NOT EXISTS ibs_sync_logs (
     sync_log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_source_id INT UNSIGNED NULL,
     sync_preview_id BIGINT UNSIGNED NULL,

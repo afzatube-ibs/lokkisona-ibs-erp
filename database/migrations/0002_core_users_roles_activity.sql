@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 core users, roles, and activity log draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS roles (
+CREATE TABLE IF NOT EXISTS ibs_roles (
     role_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     role_key VARCHAR(80) NOT NULL,
     role_name VARCHAR(120) NOT NULL,
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS roles (
     KEY idx_roles_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS ibs_users (
     user_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(120) NOT NULL,
     display_name VARCHAR(160) NOT NULL,
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS users (
     KEY idx_users_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS user_roles (
+CREATE TABLE IF NOT EXISTS ibs_user_roles (
     user_role_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
     role_id INT UNSIGNED NOT NULL,
@@ -51,7 +52,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
     KEY idx_user_roles_assigned_at (assigned_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS activity_logs (
+CREATE TABLE IF NOT EXISTS ibs_activity_logs (
     activity_log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     action VARCHAR(120) NOT NULL,
     message VARCHAR(255) NOT NULL,

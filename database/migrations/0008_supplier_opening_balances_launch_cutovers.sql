@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.2.0 supplier opening balance, adjustment, audit, and launch cutover draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS supplier_opening_balances (
+CREATE TABLE IF NOT EXISTS ibs_supplier_opening_balances (
     supplier_opening_balance_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     business_source_id INT UNSIGNED NULL,
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS supplier_opening_balances (
     KEY idx_opening_balances_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_opening_balance_adjustments (
+CREATE TABLE IF NOT EXISTS ibs_supplier_opening_balance_adjustments (
     adjustment_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_opening_balance_id BIGINT UNSIGNED NOT NULL,
     adjustment_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
@@ -51,7 +52,7 @@ CREATE TABLE IF NOT EXISTS supplier_opening_balance_adjustments (
     KEY idx_opening_adjustments_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_opening_balance_audits (
+CREATE TABLE IF NOT EXISTS ibs_supplier_opening_balance_audits (
     audit_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_opening_balance_id BIGINT UNSIGNED NOT NULL,
     action VARCHAR(120) NOT NULL,
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS supplier_opening_balance_audits (
     KEY idx_opening_audits_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS launch_cutovers (
+CREATE TABLE IF NOT EXISTS ibs_launch_cutovers (
     cutover_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     go_live_date DATE NULL,
     cutoff_date DATE NULL,

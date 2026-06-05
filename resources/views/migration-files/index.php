@@ -3,6 +3,20 @@
     <p class="page-description">Manual SQL draft inventory for future real database setup. Draft files are review material only and are not executed by the application.</p>
 </div>
 
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #2563eb;">
+    <div class="card-header">
+        <h2 class="card-title">Table Prefix — ibs_* (v0.4.2.4)</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description">Migration draft SQL files under <code>database/migrations/</code> now create <code>ibs_*</code> physical tables matching <code>config/database.php</code> prefix <code>ibs_</code>. Manual SQL apply must produce the same prefixed names the ERP expects.</p>
+        <ul class="feature-list">
+            <li>Examples: <code>ibs_users</code>, <code>ibs_suppliers</code>, <code>ibs_products</code>, <code>ibs_orders</code>.</li>
+            <li>If non-prefixed tables (<code>users</code>, <code>suppliers</code>, etc.) exist from an earlier manual apply, use <a href="<?= e(url('/dev-db-activation')) ?>">Dev DB Activation</a> prefix mismatch warning and reset/rename dev tables before testing.</li>
+            <li>No automatic rename, drop, or schema repair from the application.</li>
+        </ul>
+    </div>
+</div>
+
 <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--color-warn, #d97706);">
     <div class="card-header">
         <h2 class="card-title">v0.4.2 Write Foundation — Manual Activation Required</h2>

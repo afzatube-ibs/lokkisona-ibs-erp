@@ -1,8 +1,20 @@
 # IBS-LK Business Manager
 
-**v0.4.2.3 Write Form Table-Gate UI Safety Repair**
+**v0.4.2.4 Migration Table Prefix Safety Repair**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2.4
+
+v0.4.2.4 repairs migration draft SQL so manual apply creates `ibs_*` tables matching `config/database.php` prefix (`ibs_`). Documentation and dev activation helper only — no SQL execution, no automatic rename/drop.
+
+- `database/migrations/0002` through `0008` — all draft table definitions now use `ibs_` prefixed physical names.
+- `/dev-db-activation` — warns when non-prefixed tables exist but expected `ibs_*` tables are missing.
+- `/migration-files` and `/database-safety` — table prefix consistency rules documented.
+
+### Dev DB note
+
+If migrations were applied before v0.4.2.4, the database may contain non-prefixed tables (`users`, `suppliers`, `products`, etc.) while the ERP expects `ibs_users`, `ibs_suppliers`, `ibs_products`. Manually rename/drop dev test tables or reset the dev database, then re-apply corrected migration drafts.
 
 ## What's New in v0.4.2.3
 

@@ -4,9 +4,10 @@
 -- BACKUP DATABASE FIRST
 -- NOT EXECUTED BY APPLICATION PAGE LOAD
 -- v0.1.22 dispatch, returns, payables, and settlement draft.
+-- v0.4.2.4: CREATE TABLE names use configured prefix ibs_ (config/database.php).
 -- Logical relationships are enforced by the ERP service layer first; foreign keys are intentionally deferred.
 
-CREATE TABLE IF NOT EXISTS dispatch_reports (
+CREATE TABLE IF NOT EXISTS ibs_dispatch_reports (
     dispatch_report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     dispatch_reference VARCHAR(160) NOT NULL,
     supplier_id INT UNSIGNED NULL,
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS dispatch_reports (
     KEY idx_dispatch_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS dispatch_report_items (
+CREATE TABLE IF NOT EXISTS ibs_dispatch_report_items (
     dispatch_report_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     dispatch_report_id BIGINT UNSIGNED NOT NULL,
     order_id BIGINT UNSIGNED NULL,
@@ -44,7 +45,7 @@ CREATE TABLE IF NOT EXISTS dispatch_report_items (
     KEY idx_dispatch_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS return_receives (
+CREATE TABLE IF NOT EXISTS ibs_return_receives (
     return_receive_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     return_reference VARCHAR(160) NOT NULL,
     supplier_id INT UNSIGNED NULL,
@@ -64,7 +65,7 @@ CREATE TABLE IF NOT EXISTS return_receives (
     KEY idx_return_receive_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS return_batches (
+CREATE TABLE IF NOT EXISTS ibs_return_batches (
     return_batch_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     return_batch_reference VARCHAR(160) NOT NULL,
     supplier_id INT UNSIGNED NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS return_batches (
     KEY idx_return_batches_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS return_batch_items (
+CREATE TABLE IF NOT EXISTS ibs_return_batch_items (
     return_batch_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     return_batch_id BIGINT UNSIGNED NOT NULL,
     return_receive_id BIGINT UNSIGNED NULL,
@@ -102,7 +103,7 @@ CREATE TABLE IF NOT EXISTS return_batch_items (
     KEY idx_return_batch_items_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS payable_ledgers (
+CREATE TABLE IF NOT EXISTS ibs_payable_ledgers (
     payable_ledger_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     ledger_reference VARCHAR(160) NOT NULL,
@@ -121,7 +122,7 @@ CREATE TABLE IF NOT EXISTS payable_ledgers (
     KEY idx_payable_ledger_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_invoices (
+CREATE TABLE IF NOT EXISTS ibs_supplier_invoices (
     supplier_invoice_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     invoice_reference VARCHAR(160) NOT NULL,
@@ -139,7 +140,7 @@ CREATE TABLE IF NOT EXISTS supplier_invoices (
     KEY idx_supplier_invoices_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS supplier_payments (
+CREATE TABLE IF NOT EXISTS ibs_supplier_payments (
     supplier_payment_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     payment_reference VARCHAR(160) NOT NULL,
@@ -157,7 +158,7 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
     KEY idx_supplier_payments_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS payable_adjustments (
+CREATE TABLE IF NOT EXISTS ibs_payable_adjustments (
     payable_adjustment_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     supplier_id INT UNSIGNED NOT NULL,
     adjustment_reference VARCHAR(160) NOT NULL,

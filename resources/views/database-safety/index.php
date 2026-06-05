@@ -132,6 +132,8 @@
                 <li>Migration Execution Lock protects against accidental database changes and duplicate apply attempts.</li>
                 <li>Future runner actions must be explicit owner/admin actions with dry-run/check-first review.</li>
                 <li>Build automation must never run migrations automatically.</li>
+                <li>Table prefix consistency (v0.4.2.4): migration drafts create <code>ibs_*</code> tables matching <code>config/database.php</code>. Write forms and read repositories expect prefixed physical names — not bare <code>users</code> or <code>suppliers</code>.</li>
+                <li>If dev DB has non-prefixed tables from an earlier apply, rename/reset manually — see <a href="<?= e(url('/dev-db-activation')) ?>">Dev DB Activation</a> prefix mismatch warning.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/migration-runner')) ?>">Open Migration Runner planning</a></p>
             <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a></p>
