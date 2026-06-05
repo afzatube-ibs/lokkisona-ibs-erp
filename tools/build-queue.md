@@ -22,7 +22,9 @@ v0.2.4 extends the same read-only pattern to `/product-control` with Product and
 
 v0.2.5 extends the same read-only pattern to `/supplier-opening-balances` with Supplier Opening Balance and Launch Cutover read inventory cards.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. Opening balance write services and launch lock actions remain a future owner-approved build.
+v0.2.6 extends the same read-only pattern to `/order-workflow` with Order, Order Item, and Order Workflow History read inventory cards plus new SELECT-only repositories and read services.
+
+The next major phase should move toward owner-approved write service layer work after manual migration apply. Order workflow actions, opening balance write services, and launch lock actions remain future owner-approved builds.
 
 ## Semi-Automation Levels
 

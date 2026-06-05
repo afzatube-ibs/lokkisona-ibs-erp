@@ -3,14 +3,22 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderWorkflowHistory;
 use App\Permission;
+use App\Services\ReadOnly\OrderItemReadService;
+use App\Services\ReadOnly\OrderReadService;
+use App\Services\ReadOnly\OrderWorkflowHistoryReadService;
 
 class OrderWorkflowController extends Controller
 {
     public function index()
     {
         $this->authorize('order_workflow.view');
-        ActivityLog::record('order_workflow_access', 'Order Workflow planning foundation page viewed');
+        ActivityLog::record('order_workflow_access', 'Order Workflow read foundation page viewed');
 
         $this->render('order-workflow.index', [
             'pageTitle' => 'Order Workflow',
@@ -19,6 +27,9 @@ class OrderWorkflowController extends Controller
                 ['label' => 'Order Workflow', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'orderReadInventory' => $this->buildOrderReadInventory(),
+            'orderItemReadInventory' => $this->buildOrderItemReadInventory(),
+            'orderWorkflowHistoryReadInventory' => $this->buildOrderWorkflowHistoryReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'mainStages' => $this->mainStages(),
@@ -33,6 +44,109 @@ class OrderWorkflowController extends Controller
             'performanceRules' => $this->performanceRules(),
             'futureSyncSafety' => $this->futureSyncSafety(),
         ]);
+    }
+
+    private function buildOrderReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            Order::class,
+            OrderReadService::class,
+            'Order',
+            'OrderReadService',
+            'OrderRepository',
+            'order'
+        );
+    }
+
+    private function buildOrderItemReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            OrderItem::class,
+            OrderItemReadService::class,
+            'OrderItem',
+            'OrderItemReadService',
+            'OrderItemRepository',
+            'order item'
+        );
+    }
+
+    private function buildOrderWorkflowHistoryReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            OrderWorkflowHistory::class,
+            OrderWorkflowHistoryReadService::class,
+            'OrderWorkflowHistory',
+            'OrderWorkflowHistoryReadService',
+            'OrderWorkflowHistoryRepository',
+            'order workflow history'
+        );
+    }
+
+    private function buildEntityReadInventory(
+        string $modelClass,
+        string $serviceClass,
+        string $modelShortName,
+        string $readServiceName,
+        string $readRepositoryName,
+        string $recordLabel
+    ) {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => $modelClass::table(),
+            'prefixed_table' => TableName::forModel($modelClass),
+            'model_class' => $modelShortName,
+            'primary_key' => $modelClass::primaryKey(),
+            'columns' => $modelClass::columns(),
+            'read_service' => $readServiceName,
+            'read_repository' => $readRepositoryName,
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new $serviceClass();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0005_orders_manual_orders_workflow.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No ' . $recordLabel . ' records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 ' . $recordLabel . ' records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentContext()

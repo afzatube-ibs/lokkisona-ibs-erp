@@ -1,7 +1,16 @@
 <div class="page-header">
     <h1 class="page-title">Order Workflow</h1>
-    <p class="page-description">Order Workflow Planning Foundation for the independent IBS fulfillment workflow. No order sync, no OpenCart connection, no order tables, and no database records are written in this release.</p>
+    <p class="page-description">Order Workflow with live read-only order inventory in v0.2.6. Planning foundation content remains below. No order sync, no workflow actions, and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Order Workflow Inventory (v0.2.6)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No order status action. No workflow mutation. No sync/import. No migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'Orders']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $orderItemReadInventory, 'cardTitle' => 'Order Items']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $orderWorkflowHistoryReadInventory, 'cardTitle' => 'Order Workflow Histories']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

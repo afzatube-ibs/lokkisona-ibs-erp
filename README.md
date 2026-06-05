@@ -1,8 +1,22 @@
 # IBS-LK Business Manager
 
-**v0.2.5 Opening Balance and Launch Cutover Read Foundation**
+**v0.2.6 Order and Order Item Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.6
+
+v0.2.6 extends the read-only module pattern to Order Workflow. `/order-workflow` now shows live read-only inventory for orders, order items, and order workflow histories while keeping all planning foundation content below. No order status actions, no workflow mutation, no sync/import, no database writes, no migrations applied.
+
+- `/order-workflow` calls `OrderReadService`, `OrderItemReadService`, and `OrderWorkflowHistoryReadService` through safe `buildEntityReadInventory()` helpers wrapped in try/catch.
+- New SELECT-only `OrderRepository`, `OrderItemRepository`, and `OrderWorkflowHistoryRepository` plus matching read services.
+- Read-Only Order Workflow Inventory section shows separate cards for `ibs_orders`, `ibs_order_items`, and `ibs_order_workflow_histories`.
+- Graceful empty states when MySQL is unavailable or migration `0005_orders_manual_orders_workflow.sql` is not manually applied yet.
+- SELECT only. No database writes, no order status action, no workflow mutation, no sync/import, and no migration apply from this page.
+
+### Order Workflow Read Inventory
+
+Read services delegate to repositories and `QueryGuard`. If tables do not exist yet, the page shows "Not applied" badges and clear migration-not-applied messages while the checkpoint stays green.
 
 ## What's New in v0.2.5
 
