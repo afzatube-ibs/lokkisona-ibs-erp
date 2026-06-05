@@ -703,6 +703,14 @@ code {
     word-break: break-word;
 }
 
+.audit-note {
+    font-weight: 700;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+    max-width: 280px;
+    word-break: break-word;
+}
+
 /* Badges */
 .badge {
     display: inline-block;

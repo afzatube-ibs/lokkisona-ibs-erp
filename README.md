@@ -1,24 +1,24 @@
 # IBS-LK Business Manager
 
-**v0.4.2.6 Cost Stock History Visibility Repair**
+**v0.4.2.8 Cost Stock History UI and Audit Confirmation Repair**
 
-A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension â€” no OCMOD, no ZIP installer. Deploy via Git.
+A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no OCMOD, no ZIP installer. Deploy via Git.
 
-## What's New in v0.4.2.6
+## What's New in v0.4.2.8
 
-v0.4.2.6 improves Product Control variant/option entry for dev supplier product setup before launch.
+v0.4.2.8 improves Product Control variant/option entry for dev supplier product setup before launch.
 
-- `/product-control` â€” Product dropdown for variant form, labeled option fields, split write gates (product / variant / cost-stock), clearer variant inventory table, owner-friendly layout.
-- `ProductVariantWriteService` â€” validates product exists, required option name/value, non-negative cost/stock/low warning, blocks blank option rows.
+- `/product-control` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Product dropdown for variant form, labeled option fields, split write gates (product / variant / cost-stock), clearer variant inventory table, owner-friendly layout.
+- `ProductVariantWriteService` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â validates product exists, required option name/value, non-negative cost/stock/low warning, blocks blank option rows.
 - No OpenCart/WooCommerce sync, no order/payable/opening balance approval changes.
 
 ## What's New in v0.4.2.4
 
-v0.4.2.4 repairs migration draft SQL so manual apply creates `ibs_*` tables matching `config/database.php` prefix (`ibs_`). Documentation and dev activation helper only â€” no SQL execution, no automatic rename/drop.
+v0.4.2.4 repairs migration draft SQL so manual apply creates `ibs_*` tables matching `config/database.php` prefix (`ibs_`). Documentation and dev activation helper only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no SQL execution, no automatic rename/drop.
 
-- `database/migrations/0002` through `0008` â€” all draft table definitions now use `ibs_` prefixed physical names.
-- `/dev-db-activation` â€” warns when non-prefixed tables exist but expected `ibs_*` tables are missing.
-- `/migration-files` and `/database-safety` â€” table prefix consistency rules documented.
+- `database/migrations/0002` through `0008` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â all draft table definitions now use `ibs_` prefixed physical names.
+- `/dev-db-activation` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â warns when non-prefixed tables exist but expected `ibs_*` tables are missing.
+- `/migration-files` and `/database-safety` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â table prefix consistency rules documented.
 
 ### Dev DB note
 
@@ -28,27 +28,27 @@ If migrations were applied before v0.4.2.4, the database may contain non-prefixe
 
 v0.4.2.3 repairs write form UI safety across seven module pages. Write/action forms are hidden with a clear warning when required `ibs_*` tables are missing. Read-only inventory cards and planning content remain visible.
 
-- `App\ReadFoundation\WriteGate` â€” reusable table-gate helper (INFORMATION_SCHEMA SELECT only).
-- `partials/write-gate-warning.php` â€” shared blocked-form warning with link to `/dev-db-activation`.
+- `App\ReadFoundation\WriteGate` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â reusable table-gate helper (INFORMATION_SCHEMA SELECT only).
+- `partials/write-gate-warning.php` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â shared blocked-form warning with link to `/dev-db-activation`.
 - Gated pages: `/suppliers`, `/business-sources`, `/product-control`, `/supplier-opening-balances`, `/manual-orders`, `/order-workflow`, `/dispatch-reports`.
 
 ## What's New in v0.4.2.2
 
-v0.4.2.2 adds a dev database activation helper page with read-only table verification. Helper/checklist only â€” no SQL execution, no automatic migration apply, no new write features.
+v0.4.2.2 adds a dev database activation helper page with read-only table verification. Helper/checklist only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no SQL execution, no automatic migration apply, no new write features.
 
-- `/dev-db-activation` â€” Current activation status, manual-only rules, backup/dev warnings, migration apply order, Groups Aâ€“F table readiness (Ready / Not applied / Unavailable), after-apply test flow, and global blocked actions.
-- Table checks use INFORMATION_SCHEMA SELECT only â€” no CREATE, ALTER, DROP, or mutation SQL.
+- `/dev-db-activation` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Current activation status, manual-only rules, backup/dev warnings, migration apply order, Groups AÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“F table readiness (Ready / Not applied / Unavailable), after-apply test flow, and global blocked actions.
+- Table checks use INFORMATION_SCHEMA SELECT only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no CREATE, ALTER, DROP, or mutation SQL.
 - `/database-safety` and `/migration-files` link to the new helper page.
-- `/build-queue` â€” Next step: manual dev DB apply/test first, then v0.4.3 only after write testing.
+- `/build-queue` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Next step: manual dev DB apply/test first, then v0.4.3 only after write testing.
 
 ## What's New in v0.4.2.1
 
-v0.4.2.1 adds a post-sprint-merge QA checkpoint and manual dev database activation checklist. This build is documentation and QA only â€” no new write actions, no SQL execution, no migration apply, and **no live production database activation yet**.
+v0.4.2.1 adds a post-sprint-merge QA checkpoint and manual dev database activation checklist. This build is documentation and QA only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no new write actions, no SQL execution, no migration apply, and **no live production database activation yet**.
 
-- `/database-safety` â€” Sprint Merge QA and Dev Database Activation Checklist with 10 gate items, dev activation guide, migration phase map, and write module QA matrix (10 modules).
-- `/migration-files` â€” Note that v0.4.2 write foundations are code-ready but database activation remains manual.
-- `/build-queue` â€” Next suggested builds (v0.4.3â€“v0.4.5) marked as after dev DB activation testing.
-- `/dashboard` â€” Quick link to sprint merge QA checklist.
+- `/database-safety` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Sprint Merge QA and Dev Database Activation Checklist with 10 gate items, dev activation guide, migration phase map, and write module QA matrix (10 modules).
+- `/migration-files` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Note that v0.4.2 write foundations are code-ready but database activation remains manual.
+- `/build-queue` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Next suggested builds (v0.4.3ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“v0.4.5) marked as after dev DB activation testing.
+- `/dashboard` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Quick link to sprint merge QA checklist.
 
 ### Manual DB Activation Checklist (summary)
 
@@ -56,7 +56,7 @@ v0.4.2.1 adds a post-sprint-merge QA checkpoint and manual dev database activati
 2. Owner backup required before any SQL apply.
 3. Apply migrations manually only: start with **0002 + 0003** (suppliers/products), then **0005** (orders), **0006** (dispatch/returns/payables), **0008** (opening balance/launch cutover).
 4. Verify `ibs_*` tables exist after apply; re-run checkpoint.
-5. Test write forms on dev/staging only â€” not production.
+5. Test write forms on dev/staging only ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â not production.
 
 ## What's New in v0.4.2
 
@@ -69,7 +69,7 @@ v0.4.2 completes the supplier ERP write foundation sprint through dispatch repor
 - v0.3.5: Opening balance create/approve with payable ledger seeding on approval.
 - v0.3.4: Product cost/stock updates with history tables.
 - v0.3.3: Product and variant create/edit forms on `/product-control`.
-- v0.3.1â€“v0.3.2: Supplier and business source create/edit on `/suppliers` and `/business-sources`.
+- v0.3.1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“v0.3.2: Supplier and business source create/edit on `/suppliers` and `/business-sources`.
 - v0.3.0: Manual migration apply guide on `/migration-files`.
 - v0.2.9: Read Foundation QA gate, full ReadOnlyRepositoryRegistry, write-path whitelist planning.
 
@@ -145,11 +145,11 @@ Read services delegate to existing repositories and `QueryGuard`. If tables do n
 
 ## What's New in v0.2.3
 
-v0.2.3 wires the v0.2.2 read-only repository layer into the first real module pages: Suppliers and Business Sources. Pages use a hybrid layout â€” live read-only inventory at the top, planning foundation content below. No CRUD, no database writes, no migrations applied, and no sync.
+v0.2.3 wires the v0.2.2 read-only repository layer into the first real module pages: Suppliers and Business Sources. Pages use a hybrid layout ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â live read-only inventory at the top, planning foundation content below. No CRUD, no database writes, no migrations applied, and no sync.
 
 - `/suppliers` and `/business-sources` call `SupplierReadService` and `BusinessSourceReadService` through controller `buildReadInventory()` helpers wrapped in try/catch.
 - Read-Only Inventory cards show database connection, table readiness, prefixed table name (`ibs_*`), model contract columns, repository/service readiness, row count, and up to 50 SELECT rows when data exists.
-- Graceful empty states when MySQL is unavailable or migration `0003_business_sources_suppliers_products.sql` is not manually applied yet â€” no blank page and no fatal error.
+- Graceful empty states when MySQL is unavailable or migration `0003_business_sources_suppliers_products.sql` is not manually applied yet ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no blank page and no fatal error.
 - Empty-state copy cites the `ibs_` prefix from `config/database.php` and manual migration requirement.
 - Planning foundation sections (primary supplier/source, architecture cards, planned fields) are preserved under a "Planning Foundation" heading.
 - No create, edit, delete, sync, or migration apply from these pages.
@@ -180,14 +180,14 @@ Repositories bind to existing `app/Models/` metadata contracts and resolve prefi
 v0.2.1 organizes and corrects the model contract layer introduced in v0.2.0. This build is metadata/model-contract only: no CRUD screens, no SQL execution, no migrations applied, and no database writes.
 
 - All 16 `app/Models/` classes corrected so each `TABLE`, `$columns` (ordered), and explicit primary key exactly mirror the manual migration drafts in `database/migrations/`.
-- Added metadata-only `app/Models/BaseModel.php` (abstract) exposing read-only `table()`, `columns()`, and `primaryKey()` accessors â€” no PDO, query, `find`/`save`/`create`/`update`/`delete`, or schema logic.
+- Added metadata-only `app/Models/BaseModel.php` (abstract) exposing read-only `table()`, `columns()`, and `primaryKey()` accessors ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no PDO, query, `find`/`save`/`create`/`update`/`delete`, or schema logic.
 - Added read-only `app/Models/ModelRegistry.php` providing an in-memory table-to-model map with no filesystem scanning side effects and no database calls.
 - `App\Models\ActivityLog` is a future database contract only and is kept separate from the current file-based runtime logger `App\ActivityLog`.
 - Remaining migration draft tables that have no class yet are recorded as "model pending" rather than mass-adding new model classes in this version.
 
 ### Model Layer / Database Contract
 
-The classes under `app/Models/` are pure metadata contracts that describe the future database shape. Each model declares only its target table, its ordered column list (aligned to the migration draft), and an explicit primary key. Models contain no query builder, no PDO connection, and no read/write behavior. All future database writes will be owned by a dedicated service layer â€” never by the model classes â€” and schema changes remain manual, owner-approved migrations that the application never executes on page load.
+The classes under `app/Models/` are pure metadata contracts that describe the future database shape. Each model declares only its target table, its ordered column list (aligned to the migration draft), and an explicit primary key. Models contain no query builder, no PDO connection, and no read/write behavior. All future database writes will be owned by a dedicated service layer ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â never by the model classes ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â and schema changes remain manual, owner-approved migrations that the application never executes on page load.
 
 ## What's New in v0.2.0
 
@@ -677,4 +677,4 @@ The authenticated `/health` page reports:
 
 ## License
 
-Proprietary â€” IBS-LK Business Manager.
+Proprietary ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â IBS-LK Business Manager.
