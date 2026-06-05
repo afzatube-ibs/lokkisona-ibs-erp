@@ -1,9 +1,17 @@
 <div class="page-header">
     <h1 class="page-title">Dispatch Reports</h1>
-    <p class="page-description">Dispatch Batch / Dispatch Report with live read-only inventory in v0.2.7. Planning foundation content remains below. No dispatch batch creation, no order sync, and no database writes in this release.</p>
+    <p class="page-description">Dispatch read inventory plus dispatch report create from ready orders (v0.4.2) when migration 0006 is applied.</p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Dispatch Report Inventory (v0.2.7)</h2>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
+<form method="post" action="<?= e(url('/dispatch-reports/create')) ?>"><?= $csrfField ?? '' ?>
+<label>Supplier ID (optional)<input type="number" name="supplier_id" min="0"></label>
+<label>Business source ID (optional)<input type="number" name="business_source_id" min="0"></label>
+<button type="submit">Create dispatch report from ready_for_dispatch orders (v0.4.2)</button></form>
+</div></div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Dispatch Report Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No dispatch batch creation. No dispatch lock. No migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Dispatch Reports']); ?>

@@ -7,7 +7,9 @@ use App\Database;
 use App\Database\TableName;
 use App\Models\BusinessSource;
 use App\Permission;
+use App\Csrf;
 use App\Services\ReadOnly\BusinessSourceReadService;
+use App\Services\Write\BusinessSourceWriteService;
 
 class BusinessSourcesController extends Controller
 {
@@ -30,7 +32,34 @@ class BusinessSourcesController extends Controller
             'plannedFields' => $this->plannedFields(),
             'sourceTypes' => $this->sourceTypes(),
             'plannedBusinessSources' => $this->plannedBusinessSources(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeServiceReady' => (new BusinessSourceWriteService())->tableReady(),
         ]);
+    }
+
+    public function create()
+    {
+        $this->authorize('business_sources.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/business-sources');
+        }
+        $this->redirectWithWriteResult('/business-sources', (new BusinessSourceWriteService())->create($_POST));
+    }
+
+    public function edit()
+    {
+        $this->authorize('business_sources.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/business-sources');
+        }
+        $id = (int) ($_POST['business_source_id'] ?? 0);
+        $this->redirectWithWriteResult('/business-sources', (new BusinessSourceWriteService())->applyEdit($id, $_POST));
     }
 
     private function buildReadInventory()

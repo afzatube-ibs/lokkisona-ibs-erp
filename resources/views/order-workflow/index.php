@@ -1,9 +1,18 @@
 <div class="page-header">
     <h1 class="page-title">Order Workflow</h1>
-    <p class="page-description">Order Workflow with live read-only order inventory in v0.2.6. Planning foundation content remains below. No order sync, no workflow actions, and no database writes in this release.</p>
+    <p class="page-description">Order read inventory plus controlled workflow actions (v0.4.1) when migration 0005 is applied.</p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Order Workflow Inventory (v0.2.6)</h2>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
+<form method="post" action="<?= e(url('/order-workflow/action')) ?>"><?= $csrfField ?? '' ?>
+<label>Order ID *<input type="number" name="order_id" required min="1"></label>
+<label>To status<select name="to_status"><option value="confirmed">confirmed</option><option value="processing">processing</option><option value="ready_for_dispatch">ready_for_dispatch</option><option value="shipped">shipped</option><option value="cancelled">cancelled</option></select></label>
+<label>Note<input name="action_note" style="width:100%"></label>
+<button type="submit">Apply workflow action (v0.4.1)</button></form>
+</div></div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Order Workflow Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No order status action. No workflow mutation. No sync/import. No migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'Orders']); ?>

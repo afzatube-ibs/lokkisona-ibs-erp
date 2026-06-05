@@ -68,11 +68,11 @@
                 </div>
                 <div class="info-row">
                     <dt>Scope</dt>
-                    <dd>SELECT-only repository and read service foundation for suppliers, business sources, products, product variants, supplier opening balances, and launch cutovers.</dd>
+                    <dd>SELECT-only repository and read service foundation for all <?= e((string) ($readFoundationQa['read_repositories'] ?? 17)) ?> wired read repositories across core module pages (v0.2.9 QA gate).</dd>
                 </div>
                 <div class="info-row">
                     <dt>Writes</dt>
-                    <dd>No INSERT, UPDATE, DELETE, or schema changes from repository code. Planning pages still show planning data only.</dd>
+                    <dd>No mutation SQL or schema changes from read repository code. Write services use whitelisted paths only.</dd>
                 </div>
             </dl>
             <?php if (!empty($readOnlyRepositorySummary)): ?>
@@ -132,6 +132,119 @@
                 <li>Record the release, actor, timing, result, and Red Issues Summary for every future run.</li>
                 <li>Only then connect future ERP modules to the new tables.</li>
             </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Read Foundation QA Gate (v0.2.9)</h2>
+        </div>
+        <div class="card-body">
+            <dl class="info-list">
+                <div class="info-row">
+                    <dt>Model contracts</dt>
+                    <dd><?= e((string) ($readFoundationQa['model_contracts'] ?? 0)) ?></dd>
+                </div>
+                <div class="info-row">
+                    <dt>Read repositories</dt>
+                    <dd><?= e((string) ($readFoundationQa['read_repositories'] ?? 0)) ?></dd>
+                </div>
+                <div class="info-row">
+                    <dt>Module pages wired</dt>
+                    <dd><?= e((string) ($readFoundationQa['module_pages_wired'] ?? 0)) ?></dd>
+                </div>
+                <div class="info-row">
+                    <dt>Model pending</dt>
+                    <dd><?= e((string) ($readFoundationQa['model_pending_count'] ?? 0)) ?> tables awaiting future model contracts</dd>
+                </div>
+            </dl>
+            <?php if (!empty($readFoundationModulePages)): ?>
+                <table class="data-table" style="margin-top: 1rem; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Route</th>
+                            <th>Tables</th>
+                            <th>Migration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($readFoundationModulePages as $page): ?>
+                            <tr>
+                                <td><code><?= e($page['route']) ?></code></td>
+                                <td><?= e(implode(', ', $page['tables'])) ?></td>
+                                <td><code><?= e($page['migration']) ?></code></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Real Data Readiness Checklist</h2>
+        </div>
+        <div class="card-body">
+            <ul class="feature-list">
+                <?php foreach ($readinessChecklist as $item): ?>
+                    <li><?= e($item) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Write Path Whitelist (planned v0.3.1+)</h2>
+        </div>
+        <div class="card-body">
+            <p class="page-description">Checkpoint allows mutation SQL only in these directories from v0.3.1 onward. No write services exist in v0.2.9.</p>
+            <ul class="feature-list">
+                <?php foreach ($writePathWhitelistDirs as $dir): ?>
+                    <li><code><?= e($dir) ?></code></li>
+                <?php endforeach; ?>
+            </ul>
+            <ul class="feature-list" style="margin-top: 1rem;">
+                <?php foreach ($writePathWhitelistRules as $rule): ?>
+                    <li><?= e($rule) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Model Pending Tables</h2>
+        </div>
+        <div class="card-body">
+            <p class="page-description">Migration draft tables without a model contract yet. Recorded as model pending — not mass-added in v0.2.9.</p>
+            <?php if (!empty($modelPendingTables)): ?>
+                <table class="data-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Model</th>
+                            <th>Read Repo</th>
+                            <th>Planned Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($modelPendingTables as $row): ?>
+                            <tr>
+                                <td><code><?= e($row['table']) ?></code></td>
+                                <td><span class="badge badge-<?= $row['has_model'] ? 'ok' : 'warn' ?>"><?= $row['has_model'] ? 'Yes' : 'Pending' ?></span></td>
+                                <td><span class="badge badge-<?= $row['has_read_repo'] ? 'ok' : 'warn' ?>"><?= $row['has_read_repo'] ? 'Yes' : 'Pending' ?></span></td>
+                                <td><?= e($row['planned_version']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
     </div>
 </div>

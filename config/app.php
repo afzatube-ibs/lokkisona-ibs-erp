@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.2.8',
-    'release_label' => 'Admin, Activity, and Invoice Read Foundation',
+    'version' => '0.4.2',
+    'release_label' => 'Dispatch Report Create Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

@@ -8,8 +8,12 @@ use App\Database\TableName;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Permission;
+use App\Csrf;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
+use App\Services\Write\ProductCostStockWriteService;
+use App\Services\Write\ProductVariantWriteService;
+use App\Services\Write\ProductWriteService;
 
 class ProductControlController extends Controller
 {
@@ -40,7 +44,62 @@ class ProductControlController extends Controller
             'sharedStockRule' => $this->sharedStockRule(),
             'plannedProductFields' => $this->plannedProductFields(),
             'plannedVariantFields' => $this->plannedVariantFields(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeServiceReady' => (new ProductWriteService())->tableReady(),
         ]);
+    }
+
+    public function createProduct()
+    {
+        $this->authorize('product_control.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->create($_POST));
+    }
+
+    public function editProduct()
+    {
+        $this->authorize('product_control.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+        $id = (int) ($_POST['product_id'] ?? 0);
+        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->applyEdit($id, $_POST));
+    }
+
+    public function createVariant()
+    {
+        $this->authorize('product_control.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+        $this->redirectWithWriteResult('/product-control', (new ProductVariantWriteService())->create($_POST));
+    }
+
+    public function updateCostStock()
+    {
+        $this->authorize('product_control.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+        $service = new ProductCostStockWriteService();
+        if (!empty($_POST['product_variant_id'])) {
+            $result = $service->updateVariantCostStock((int) $_POST['product_variant_id'], $_POST);
+        } else {
+            $result = $service->updateProductCostStock((int) ($_POST['product_id'] ?? 0), $_POST);
+        }
+        $this->redirectWithWriteResult('/product-control', $result);
     }
 
     private function buildProductReadInventory()

@@ -141,3 +141,21 @@
         </div>
     </div>
 </div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Manual Migration Apply Guide (v0.3.0)</h2></div>
+    <div class="card-body">
+        <h3>Minimum activation set (before v0.3.1)</h3>
+        <ul class="feature-list"><?php foreach ($minimumActivationSet ?? [] as $file): ?><li><code><?= e($file) ?></code></li><?php endforeach; ?></ul>
+        <h3>Activation steps</h3>
+        <ul class="feature-list"><?php foreach ($activationGuide ?? [] as $step): ?><li><?= e($step) ?></li><?php endforeach; ?></ul>
+        <h3>Full apply order</h3>
+        <?php if (!empty($fullApplyOrder)): ?>
+        <table class="data-table" style="width:100%;"><thead><tr><th>File</th><th>Tables</th><th>Group</th></tr></thead><tbody>
+        <?php foreach ($fullApplyOrder as $row): ?><tr><td><code><?= e($row['file']) ?></code></td><td><?= e((string) $row['tables']) ?></td><td><?= e($row['group']) ?></td></tr><?php endforeach; ?>
+        </tbody></table>
+        <?php endif; ?>
+        <h3>Write phase gates</h3>
+        <ul class="feature-list"><?php foreach ($writePhaseGates ?? [] as $gate): ?><li><?= e($gate) ?></li><?php endforeach; ?></ul>
+    </div>
+</div>

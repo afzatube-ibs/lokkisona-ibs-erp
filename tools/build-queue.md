@@ -28,7 +28,16 @@ v0.2.7 extends the same read-only pattern to `/dispatch-reports`, `/return-recei
 
 v0.2.8 completes read-only module coverage for `/invoice-printing`, `/activity-log`, `/users`, and `/roles-permissions` with Invoice, ActivityLog (DB contract), User, and Role read inventory cards.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. All read-only model contract pages are now wired; write services remain future owner-approved builds.
+v0.2.9 through v0.4.2 complete the supplier ERP write foundation sprint:
+
+- v0.2.9: Read QA gate, registry sync, write-path whitelist planning
+- v0.3.0: Manual migration apply guide on `/migration-files`
+- v0.3.1–v0.3.2: Supplier and business source create/edit write services
+- v0.3.3–v0.3.4: Product/variant CRUD and cost/stock history updates
+- v0.3.5–v0.3.6: Opening balance create/approve and launch cutover lock
+- v0.4.0–v0.4.2: Manual order create, workflow actions, dispatch report create
+
+Owner must manually apply migrations before write forms activate on each environment. Recommended next build: v0.4.3+ return receive submit or payable settlement (post-milestone).
 
 ## Semi-Automation Levels
 

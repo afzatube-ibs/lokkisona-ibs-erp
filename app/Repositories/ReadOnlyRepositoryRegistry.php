@@ -9,12 +9,23 @@ namespace App\Repositories;
 class ReadOnlyRepositoryRegistry
 {
     private static array $map = [
-        'suppliers' => SupplierRepository::class,
+        'users' => UserRepository::class,
+        'roles' => RoleRepository::class,
+        'activity_logs' => ActivityLogRepository::class,
+        'businesses' => BusinessRepository::class,
         'business_sources' => BusinessSourceRepository::class,
+        'suppliers' => SupplierRepository::class,
         'products' => ProductRepository::class,
         'product_variants' => ProductVariantRepository::class,
         'supplier_opening_balances' => SupplierOpeningBalanceRepository::class,
         'launch_cutovers' => LaunchCutoverRepository::class,
+        'orders' => OrderRepository::class,
+        'order_items' => OrderItemRepository::class,
+        'order_workflow_histories' => OrderWorkflowHistoryRepository::class,
+        'dispatch_reports' => DispatchReportRepository::class,
+        'return_receives' => ReturnReceiveRepository::class,
+        'payable_ledgers' => PayableLedgerRepository::class,
+        'invoices' => InvoiceRepository::class,
     ];
 
     public static function all(): array

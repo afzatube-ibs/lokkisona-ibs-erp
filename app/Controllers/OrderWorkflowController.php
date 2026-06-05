@@ -11,7 +11,9 @@ use App\Models\OrderWorkflowHistory;
 use App\Permission;
 use App\Services\ReadOnly\OrderItemReadService;
 use App\Services\ReadOnly\OrderReadService;
+use App\Csrf;
 use App\Services\ReadOnly\OrderWorkflowHistoryReadService;
+use App\Services\Write\OrderWorkflowWriteService;
 
 class OrderWorkflowController extends Controller
 {
@@ -43,7 +45,24 @@ class OrderWorkflowController extends Controller
             'actionLogRule' => $this->actionLogRule(),
             'performanceRules' => $this->performanceRules(),
             'futureSyncSafety' => $this->futureSyncSafety(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
         ]);
+    }
+
+    public function action()
+    {
+        $this->authorize('order_workflow.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/order-workflow');
+        }
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $toStatus = trim((string) ($_POST['to_status'] ?? ''));
+        $note = trim((string) ($_POST['action_note'] ?? '')) ?: null;
+        $this->redirectWithWriteResult('/order-workflow', (new OrderWorkflowWriteService())->transition($orderId, $toStatus, $note));
     }
 
     private function buildOrderReadInventory()

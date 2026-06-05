@@ -1,7 +1,21 @@
 <div class="page-header">
     <h1 class="page-title">Manual Orders</h1>
-    <p class="page-description">Manual and External Order Planning Foundation. No real orders are created, no order records are written, and no OpenCart or WooCommerce connection is made in this release.</p>
+    <p class="page-description">Manual/external reference order create (v0.4.0) when migration 0005 is applied. No channel sync.</p>
 </div>
+
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeServiceReady)): ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
+<form method="post" action="<?= e(url('/manual-orders/create')) ?>"><?= $csrfField ?? '' ?>
+<label>Business source ID *<input type="number" name="business_source_id" required min="1"></label>
+<label>External order reference<input name="external_order_reference" style="width:100%"></label>
+<label>Customer name<input name="customer_name" style="width:100%"></label>
+<label>Product ID<input type="number" name="product_id" min="0"></label>
+<label>Quantity<input type="number" name="quantity" value="1" min="1"></label>
+<label>Selling price<input type="number" name="selling_price" step="0.01"></label>
+<button type="submit">Create manual order (v0.4.0)</button></form>
+</div></div>
+<?php endif; ?>
 
 <div class="card-grid">
     <div class="card">
