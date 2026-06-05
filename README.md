@@ -1,8 +1,22 @@
 # IBS-LK Business Manager
 
-**v0.2.0 Real Database Schema Foundation**
+**v0.2.1 Core Model Layer and Database Contract Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.1
+
+v0.2.1 organizes and corrects the model contract layer introduced in v0.2.0. This build is metadata/model-contract only: no CRUD screens, no SQL execution, no migrations applied, and no database writes.
+
+- All 16 `app/Models/` classes corrected so each `TABLE`, `$columns` (ordered), and explicit primary key exactly mirror the manual migration drafts in `database/migrations/`.
+- Added metadata-only `app/Models/BaseModel.php` (abstract) exposing read-only `table()`, `columns()`, and `primaryKey()` accessors — no PDO, query, `find`/`save`/`create`/`update`/`delete`, or schema logic.
+- Added read-only `app/Models/ModelRegistry.php` providing an in-memory table-to-model map with no filesystem scanning side effects and no database calls.
+- `App\Models\ActivityLog` is a future database contract only and is kept separate from the current file-based runtime logger `App\ActivityLog`.
+- Remaining migration draft tables that have no class yet are recorded as "model pending" rather than mass-adding new model classes in this version.
+
+### Model Layer / Database Contract
+
+The classes under `app/Models/` are pure metadata contracts that describe the future database shape. Each model declares only its target table, its ordered column list (aligned to the migration draft), and an explicit primary key. Models contain no query builder, no PDO connection, and no read/write behavior. All future database writes will be owned by a dedicated service layer — never by the model classes — and schema changes remain manual, owner-approved migrations that the application never executes on page load.
 
 ## What's New in v0.2.0
 

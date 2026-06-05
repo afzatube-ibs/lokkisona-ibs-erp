@@ -1,9 +1,12 @@
 <?php
+
 namespace App\Models;
 
-class LaunchCutover
+class LaunchCutover extends BaseModel
 {
     const TABLE = 'launch_cutovers';
+
+    const PRIMARY_KEY = 'cutover_id';
 
     public static array $columns = [
         'cutover_id',

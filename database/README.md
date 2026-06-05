@@ -8,6 +8,12 @@ Manual migration notes live in `database/migrations/`.
 
 Database changes must be reviewed and applied by an owner/admin action outside page load. The application must not automatically create, alter, or repair schema while serving ERP pages.
 
+## Model-to-Migration Contract
+
+The classes under `app/Models/` are the metadata contract layer for these migration drafts. Each model declares its target table, an ordered `$columns` list, and an explicit primary key that mirror the corresponding `database/migrations/*.sql` draft. The models are pure metadata: they contain no PDO connection, no query building, and no read/write logic, so loading or reading a model never touches the database.
+
+Writes are deliberately not implemented in the model classes. A future service layer (owner-approved) will own all inserts, updates, and deletes once the migrations have been manually applied. The models describe the intended shape only; they do not execute SQL, apply migrations, or create/alter/drop tables. `App\Models\ModelRegistry` provides a read-only, in-memory table-to-model map for planning and coverage display only.
+
 v0.1.26 adds Supplier Opening Balance and Launch Cutover planning only. The `/supplier-opening-balances` page documents old/manual supplier payable as a controlled ERP starting balance with cut-off date, supplier/source selection, reference note, proof planning, owner approval, audit requirement, adjustment safety, and launch cutover checklist. It does not create payable ledger records, change stock, upload files, or write opening balance records.
 
 Opening balance workflow:
@@ -35,5 +41,6 @@ Draft migration files:
 - `database/migrations/0005_orders_manual_orders_workflow.sql`
 - `database/migrations/0006_dispatch_returns_payables.sql`
 - `database/migrations/0007_invoices_printing_supplier_tools.sql`
+- `database/migrations/0008_supplier_opening_balances_launch_cutovers.sql`
 
 These files are not executed by application page load, Build Queue, Migration Runner, Migration Dry Run, Migration Approval, Migration Execution Lock, Supplier Opening Balances, sync/import, staff pages, or supplier pages. Apply manually only after dry-run passes, approval gate is complete, execution lock is ready, owner approval is captured, rollback plan is reviewed, and database backup is confirmed.

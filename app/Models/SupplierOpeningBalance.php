@@ -1,9 +1,12 @@
 <?php
+
 namespace App\Models;
 
-class SupplierOpeningBalance
+class SupplierOpeningBalance extends BaseModel
 {
     const TABLE = 'supplier_opening_balances';
+
+    const PRIMARY_KEY = 'supplier_opening_balance_id';
 
     public static array $columns = [
         'supplier_opening_balance_id',

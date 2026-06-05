@@ -1,22 +1,24 @@
 <?php
+
 namespace App\Models;
 
-class PayableLedger
+class PayableLedger extends BaseModel
 {
     const TABLE = 'payable_ledgers';
 
+    const PRIMARY_KEY = 'payable_ledger_id';
+
     public static array $columns = [
-        'ledger_id',
+        'payable_ledger_id',
         'supplier_id',
-        'entry_type',
-        'amount',
-        'currency_code',
-        'reference_type',
-        'reference_id',
-        'entry_date',
-        'notes',
+        'ledger_reference',
+        'ledger_type',
+        'source_reference',
+        'debit_amount',
+        'credit_amount',
+        'balance_after',
+        'status',
         'created_by',
         'created_at',
-        'updated_at',
     ];
 }

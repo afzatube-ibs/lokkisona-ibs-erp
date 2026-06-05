@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.2.0',
-    'release_label' => 'Real Database Schema Foundation',
+    'version' => '0.2.1',
+    'release_label' => 'Core Model Layer and Database Contract Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

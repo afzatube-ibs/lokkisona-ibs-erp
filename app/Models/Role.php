@@ -1,15 +1,19 @@
 <?php
+
 namespace App\Models;
 
-class Role
+class Role extends BaseModel
 {
     const TABLE = 'roles';
 
+    const PRIMARY_KEY = 'role_id';
+
     public static array $columns = [
         'role_id',
+        'role_key',
         'role_name',
         'description',
-        'is_active',
+        'status',
         'created_at',
         'updated_at',
     ];

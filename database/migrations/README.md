@@ -2,6 +2,8 @@
 
 Migrations in this directory are manual owner-action files. The application must not run these files automatically during page load.
 
+The classes under `app/Models/` mirror these draft tables as metadata-only contracts (table name, ordered columns, explicit primary key). They contain no SQL and perform no execution; the migrations here remain manual-only and non-executing.
+
 ## Safety Rules
 
 - Review every migration before running it.
