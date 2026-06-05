@@ -38,6 +38,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v0.4.2.9 Manual Order Create QA and Audit Visibility Repair: /manual-orders restores the full DEV/TEST create form, requires dev/test confirmation and note, shows safety badges, displays latest manual order and item confirmation tables, and surfaces ERP bridge/read inventory visibility without payable, stock, invoice, or channel sync creation',
                 'v0.4.2.8 Cost Stock History UI and Audit Confirmation Repair: Product Control passes cost/stock history read inventory, shows Audit Confirmation table with bold notes directly under the cost/stock form, and creates audit rows when same-value cost/stock is saved with a note',
                 'v0.4.2.7 Cost/Stock Note Audit: cost/stock note is saved into visible history even when the entered value is the same as current value',
                 'v0.4.2.6 Cost/Stock History Visibility: /product-control shows latest cost/stock history notes, old/new values, product/variant reference, and raw read inventory for ibs_product_cost_histories and ibs_product_stock_histories',

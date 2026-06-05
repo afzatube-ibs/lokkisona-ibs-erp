@@ -5,14 +5,14 @@ namespace App\Repositories;
 use App\Database\QueryGuard;
 use App\Database\ReadOnlyQueryException;
 use App\Database\TableName;
-use App\Models\Order;
+use App\Models\ManualOrderItem;
 use PDO;
 
-class OrderRepository extends BaseReadOnlyRepository
+class ManualOrderItemRepository extends BaseReadOnlyRepository
 {
     public function modelClass(): string
     {
-        return Order::class;
+        return ManualOrderItem::class;
     }
 
     public function latest(int $limit = 20): array

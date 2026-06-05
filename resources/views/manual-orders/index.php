@@ -1,23 +1,210 @@
+<?php
+$manualOrderRows = array_slice($manualOrderReadInventory['rows'] ?? [], 0, 20);
+$manualOrderItemRows = array_slice($manualOrderItemReadInventory['rows'] ?? [], 0, 20);
+$bridgeOrderRows = array_slice($orderReadInventory['rows'] ?? [], 0, 20);
+$bridgeReady = !empty($orderReadInventory['table_exists']) && !empty($orderItemReadInventory['table_exists']);
+$cell = static function (array $row, string $key): string {
+    return (string) ($row[$key] ?? '');
+};
+?>
 <div class="page-header">
     <h1 class="page-title">Manual Orders</h1>
-    <p class="page-description">Manual/external reference order create (v0.4.0) when migration 0005 is applied. No channel sync.</p>
+    <p class="page-description">Manual order create QA and audit visibility repair (v0.4.2.9). DEV/TEST only; no payable, stock deduction, invoice, or channel sync.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Manual Order Safety Badges</h2></div>
+    <div class="card-body">
+        <span class="badge badge-warn">DEV/TEST ONLY</span>
+        <span class="badge badge-ok">No payable created</span>
+        <span class="badge badge-ok">No stock deducted</span>
+        <span class="badge badge-ok">No invoice generated</span>
+        <span class="badge badge-ok">No channel sync</span>
+        <span class="badge badge-warn">Opening balance separate and draft/test only</span>
+    </div>
+</div>
+
 <?php if (!empty($writeGateReady)): ?>
-<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
-<form method="post" action="<?= e(url('/manual-orders/create')) ?>"><?= $csrfField ?? '' ?>
-<label>Business source ID *<input type="number" name="business_source_id" required min="1"></label>
-<label>External order reference<input name="external_order_reference" style="width:100%"></label>
-<label>Customer name<input name="customer_name" style="width:100%"></label>
-<label>Product ID<input type="number" name="product_id" min="0"></label>
-<label>Quantity<input type="number" name="quantity" value="1" min="1"></label>
-<label>Selling price<input type="number" name="selling_price" step="0.01"></label>
-<button type="submit">Create manual order (v0.4.0)</button></form>
-</div></div>
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header"><h2 class="card-title">Create DEV/TEST Manual Order</h2></div>
+    <div class="card-body">
+        <form method="post" action="<?= e(url('/manual-orders/create')) ?>">
+            <?= $csrfField ?? '' ?>
+            <div class="form-grid" style="display: grid; gap: 0.75rem; max-width: 760px;">
+                <label>Business Source ID *<input type="number" name="business_source_id" required min="1" class="form-input" style="width:100%"></label>
+                <label>Supplier ID optional<input type="number" name="supplier_id" min="1" class="form-input" style="width:100%"></label>
+                <label>Manual order reference optional<input type="text" name="manual_order_reference" class="form-input" style="width:100%"></label>
+                <label>External order reference optional<input type="text" name="external_order_reference" class="form-input" style="width:100%"></label>
+                <label>External invoice reference optional<input type="text" name="external_invoice_reference" class="form-input" style="width:100%"></label>
+                <label>Customer name *<input type="text" name="customer_name" required class="form-input" style="width:100%"></label>
+                <label>Customer phone<input type="text" name="customer_phone" class="form-input" style="width:100%"></label>
+                <label>Customer address<textarea name="customer_address" class="form-input" style="width:100%; min-height: 72px;"></textarea></label>
+                <label>Product ID *<input type="number" name="product_id" required min="1" class="form-input" style="width:100%"></label>
+                <label>Product Variant ID optional<input type="number" name="product_variant_id" min="1" class="form-input" style="width:100%"></label>
+                <label>Variant label optional<input type="text" name="variant_label" class="form-input" style="width:100%"></label>
+                <label>Quantity *<input type="number" name="quantity" required value="1" min="1" class="form-input" style="width:100%"></label>
+                <label>Selling price *<input type="number" name="selling_price" required step="0.01" min="0" class="form-input" style="width:100%"></label>
+                <label>Confirmation note *<textarea name="confirmation_note" required class="form-input" style="width:100%; min-height: 72px;"></textarea></label>
+                <label style="display:flex; gap:0.5rem; align-items:flex-start;">
+                    <input type="checkbox" name="dev_test_confirmation" value="1" required>
+                    <span>I confirm this is a dev/test manual order only and it must not create payable, stock deduction, invoice, or live sync.</span>
+                </label>
+                <button type="submit" class="btn btn-primary">Create manual order for testing</button>
+            </div>
+        </form>
+    </div>
+</div>
 <?php else: ?>
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Manual Order Audit Confirmation latest 20</h2></div>
+    <div class="card-body">
+        <?php if (!empty($manualOrderRows)): ?>
+        <table class="data-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Manual Order ID</th>
+                    <th>Manual Ref</th>
+                    <th>External Ref</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Source ID</th>
+                    <th>Supplier ID</th>
+                    <th>IBS Status</th>
+                    <th>Entry Status</th>
+                    <th>Order Total</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($manualOrderRows as $row): ?>
+                <tr>
+                    <td><?= e($cell($row, 'manual_order_id')) ?></td>
+                    <td><?= e($cell($row, 'manual_order_reference')) ?></td>
+                    <td><?= e($cell($row, 'external_order_reference')) ?></td>
+                    <td><?= e($cell($row, 'customer_name')) ?></td>
+                    <td><?= e($cell($row, 'customer_phone')) ?></td>
+                    <td><?= e($cell($row, 'business_source_id')) ?></td>
+                    <td><?= e($cell($row, 'supplier_id')) ?></td>
+                    <td><?= e($cell($row, 'ibs_status')) ?></td>
+                    <td><?= e($cell($row, 'entry_status')) ?></td>
+                    <td><?= e($cell($row, 'order_total')) ?></td>
+                    <td><?= e($cell($row, 'created_at')) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <p class="page-description"><span class="badge badge-warn">Empty state</span> <?= e($manualOrderReadInventory['status_message'] ?? 'Manual order audit confirmation is not ready yet.') ?></p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Manual Order Items Confirmation latest 20</h2></div>
+    <div class="card-body">
+        <?php if (!empty($manualOrderItemRows)): ?>
+        <table class="data-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Manual Order Item ID</th>
+                    <th>Manual Order ID</th>
+                    <th>Product ID</th>
+                    <th>Variant ID</th>
+                    <th>Product Name</th>
+                    <th>Variant Label</th>
+                    <th>Quantity</th>
+                    <th>Selling Price</th>
+                    <th>Supplier Cost Snapshot</th>
+                    <th>Line Total</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($manualOrderItemRows as $row): ?>
+                <tr>
+                    <td><?= e($cell($row, 'manual_order_item_id')) ?></td>
+                    <td><?= e($cell($row, 'manual_order_id')) ?></td>
+                    <td><?= e($cell($row, 'product_id')) ?></td>
+                    <td><?= e($cell($row, 'product_variant_id')) ?></td>
+                    <td><?= e($cell($row, 'product_name')) ?></td>
+                    <td><?= e($cell($row, 'variant_label')) ?></td>
+                    <td><?= e($cell($row, 'quantity')) ?></td>
+                    <td><?= e($cell($row, 'selling_price')) ?></td>
+                    <td><?= e($cell($row, 'supplier_cost_snapshot')) ?></td>
+                    <td><?= e($cell($row, 'line_total')) ?></td>
+                    <td><?= e($cell($row, 'created_at')) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <p class="page-description"><span class="badge badge-warn">Empty state</span> <?= e($manualOrderItemReadInventory['status_message'] ?? 'Manual order item confirmation is not ready yet.') ?></p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">ERP Order Bridge Confirmation</h2></div>
+    <div class="card-body">
+        <?php if ($bridgeReady): ?>
+            <p class="page-description">Latest bridged ERP orders from <code>ibs_orders</code>. SELECT only; no payable, stock deduction, invoice, or sync is triggered by this display.</p>
+            <?php if (!empty($bridgeOrderRows)): ?>
+            <table class="data-table" style="width:100%; margin-top: 1rem;">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Order Ref</th>
+                        <th>Source Ref</th>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Source ID</th>
+                        <th>Supplier ID</th>
+                        <th>IBS Status</th>
+                        <th>Order Total</th>
+                        <th>Cost Snapshot Total</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($bridgeOrderRows as $row): ?>
+                    <tr>
+                        <td><?= e($cell($row, 'order_id')) ?></td>
+                        <td><?= e($cell($row, 'order_reference')) ?></td>
+                        <td><?= e($cell($row, 'source_order_reference')) ?></td>
+                        <td><?= e($cell($row, 'customer_name')) ?></td>
+                        <td><?= e($cell($row, 'customer_phone')) ?></td>
+                        <td><?= e($cell($row, 'business_source_id')) ?></td>
+                        <td><?= e($cell($row, 'supplier_id')) ?></td>
+                        <td><?= e($cell($row, 'ibs_status')) ?></td>
+                        <td><?= e($cell($row, 'order_total')) ?></td>
+                        <td><?= e($cell($row, 'cost_snapshot_total')) ?></td>
+                        <td><?= e($cell($row, 'created_at')) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else: ?>
+            <p class="page-description" style="margin-top: 1rem;"><span class="badge badge-warn">Empty state</span> ERP bridge tables are ready, but no bridged ERP orders are visible yet.</p>
+            <?php endif; ?>
+        <?php else: ?>
+            <p class="page-description"><span class="badge badge-warn">Bridge not ready</span> ERP order bridge tables not ready. Manual order was saved only in manual order tables.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 0.75rem;">Raw Read Inventory</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes, no migration apply, no payable creation, no stock deduction, no invoice generation, and no channel sync from these inventory cards.</p>
+<?php view('partials.read-inventory-card', ['readInventory' => $manualOrderReadInventory, 'cardTitle' => 'Manual Orders raw read inventory']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $manualOrderItemReadInventory, 'cardTitle' => 'Manual Order Items raw read inventory']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'ERP Orders raw read inventory']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $orderItemReadInventory, 'cardTitle' => 'ERP Order Items raw read inventory']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

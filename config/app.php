@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.8',
-    'release_label' => 'Cost Stock History UI and Audit Confirmation Repair',
+    'version' => '0.4.2.9',
+    'release_label' => 'Manual Order Create QA and Audit Visibility Repair',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

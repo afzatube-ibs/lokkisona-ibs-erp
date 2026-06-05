@@ -28,6 +28,11 @@ class OrderReadService
         return $this->repository->all($limit, $offset);
     }
 
+    public function latest(int $limit = 20): array
+    {
+        return $this->repository->latest($limit);
+    }
+
     public function count(): int
     {
         return $this->repository->count();

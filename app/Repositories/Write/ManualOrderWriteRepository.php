@@ -24,15 +24,21 @@ class ManualOrderWriteRepository extends BaseWriteRepository
         return (int) $this->pdo->lastInsertId();
     }
 
-    public function findByExternalReference(string $ref): ?array
+    public function findByExternalReference(string $ref, ?int $businessSourceId = null): ?array
     {
         if (!$this->tableExists() || $ref === '') {
             return null;
         }
 
-        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE external_order_reference = :ref LIMIT 1';
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE external_order_reference = :ref';
+        $params = ['ref' => $ref];
+        if ($businessSourceId !== null && $businessSourceId > 0) {
+            $sql .= ' AND business_source_id = :business_source_id';
+            $params['business_source_id'] = $businessSourceId;
+        }
+        $sql .= ' LIMIT 1';
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['ref' => $ref]);
+        $statement->execute($params);
         $row = $statement->fetch(\PDO::FETCH_ASSOC);
 
         return $row === false ? null : $row;

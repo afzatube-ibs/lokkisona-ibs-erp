@@ -46,14 +46,24 @@ class ManualOrderWriteService
             return WriteResult::fail('Manual order tables not available. Apply migration 0005 first.');
         }
 
+        $confirmed = in_array((string) ($input['dev_test_confirmation'] ?? ''), ['1', 'on', 'yes'], true);
+        if (!$confirmed) {
+            return WriteResult::fail('Dev/test manual order confirmation is required.');
+        }
+
+        $confirmationNote = trim((string) ($input['confirmation_note'] ?? ''));
+        if ($confirmationNote === '') {
+            return WriteResult::fail('Confirmation note is required.');
+        }
+
         $sourceId = (int) ($input['business_source_id'] ?? 0);
         if ($sourceId <= 0) {
             return WriteResult::fail('Business source is required.');
         }
 
         $externalRef = trim((string) ($input['external_order_reference'] ?? ''));
-        if ($externalRef !== '' && $this->manualOrders->findByExternalReference($externalRef) !== null) {
-            return WriteResult::fail('Duplicate external order reference blocked.');
+        if ($externalRef !== '' && $this->manualOrders->findByExternalReference($externalRef, $sourceId) !== null) {
+            return WriteResult::fail('Duplicate external order reference blocked. This source/reference already exists.');
         }
 
         $ref = trim((string) ($input['manual_order_reference'] ?? ''));
@@ -62,9 +72,26 @@ class ManualOrderWriteService
         }
 
         $productId = (int) ($input['product_id'] ?? 0);
+        if ($productId <= 0) {
+            return WriteResult::fail('Product ID must be greater than 0.');
+        }
+
         $variantId = ($input['product_variant_id'] ?? '') !== '' ? (int) $input['product_variant_id'] : null;
-        $qty = max(1, (int) ($input['quantity'] ?? 1));
+        $qty = (int) ($input['quantity'] ?? 0);
+        if ($qty <= 0) {
+            return WriteResult::fail('Quantity must be greater than 0.');
+        }
+
+        if (($input['selling_price'] ?? '') === '' || !is_numeric($input['selling_price'])) {
+            return WriteResult::fail('Selling price is required.');
+        }
         $sellingPrice = round((float) ($input['selling_price'] ?? 0), 2);
+
+        $customerName = trim((string) ($input['customer_name'] ?? ''));
+        if ($customerName === '') {
+            return WriteResult::fail('Customer name is required.');
+        }
+
         $costSnapshot = $this->resolveCostSnapshot($productId, $variantId);
         $lineTotal = round($sellingPrice * $qty, 2);
         $productName = trim((string) ($input['product_name'] ?? 'Manual order item'));
@@ -81,7 +108,7 @@ class ManualOrderWriteService
             'manual_order_reference' => $ref,
             'external_order_reference' => $externalRef ?: null,
             'external_invoice_reference' => trim((string) ($input['external_invoice_reference'] ?? '')) ?: null,
-            'customer_name' => trim((string) ($input['customer_name'] ?? '')) ?: null,
+            'customer_name' => $customerName,
             'customer_phone' => trim((string) ($input['customer_phone'] ?? '')) ?: null,
             'customer_address' => trim((string) ($input['customer_address'] ?? '')) ?: null,
             'order_total' => $lineTotal,
@@ -110,7 +137,7 @@ class ManualOrderWriteService
                 'supplier_id' => ($input['supplier_id'] ?? '') !== '' ? (int) $input['supplier_id'] : null,
                 'source_order_reference' => $externalRef ?: $ref,
                 'order_reference' => $ref,
-                'customer_name' => trim((string) ($input['customer_name'] ?? '')) ?: null,
+                'customer_name' => $customerName,
                 'customer_phone' => trim((string) ($input['customer_phone'] ?? '')) ?: null,
                 'customer_address' => trim((string) ($input['customer_address'] ?? '')) ?: null,
                 'order_total' => $lineTotal,
@@ -135,9 +162,10 @@ class ManualOrderWriteService
         ActivityLog::record('manual_order_created', 'Manual order created', [
             'manual_order_id' => $manualId,
             'order_id' => $orderId,
+            'confirmation_note' => $confirmationNote,
         ]);
 
-        return WriteResult::ok('Manual order created with cost snapshot. No workflow action yet.', $manualId);
+        return WriteResult::ok('Manual order created for testing with cost snapshot. No payable, stock deduction, invoice, or sync was created.', $manualId);
     }
 
     private function resolveCostSnapshot(int $productId, ?int $variantId): float

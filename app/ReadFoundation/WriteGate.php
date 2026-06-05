@@ -130,6 +130,12 @@ class WriteGate
         return self::status([
             'ibs_manual_orders',
             'ibs_manual_order_items',
+        ]);
+    }
+
+    public static function manualOrderBridge(): array
+    {
+        return self::status([
             'ibs_orders',
             'ibs_order_items',
         ]);

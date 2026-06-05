@@ -19,6 +19,8 @@ class ReadOnlyRepositoryRegistry
         'product_variants' => ProductVariantRepository::class,
         'supplier_opening_balances' => SupplierOpeningBalanceRepository::class,
         'launch_cutovers' => LaunchCutoverRepository::class,
+        'manual_orders' => ManualOrderRepository::class,
+        'manual_order_items' => ManualOrderItemRepository::class,
         'orders' => OrderRepository::class,
         'order_items' => OrderItemRepository::class,
         'order_workflow_histories' => OrderWorkflowHistoryRepository::class,

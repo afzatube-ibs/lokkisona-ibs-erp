@@ -4,8 +4,22 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Csrf;
+use App\Database;
+use App\Database\TableName;
+use App\Models\ManualOrder;
+use App\Models\ManualOrderItem;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
+use App\Services\ReadOnly\ManualOrderItemReadService;
+use App\Services\ReadOnly\ManualOrderReadService;
+use App\Services\ReadOnly\OrderItemReadService;
+use App\Services\ReadOnly\OrderReadService;
+use App\Services\ReadOnly\ProductReadService;
+use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\Write\ManualOrderWriteService;
 
 class ManualOrdersController extends Controller
@@ -22,6 +36,12 @@ class ManualOrdersController extends Controller
                 ['label' => 'Manual Orders', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'manualOrderReadInventory' => $this->buildManualOrderReadInventory(),
+            'manualOrderItemReadInventory' => $this->buildManualOrderItemReadInventory(),
+            'orderReadInventory' => $this->buildOrderReadInventory(),
+            'orderItemReadInventory' => $this->buildOrderItemReadInventory(),
+            'productReadInventory' => $this->buildProductReadInventory(),
+            'productVariantReadInventory' => $this->buildProductVariantReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'sonamoniReferencePlan' => $this->sonamoniReferencePlan(),
@@ -56,6 +76,159 @@ class ManualOrdersController extends Controller
             redirect('/manual-orders');
         }
         $this->redirectWithWriteResult('/manual-orders', (new ManualOrderWriteService())->create($_POST));
+    }
+
+    private function buildManualOrderReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ManualOrder::class,
+            ManualOrderReadService::class,
+            'ManualOrder',
+            'ManualOrderReadService',
+            'ManualOrderRepository',
+            'manual order',
+            '0005_orders_manual_orders_workflow.sql',
+            true
+        );
+    }
+
+    private function buildManualOrderItemReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ManualOrderItem::class,
+            ManualOrderItemReadService::class,
+            'ManualOrderItem',
+            'ManualOrderItemReadService',
+            'ManualOrderItemRepository',
+            'manual order item',
+            '0005_orders_manual_orders_workflow.sql',
+            true
+        );
+    }
+
+    private function buildOrderReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            Order::class,
+            OrderReadService::class,
+            'Order',
+            'OrderReadService',
+            'OrderRepository',
+            'ERP order',
+            '0005_orders_manual_orders_workflow.sql',
+            true
+        );
+    }
+
+    private function buildOrderItemReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            OrderItem::class,
+            OrderItemReadService::class,
+            'OrderItem',
+            'OrderItemReadService',
+            'OrderItemRepository',
+            'ERP order item',
+            '0005_orders_manual_orders_workflow.sql',
+            true
+        );
+    }
+
+    private function buildProductReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            Product::class,
+            ProductReadService::class,
+            'Product',
+            'ProductReadService',
+            'ProductRepository',
+            'product',
+            '0003_business_sources_suppliers_products.sql'
+        );
+    }
+
+    private function buildProductVariantReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ProductVariant::class,
+            ProductVariantReadService::class,
+            'ProductVariant',
+            'ProductVariantReadService',
+            'ProductVariantRepository',
+            'product variant',
+            '0003_business_sources_suppliers_products.sql'
+        );
+    }
+
+    private function buildEntityReadInventory(
+        string $modelClass,
+        string $serviceClass,
+        string $modelShortName,
+        string $readServiceName,
+        string $readRepositoryName,
+        string $recordLabel,
+        string $migrationFile,
+        bool $useLatestRows = false
+    ) {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => $modelClass::table(),
+            'prefixed_table' => TableName::forModel($modelClass),
+            'model_class' => $modelShortName,
+            'primary_key' => $modelClass::primaryKey(),
+            'columns' => $modelClass::columns(),
+            'read_service' => $readServiceName,
+            'read_repository' => $readRepositoryName,
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new $serviceClass();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available - migration `' . $migrationFile . '` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $useLatestRows ? $service->latest(50) : $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No ' . $recordLabel . ' records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = $useLatestRows
+                ? 'Showing up to 50 latest ' . $recordLabel . ' records ordered by created_at DESC (SELECT only).'
+                : 'Showing up to 50 ' . $recordLabel . ' records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentContext()

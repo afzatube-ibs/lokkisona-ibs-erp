@@ -2,15 +2,15 @@
 
 namespace App\Services\ReadOnly;
 
-use App\Repositories\OrderItemRepository;
+use App\Repositories\ManualOrderRepository;
 
-class OrderItemReadService
+class ManualOrderReadService
 {
-    private OrderItemRepository $repository;
+    private ManualOrderRepository $repository;
 
-    public function __construct(?OrderItemRepository $repository = null)
+    public function __construct(?ManualOrderRepository $repository = null)
     {
-        $this->repository = $repository ?? new OrderItemRepository();
+        $this->repository = $repository ?? new ManualOrderRepository();
     }
 
     public function tableExists(): bool
