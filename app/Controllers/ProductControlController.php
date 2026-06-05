@@ -3,14 +3,20 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Permission;
+use App\Services\ReadOnly\ProductReadService;
+use App\Services\ReadOnly\ProductVariantReadService;
 
 class ProductControlController extends Controller
 {
     public function index()
     {
         $this->authorize('product_control.view');
-        ActivityLog::record('product_control_access', 'Product Control foundation page viewed');
+        ActivityLog::record('product_control_access', 'Product Control read foundation page viewed');
 
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
@@ -19,6 +25,8 @@ class ProductControlController extends Controller
                 ['label' => 'Product Control', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'productReadInventory' => $this->buildProductReadInventory(),
+            'productVariantReadInventory' => $this->buildProductVariantReadInventory(),
             'currentSupplier' => $this->currentSupplier(),
             'purpose' => $this->purpose(),
             'futureSyncedStructure' => $this->futureSyncedStructure(),
@@ -33,6 +41,97 @@ class ProductControlController extends Controller
             'plannedProductFields' => $this->plannedProductFields(),
             'plannedVariantFields' => $this->plannedVariantFields(),
         ]);
+    }
+
+    private function buildProductReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            Product::class,
+            ProductReadService::class,
+            'Product',
+            'ProductReadService',
+            'ProductRepository',
+            'product'
+        );
+    }
+
+    private function buildProductVariantReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ProductVariant::class,
+            ProductVariantReadService::class,
+            'ProductVariant',
+            'ProductVariantReadService',
+            'ProductVariantRepository',
+            'product variant'
+        );
+    }
+
+    private function buildEntityReadInventory(
+        string $modelClass,
+        string $serviceClass,
+        string $modelShortName,
+        string $readServiceName,
+        string $readRepositoryName,
+        string $recordLabel
+    ) {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => $modelClass::table(),
+            'prefixed_table' => TableName::forModel($modelClass),
+            'model_class' => $modelShortName,
+            'primary_key' => $modelClass::primaryKey(),
+            'columns' => $modelClass::columns(),
+            'read_service' => $readServiceName,
+            'read_repository' => $readRepositoryName,
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new $serviceClass();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0003_business_sources_suppliers_products.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No ' . $recordLabel . ' records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 ' . $recordLabel . ' records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentSupplier()

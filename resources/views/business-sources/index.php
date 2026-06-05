@@ -3,7 +3,7 @@
     <p class="page-description">Business Source and Sales Channel Foundation with live read-only inventory in v0.2.3. Planning foundation content remains below for architecture reference. No business, source, or channel records are written in this release.</p>
 </div>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory (v0.2.3)']); ?>
 
 <h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 

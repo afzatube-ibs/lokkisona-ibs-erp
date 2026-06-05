@@ -1,8 +1,22 @@
 # IBS-LK Business Manager
 
-**v0.2.3 Supplier and Business Source Read Foundation**
+**v0.2.4 Product and Variant Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.4
+
+v0.2.4 extends the v0.2.3 read-only module pattern to Product Control. `/product-control` now shows live read-only inventory for products and product variants while keeping all planning foundation content below. No CRUD, no stock changes, no product cost changes, no database writes, no migrations applied, and no sync.
+
+- `/product-control` calls `ProductReadService` and `ProductVariantReadService` through safe `buildEntityReadInventory()` helpers wrapped in try/catch.
+- Read-Only Product Inventory section shows separate cards for `ibs_products` and `ibs_product_variants` with connection status, table readiness, model contract columns, row count, and up to 50 SELECT rows each.
+- Graceful empty states when MySQL is unavailable or migration `0003_business_sources_suppliers_products.sql` is not manually applied yet.
+- Shared partial `read-inventory-card.php` now accepts a configurable card title for reuse across module pages.
+- No database writes, no sync, no stock change, no product cost change, and no migration apply from this page.
+
+### Product and Variant Read Inventory
+
+Read services delegate to existing repositories and `QueryGuard`. If tables do not exist yet, the page shows "Not applied" badges and clear migration-not-applied messages while the checkpoint stays green.
 
 ## What's New in v0.2.3
 
@@ -407,7 +421,7 @@ No business, source, or sales channel tables are created automatically and no da
 
 ## Product Control
 
-The authenticated `/product-control` page documents the Product Control Foundation only. It shows the current supplier context (Iqbal & Brothers), product control purpose, future synced product structure, supplier-editable fields, read-only platform fields, cost/stock history rules, low stock warning rules, option/image reference rules, and the future payable/dispatch cost snapshot rule.
+The authenticated `/product-control` page shows live read-only product and variant inventory (v0.2.4) plus Product Control Foundation planning content. Read inventory uses `ProductReadService` and `ProductVariantReadService` with graceful empty states when the database or `ibs_products` / `ibs_product_variants` tables are unavailable. Planning sections document the current supplier context (Iqbal & Brothers), product control purpose, future synced product structure, supplier-editable fields, read-only platform fields, cost/stock history rules, low stock warning rules, option/image reference rules, and the future payable/dispatch cost snapshot rule.
 
 Business rules documented: OpenCart/improved option model and stock are read-only when synced later; supplier model, product cost, and vendor stock are editable with history; low warning is alert-only and does not auto-block workflows; option images should follow POIP/PIT Order Manager image reference logic; dispatch and payable must use cost snapshots, not live changing cost.
 
@@ -415,7 +429,7 @@ Planned product fields documented only: product_id/source_product_id, product na
 
 Planned variant/option fields documented only: option/variant name, option value, source option id, source option value id, improved option model read-only, improved option stock read-only, supplier model, product cost, vendor stock, option image reference, POIP/PIT image reference note.
 
-No product, variant, cost, or stock history tables are created automatically and no database records are written in v0.1.26. OpenCart sync is not connected in this release.
+No product, variant, cost, or stock history tables are created automatically and no database records are written in this release. When migration `0003` is manually applied with the `ibs_` prefix, the page shows up to 50 read-only rows per table. OpenCart sync is not connected in this release.
 
 ## Status Mapping & Sync Planning
 

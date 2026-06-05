@@ -18,7 +18,9 @@ v0.2.2 completes the read-only database service/repository foundation (SELECT-on
 
 v0.2.3 wires the first module read inventory into `/suppliers` and `/business-sources` with hybrid planning plus live SELECT-only display and graceful empty states when tables are not applied yet.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. Product Control and Supplier Opening Balances remain planning-only until their read foundation builds. Opening balance work remains planning-only until owner-approved write services begin.
+v0.2.4 extends the same read-only pattern to `/product-control` with Product and Product Variant read inventory cards.
+
+The next major phase should move toward owner-approved write service layer work after manual migration apply. Supplier Opening Balances remains planning-only until its read foundation build. Opening balance work remains planning-only until owner-approved write services begin.
 
 ## Semi-Automation Levels
 

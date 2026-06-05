@@ -26,6 +26,10 @@ v0.2.2 adds a read-only database access foundation:
 
 Repositories use `INFORMATION_SCHEMA` probes for `tableExists()` and return empty results when MySQL is down or migration drafts are not manually applied yet. The Database Safety page displays repository inventory and table-exists status only.
 
+## Module Read Inventory (v0.2.3+)
+
+v0.2.3 wires supplier and business source read inventory into `/suppliers` and `/business-sources`. v0.2.4 adds product and product variant read inventory to `/product-control`. Module pages use read services with try/catch fallbacks and show graceful empty states when `ibs_*` tables from migration `0003` are not manually applied yet.
+
 For future production, consider a MySQL read-only database user for reporting and read services. Write services remain a future owner-approved build.
 
 v0.2.2 adds Supplier Opening Balance and Launch Cutover read-only repository skeletons only. The `/supplier-opening-balances` page documents old/manual supplier payable as a controlled ERP starting balance with cut-off date, supplier/source selection, reference note, proof planning, owner approval, audit requirement, adjustment safety, and launch cutover checklist. It does not create payable ledger records, change stock, upload files, or write opening balance records.

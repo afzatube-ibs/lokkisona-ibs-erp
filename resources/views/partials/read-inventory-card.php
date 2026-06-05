@@ -1,10 +1,11 @@
 <?php
 $inventory = $readInventory ?? [];
 $recordLabel = $recordLabel ?? 'records';
+$cardTitle = $cardTitle ?? 'Read-Only Inventory';
 ?>
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Read-Only Inventory (v0.2.3)</h2>
+        <h2 class="card-title"><?= e($cardTitle) ?></h2>
     </div>
     <div class="card-body">
         <p class="page-description">Live Read Inventory (SELECT only). No database writes, no sync, and no migration apply from this page.</p>

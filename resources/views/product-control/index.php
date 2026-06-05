@@ -1,7 +1,15 @@
 <div class="page-header">
     <h1 class="page-title">Product Control</h1>
-    <p class="page-description">Product Control Foundation for supplier product, cost, and stock planning. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No OpenCart sync, no product tables, and no database records are written in this release.</p>
+    <p class="page-description">Product Control with live read-only product and variant inventory in v0.2.4. Planning foundation content remains below. No OpenCart sync, no stock changes, no product cost changes, and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Product Inventory (v0.2.4)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">Live Read Inventory (SELECT only). No database writes, no sync, no stock change, no product cost change, and no migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $productReadInventory, 'cardTitle' => 'Products']); ?>
+<?php view('partials.read-inventory-card', ['readInventory' => $productVariantReadInventory, 'cardTitle' => 'Product Variants']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">
