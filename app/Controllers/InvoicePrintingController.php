@@ -3,14 +3,18 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\Invoice;
 use App\Permission;
+use App\Services\ReadOnly\InvoiceReadService;
 
 class InvoicePrintingController extends Controller
 {
     public function index()
     {
         $this->authorize('invoice_printing.view');
-        ActivityLog::record('invoice_printing_access', 'ERP Invoice and Packing Print planning foundation page viewed');
+        ActivityLog::record('invoice_printing_access', 'ERP Invoice and Packing Print read foundation page viewed');
 
         $this->render('invoice-printing.index', [
             'pageTitle' => 'Invoice Printing',
@@ -19,6 +23,7 @@ class InvoicePrintingController extends Controller
                 ['label' => 'Invoice Printing', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'templateRules' => $this->templateRules(),
@@ -32,6 +37,87 @@ class InvoicePrintingController extends Controller
             'plannedPrintLogFields' => $this->plannedPrintLogFields(),
             'plannedInvoiceTemplateFields' => $this->plannedInvoiceTemplateFields(),
         ]);
+    }
+
+    private function buildReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            Invoice::class,
+            InvoiceReadService::class,
+            'Invoice',
+            'InvoiceReadService',
+            'InvoiceRepository',
+            'invoice',
+            '0007_invoices_printing_supplier_tools.sql'
+        );
+    }
+
+    private function buildEntityReadInventory(
+        string $modelClass,
+        string $serviceClass,
+        string $modelShortName,
+        string $readServiceName,
+        string $readRepositoryName,
+        string $recordLabel,
+        string $migrationFile
+    ) {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => $modelClass::table(),
+            'prefixed_table' => TableName::forModel($modelClass),
+            'model_class' => $modelShortName,
+            'primary_key' => $modelClass::primaryKey(),
+            'columns' => $modelClass::columns(),
+            'read_service' => $readServiceName,
+            'read_repository' => $readRepositoryName,
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new $serviceClass();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `' . $migrationFile . '` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No ' . $recordLabel . ' records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 ' . $recordLabel . ' records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentContext()

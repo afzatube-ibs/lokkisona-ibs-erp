@@ -26,7 +26,9 @@ v0.2.6 extends the same read-only pattern to `/order-workflow` with Order, Order
 
 v0.2.7 extends the same read-only pattern to `/dispatch-reports`, `/return-receive`, and `/supplier-payables` with DispatchReport, ReturnReceive, and PayableLedger read inventory cards.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. Dispatch, return, payable, order workflow, opening balance write services, and launch lock actions remain future owner-approved builds.
+v0.2.8 completes read-only module coverage for `/invoice-printing`, `/activity-log`, `/users`, and `/roles-permissions` with Invoice, ActivityLog (DB contract), User, and Role read inventory cards.
+
+The next major phase should move toward owner-approved write service layer work after manual migration apply. All read-only model contract pages are now wired; write services remain future owner-approved builds.
 
 ## Semi-Automation Levels
 

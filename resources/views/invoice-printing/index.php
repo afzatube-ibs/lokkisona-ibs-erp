@@ -1,7 +1,14 @@
 <div class="page-header">
     <h1 class="page-title">Invoice Printing</h1>
-    <p class="page-description">ERP Invoice and Packing Print Planning Foundation. No real invoices are generated, no invoice tables are created automatically, and no invoice/print records are written in this release.</p>
+    <p class="page-description">ERP Invoice and Packing Print with live read-only inventory in v0.2.8. Planning foundation content remains below. No invoice creation, no print log creation, and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Invoice Inventory (v0.2.8)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No invoice creation. No print log creation. No migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Invoices']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

@@ -28,7 +28,7 @@ Repositories use `INFORMATION_SCHEMA` probes for `tableExists()` and return empt
 
 ## Module Read Inventory (v0.2.3+)
 
-v0.2.3 wires supplier and business source read inventory into `/suppliers` and `/business-sources`. v0.2.4 adds product and product variant read inventory to `/product-control`. v0.2.5 adds supplier opening balance and launch cutover read inventory to `/supplier-opening-balances`. v0.2.6 adds order, order item, and order workflow history read inventory to `/order-workflow`. v0.2.7 adds dispatch report, return receive, and payable ledger read inventory to `/dispatch-reports`, `/return-receive`, and `/supplier-payables`. Module pages use read services with try/catch fallbacks and show graceful empty states when `ibs_*` tables are not manually applied yet (migration `0003` for core supplier/product tables, migration `0005` for order tables, migration `0006` for dispatch/return/payable tables, migration `0008` for opening balance and launch cutover tables).
+v0.2.3 through v0.2.7 wire read inventory across suppliers, business sources, products, opening balances, orders, dispatch, returns, and payables. v0.2.8 completes coverage for invoices, database activity logs, users, and roles on `/invoice-printing`, `/activity-log`, `/users`, and `/roles-permissions`. Module pages use read services with try/catch fallbacks and show graceful empty states when `ibs_*` tables are not manually applied yet (migration `0002` for users/roles/activity, `0003` for supplier/product, `0005` for orders, `0006` for dispatch/return/payable, `0007` for invoices, `0008` for opening balance and launch cutover).
 
 For future production, consider a MySQL read-only database user for reporting and read services. Write services remain a future owner-approved build.
 

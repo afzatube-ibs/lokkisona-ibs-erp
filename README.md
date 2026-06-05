@@ -1,8 +1,22 @@
 # IBS-LK Business Manager
 
-**v0.2.7 Dispatch, Return, and Payable Read Foundation**
+**v0.2.8 Admin, Activity, and Invoice Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.8
+
+v0.2.8 completes read-only coverage for the remaining core model contracts. `/invoice-printing`, `/activity-log`, `/users`, and `/roles-permissions` now show live read-only inventory while keeping all existing planning and admin content. No database writes, no migrations applied.
+
+- `/invoice-printing` calls `InvoiceReadService` for `ibs_invoices` (migration `0007`).
+- `/activity-log` adds `ActivityLogReadService` for `ibs_activity_logs` (migration `0002`) while file-based `App\ActivityLog` runtime logging remains unchanged.
+- `/users` calls `UserReadService` for `ibs_users` with sensitive field redaction in row display.
+- `/roles-permissions` calls `RoleReadService` for `ibs_roles`.
+- Shared `read-inventory-card` partial supports `redact_sensitive_fields` for password/token/secret/key columns.
+
+### Admin, Activity, and Invoice Read Inventory
+
+Read services delegate to repositories and `QueryGuard`. If tables do not exist yet, pages show "Not applied" badges and clear migration-not-applied messages while the checkpoint stays green.
 
 ## What's New in v0.2.7
 

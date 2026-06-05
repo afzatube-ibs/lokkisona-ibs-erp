@@ -1,7 +1,14 @@
 <div class="page-header">
     <h1 class="page-title">Role & Permission Foundation</h1>
-    <p class="page-description">Config-backed access planning for future database users.</p>
+    <p class="page-description">Config-backed access planning with live read-only role inventory in v0.2.8. No role/permission mutation and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Role Inventory (v0.2.8)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No role/permission mutation. No migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Roles']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

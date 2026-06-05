@@ -2,6 +2,26 @@
 $inventory = $readInventory ?? [];
 $recordLabel = $recordLabel ?? 'records';
 $cardTitle = $cardTitle ?? 'Read-Only Inventory';
+$shouldRedactColumn = static function (string $column, array $inventory): bool {
+    if (empty($inventory['redact_sensitive_fields'])) {
+        return false;
+    }
+
+    $lower = strtolower($column);
+    $exactMatches = ['password', 'password_hash', 'remember_token', 'reset_token', 'api_key', 'secret'];
+
+    if (in_array($lower, $exactMatches, true)) {
+        return true;
+    }
+
+    foreach (['password', 'token', 'secret', 'key'] as $needle) {
+        if (str_contains($lower, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+};
 ?>
 <div class="card">
     <div class="card-header">
@@ -72,7 +92,12 @@ $cardTitle = $cardTitle ?? 'Read-Only Inventory';
                     <?php foreach ($inventory['rows'] as $row): ?>
                         <tr>
                             <?php foreach ($inventory['columns'] as $column): ?>
-                                <td><?= e((string) ($row[$column] ?? '')) ?></td>
+                                <?php
+                                $cellValue = $shouldRedactColumn($column, $inventory)
+                                    ? '[redacted]'
+                                    : (string) ($row[$column] ?? '');
+                                ?>
+                                <td><?= e($cellValue) ?></td>
                             <?php endforeach; ?>
                         </tr>
                     <?php endforeach; ?>
