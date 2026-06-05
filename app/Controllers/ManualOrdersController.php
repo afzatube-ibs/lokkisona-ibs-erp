@@ -114,7 +114,7 @@ class ManualOrdersController extends Controller
             'summary' => 'Manual/external orders must preserve their source reference for review and duplicate checks.',
             'points' => [
                 'Store external_order_reference and external_invoice_reference when available.',
-                'Manual entry must not auto-update the source website.',
+                'Manual entry must not auto-modify the source website.',
                 'External references remain visible in the normal ERP order list later.',
                 'Duplicate external reference should be blocked later.',
             ],
@@ -227,7 +227,7 @@ class ManualOrdersController extends Controller
             'title' => 'Future Direct WooCommerce Sync Upgrade Rule',
             'summary' => 'Manual Sonamoni reference entry is the fallback before direct WooCommerce sync.',
             'points' => [
-                'Direct WooCommerce sync can later replace or reduce manual entry.',
+                'Direct WooCommerce sync can later reduce manual entry.',
                 'The supplier/payable workflow should not change when WooCommerce sync is added.',
                 'Existing manual/external reference orders remain source-aware ERP orders.',
                 'No WooCommerce connection or sync is added in this release.',

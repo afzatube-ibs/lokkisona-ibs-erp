@@ -54,6 +54,58 @@
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">Read-Only Repository Layer</h2>
+        </div>
+        <div class="card-body">
+            <dl class="info-list">
+                <div class="info-row">
+                    <dt>Query Guard</dt>
+                    <dd>
+                        <span class="badge badge-<?= $queryGuardActive ? 'ok' : 'warn' ?>">
+                            <?= $queryGuardActive ? 'Active' : 'Inactive' ?>
+                        </span>
+                    </dd>
+                </div>
+                <div class="info-row">
+                    <dt>Scope</dt>
+                    <dd>SELECT-only repository and read service foundation for suppliers, business sources, products, product variants, supplier opening balances, and launch cutovers.</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Writes</dt>
+                    <dd>No INSERT, UPDATE, DELETE, or schema changes from repository code. Planning pages still show planning data only.</dd>
+                </div>
+            </dl>
+            <?php if (!empty($readOnlyRepositorySummary)): ?>
+                <table class="data-table" style="margin-top: 1rem; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Logical Table</th>
+                            <th>Prefixed Table</th>
+                            <th>Table Exists</th>
+                            <th>Row Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($readOnlyRepositorySummary as $entry): ?>
+                            <tr>
+                                <td><code><?= e($entry['logical_table']) ?></code></td>
+                                <td><code><?= e($entry['prefixed_table']) ?></code></td>
+                                <td>
+                                    <span class="badge badge-<?= $entry['table_exists'] ? 'ok' : 'warn' ?>">
+                                        <?= $entry['table_exists'] ? 'Yes' : 'Not applied' ?>
+                                    </span>
+                                </td>
+                                <td><?= e((string) $entry['row_count']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">No Page-Load Schema Changes</h2>
         </div>
         <div class="card-body">

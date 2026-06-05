@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Database;
+use App\Database\QueryGuard;
 
 class HealthController extends Controller
 {
@@ -50,6 +51,13 @@ class HealthController extends Controller
             'status' => $databaseStatus['connected'] ? 'ok' : 'warn',
             'message' => $databaseStatus['message'],
             'detail' => $databaseStatus['detail'],
+        ];
+
+        $checks[] = [
+            'name' => 'Read-Only Query Guard',
+            'status' => QueryGuard::isActive() ? 'ok' : 'fail',
+            'message' => QueryGuard::isActive() ? 'Active' : 'Inactive',
+            'detail' => 'Repositories allow SELECT, SHOW, DESCRIBE, and EXPLAIN only. No database writes.',
         ];
 
         $checks[] = [

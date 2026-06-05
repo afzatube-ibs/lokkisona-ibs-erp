@@ -1,8 +1,25 @@
 # IBS-LK Business Manager
 
-**v0.2.1 Core Model Layer and Database Contract Foundation**
+**v0.2.2 Database Service Layer Read-Only Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.2
+
+v0.2.2 adds a read-only database service/repository foundation on top of the v0.2.1 model contracts. This build prepares SELECT-only access structure only: no CRUD screens, no database writes, no migrations applied, and planning pages still show planning data.
+
+- Added `app/Database/` helpers: `Connection`, `TableName` (prefix-aware), `QueryGuard`, and `ReadOnlyQueryException`.
+- Evolved `App\Database` facade to delegate PDO creation to `App\Database\Connection` while keeping `check()` for health and database safety pages.
+- Added `app/Repositories/` with `ReadOnlyRepository`, `BaseReadOnlyRepository`, `ReadOnlyRepositoryRegistry`, and six read-only repositories for suppliers, business sources, products, product variants, supplier opening balances, and launch cutovers.
+- Added `app/Services/ReadOnly/` thin read services delegating to the repositories with no write methods.
+- `QueryGuard` allows only SELECT, SHOW, DESCRIBE, and EXPLAIN SQL and rejects mutation keywords at runtime.
+- Database Safety page shows read-only repository inventory, query guard status, and per-table existence probes.
+- Health check includes a Read-Only Query Guard status row.
+- Checkpoint database safety scan now blocks runtime INSERT, UPDATE, DELETE, TRUNCATE, and REPLACE in PHP code.
+
+### Read-Only Service Layer
+
+Repositories bind to existing `app/Models/` metadata contracts and resolve prefixed table names from `config/database.php`. All queries pass through `QueryGuard` before execution. If MySQL is unavailable or migration drafts are not manually applied yet, repositories return empty results gracefully. Write services remain a future owner-approved build.
 
 ## What's New in v0.2.1
 

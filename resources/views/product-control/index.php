@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Product Control</h1>
-    <p class="page-description">Product Control Foundation for supplier product, cost, and stock planning. No OpenCart sync, no product tables, and no database records are written in this release.</p>
+    <p class="page-description">Product Control Foundation for supplier product, cost, and stock planning. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No OpenCart sync, no product tables, and no database records are written in this release.</p>
 </div>
 
 <div class="card-grid">

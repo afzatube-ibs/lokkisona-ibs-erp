@@ -14,7 +14,7 @@ This is planning/foundation only. It documents a safe build queue workflow for I
 
 Migration-related build tasks require successful dry-run, manual approval gate completion, execution lock readiness, owner approval, backup confirmation, and manual apply only. The Build Queue must never apply migration SQL automatically or bypass the execution lock.
 
-After the Supplier Opening Balance and Launch Cutover planning foundation, the next major phase should move toward v0.2 real database/model foundation planning. Opening balance work remains planning-only until owner-approved model/database work begins.
+v0.2.2 completes the read-only database service/repository foundation (SELECT-only repositories and read services for suppliers, business sources, products, product variants, supplier opening balances, and launch cutovers). The next major phase should move toward owner-approved write service layer work after manual migration apply. Opening balance work remains planning-only until owner-approved write services begin.
 
 ## Semi-Automation Levels
 

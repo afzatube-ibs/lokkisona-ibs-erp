@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Suppliers</h1>
-    <p class="page-description">Supplier Foundation for future database-backed supplier operations. No supplier records are written in this release.</p>
+    <p class="page-description">Supplier Foundation for future database-backed supplier operations. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No supplier records are written in this release.</p>
 </div>
 
 <div class="card-grid">

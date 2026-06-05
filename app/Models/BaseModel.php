@@ -8,7 +8,7 @@ namespace App\Models;
  * Models in this namespace are pure database contracts: they declare the target
  * table name, the ordered column list that mirrors the manual migration drafts in
  * database/migrations, and an explicit primary key. They intentionally contain no
- * PDO/connection, no query building, and no save/find/create/update/delete logic.
+ * PDO/connection, no query building, and no save/find/create/mutation logic.
  * Writes are owned by a future service layer, never by these classes.
  */
 abstract class BaseModel

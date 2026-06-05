@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Opening Balance &amp; Launch Cutover Planning</h1>
-    <p class="page-description">Controlled ERP starting balance planning for old/manual supplier payable before launch. Planning only; no payable ledger records are created.</p>
+    <p class="page-description">Controlled ERP starting balance planning for old/manual supplier payable before launch. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No payable ledger records are created.</p>
 </div>
 
 <div class="card-grid">

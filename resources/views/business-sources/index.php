@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Business Sources</h1>
-    <p class="page-description">Business Source and Sales Channel Foundation for future channel-neutral order workflows. No business, source, or channel records are written in this release.</p>
+    <p class="page-description">Business Source and Sales Channel Foundation for future channel-neutral order workflows. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No business, source, or channel records are written in this release.</p>
 </div>
 
 <div class="card-grid">

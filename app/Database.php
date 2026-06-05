@@ -2,33 +2,14 @@
 
 namespace App;
 
+use App\Database\Connection;
 use PDO;
 
 class Database
 {
-    public static function connection()
+    public static function connection(): PDO
     {
-        $driver = config('database.driver', 'mysql');
-        $host = config('database.host', '127.0.0.1');
-        $port = config('database.port', 3306);
-        $database = config('database.database', '');
-        $charset = config('database.charset', 'utf8mb4');
-
-        $dsn = sprintf(
-            '%s:host=%s;port=%d;dbname=%s;charset=%s',
-            $driver,
-            $host,
-            (int) $port,
-            $database,
-            $charset
-        );
-
-        return new PDO(
-            $dsn,
-            config('database.username', ''),
-            config('database.password', ''),
-            config('database.options', [])
-        );
+        return Connection::pdo();
     }
 
     public static function check()

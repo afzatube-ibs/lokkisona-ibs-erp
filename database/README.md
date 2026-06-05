@@ -12,9 +12,23 @@ Database changes must be reviewed and applied by an owner/admin action outside p
 
 The classes under `app/Models/` are the metadata contract layer for these migration drafts. Each model declares its target table, an ordered `$columns` list, and an explicit primary key that mirror the corresponding `database/migrations/*.sql` draft. The models are pure metadata: they contain no PDO connection, no query building, and no read/write logic, so loading or reading a model never touches the database.
 
-Writes are deliberately not implemented in the model classes. A future service layer (owner-approved) will own all inserts, updates, and deletes once the migrations have been manually applied. The models describe the intended shape only; they do not execute SQL, apply migrations, or create/alter/drop tables. `App\Models\ModelRegistry` provides a read-only, in-memory table-to-model map for planning and coverage display only.
+Writes are deliberately not implemented in the model classes. A future write service layer (owner-approved) will own all inserts, updates, and deletes once the migrations have been manually applied. The models describe the intended shape only; they do not execute SQL, apply migrations, or create/alter/drop tables. `App\Models\ModelRegistry` provides a read-only, in-memory table-to-model map for planning and coverage display only.
 
-v0.1.26 adds Supplier Opening Balance and Launch Cutover planning only. The `/supplier-opening-balances` page documents old/manual supplier payable as a controlled ERP starting balance with cut-off date, supplier/source selection, reference note, proof planning, owner approval, audit requirement, adjustment safety, and launch cutover checklist. It does not create payable ledger records, change stock, upload files, or write opening balance records.
+## Read-Only Repository and Service Layer (v0.2.2)
+
+v0.2.2 adds a read-only database access foundation:
+
+- `app/Database/Connection.php` — PDO factory (delegated from `App\Database`)
+- `app/Database/TableName.php` — resolves `ibs_` prefixed physical names from logical model table names
+- `app/Database/QueryGuard.php` — rejects non-SELECT SQL before repository execution
+- `app/Repositories/` — six read-only repositories bound to existing model contracts
+- `app/Services/ReadOnly/` — thin read services with no write methods
+
+Repositories use `INFORMATION_SCHEMA` probes for `tableExists()` and return empty results when MySQL is down or migration drafts are not manually applied yet. The Database Safety page displays repository inventory and table-exists status only.
+
+For future production, consider a MySQL read-only database user for reporting and read services. Write services remain a future owner-approved build.
+
+v0.2.2 adds Supplier Opening Balance and Launch Cutover read-only repository skeletons only. The `/supplier-opening-balances` page documents old/manual supplier payable as a controlled ERP starting balance with cut-off date, supplier/source selection, reference note, proof planning, owner approval, audit requirement, adjustment safety, and launch cutover checklist. It does not create payable ledger records, change stock, upload files, or write opening balance records.
 
 Opening balance workflow:
 

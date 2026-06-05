@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.2.1 Core Model Layer and Database Contract Foundation"
+$appVersionLabel = "v0.2.2 Database Service Layer Read-Only Foundation"
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -164,8 +164,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.2\.1") {
-        Fail "Version check failed: /version does not contain v0.2.1." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.2.1."
+    if ($versionResponse.Content -notmatch "v0\.2\.2") {
+        Fail "Version check failed: /version does not contain v0.2.2." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.2.2."
     }
     Ok "Version"
 
@@ -200,6 +200,11 @@ try {
             if ($line -match "(?i)schema\s+repair|repair\s+schema") {
                 if ($line -notmatch "(?i)No .*schema\s+repair|No .*repair\s+schema") {
                     Fail "Suspicious page-load schema repair wording found in $($file.FullName)." "Database safety" $file.FullName "Remove schema repair behavior/wording from runtime page-load code."
+                }
+            }
+            if ($line -match "(?i)\b(INSERT|UPDATE|DELETE|TRUNCATE|REPLACE)\b") {
+                if ($line -notmatch "(?i)No INSERT|No UPDATE|No DELETE|no INSERT|no UPDATE|no DELETE|does not INSERT|does not UPDATE|does not DELETE|no database writes|No database writes|not INSERT|not UPDATE|not DELETE") {
+                    Fail "Runtime mutation SQL found in $($file.FullName)." "Database safety" $file.FullName "Remove runtime INSERT / UPDATE / DELETE / TRUNCATE / REPLACE. Writes belong to a future owner-approved service layer."
                 }
             }
         }

@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Database;
+use App\Database\QueryGuard;
+use App\Repositories\ReadOnlyRepositoryRegistry;
 
 class DatabaseSafetyController extends Controller
 {
@@ -20,7 +22,18 @@ class DatabaseSafetyController extends Controller
             ],
             'databaseStatus' => Database::check(),
             'plannedTables' => $this->plannedTables(),
+            'queryGuardActive' => QueryGuard::isActive(),
+            'readOnlyRepositorySummary' => $this->readOnlyRepositorySummary(),
         ]);
+    }
+
+    private function readOnlyRepositorySummary()
+    {
+        try {
+            return ReadOnlyRepositoryRegistry::statusSummary();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     private function plannedTables()
