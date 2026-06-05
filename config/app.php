@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.4',
-    'release_label' => 'Migration Table Prefix Safety Repair',
+    'version' => '0.4.2.5',
+    'release_label' => 'Product Variant / Option Entry Safety and UI Repair',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

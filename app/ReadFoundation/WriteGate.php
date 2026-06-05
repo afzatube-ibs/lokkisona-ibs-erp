@@ -96,6 +96,25 @@ class WriteGate
         ]);
     }
 
+    public static function productCreateForm(): array
+    {
+        return self::status(['ibs_products']);
+    }
+
+    public static function productVariantForm(): array
+    {
+        return self::status(['ibs_products', 'ibs_product_variants']);
+    }
+
+    public static function productCostStockForm(): array
+    {
+        return self::status([
+            'ibs_products',
+            'ibs_product_cost_histories',
+            'ibs_product_stock_histories',
+        ]);
+    }
+
     public static function supplierOpeningBalances(): array
     {
         return self::status([

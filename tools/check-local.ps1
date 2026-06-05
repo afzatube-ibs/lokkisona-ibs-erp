@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.4.2.4 Migration Table Prefix Safety Repair"
+$appVersionLabel = "v0.4.2.5 Product Variant / Option Entry Safety and UI Repair"
 $writePathWhitelistDirs = @("app/Services/Write", "app/Repositories/Write")
 $routeSmokeCount = 0
 
@@ -165,8 +165,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.4\.2\.4") {
-        Fail "Version check failed: /version does not contain v0.4.2.4." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.4."
+    if ($versionResponse.Content -notmatch "v0\.4\.2\.5") {
+        Fail "Version check failed: /version does not contain v0.4.2.5." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.5."
     }
     Ok "Version"
 

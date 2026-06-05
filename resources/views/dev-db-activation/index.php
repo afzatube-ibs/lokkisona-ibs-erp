@@ -94,6 +94,7 @@
                 <li><strong>Read-only checks:</strong> This page uses INFORMATION_SCHEMA SELECT only. No CREATE, ALTER, DROP, or mutation SQL.</li>
                 <li><strong>Write form gating (v0.4.2.3):</strong> Module write/action forms stay hidden until every required table in the matching group shows Ready. Read inventory cards remain visible regardless.</li>
                 <li><strong>Table prefix (v0.4.2.4):</strong> Migration drafts create <code>ibs_*</code> tables matching <code>config/database.php</code>. Readiness checks use prefixed names only.</li>
+                <li><strong>Product variant entry (v0.4.2.5):</strong> Group B enables product and variant/option testing on <a href="<?= e(url('/product-control')) ?>">Product Control</a> when <code>ibs_products</code> and <code>ibs_product_variants</code> are Ready.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Database Safety sprint merge checklist</a> · <a href="<?= e(url('/migration-files')) ?>">Migration Files</a></p>
         </div>

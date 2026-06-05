@@ -1,8 +1,16 @@
 # IBS-LK Business Manager
 
-**v0.4.2.4 Migration Table Prefix Safety Repair**
+**v0.4.2.5 Product Variant / Option Entry Safety and UI Repair**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2.5
+
+v0.4.2.5 improves Product Control variant/option entry for dev supplier product setup before launch.
+
+- `/product-control` — Product dropdown for variant form, labeled option fields, split write gates (product / variant / cost-stock), clearer variant inventory table, owner-friendly layout.
+- `ProductVariantWriteService` — validates product exists, required option name/value, non-negative cost/stock/low warning, blocks blank option rows.
+- No OpenCart/WooCommerce sync, no order/payable/opening balance approval changes.
 
 ## What's New in v0.4.2.4
 

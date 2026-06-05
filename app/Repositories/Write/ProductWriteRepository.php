@@ -48,4 +48,13 @@ class ProductWriteRepository extends BaseWriteRepository
 
         return $statement->execute(['product_cost' => $cost, 'vendor_stock' => $stock, 'id' => $id]);
     }
+
+    public function updateLowWarningThreshold(int $id, ?int $threshold): bool
+    {
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
+            . 'low_warning_threshold = :low_warning_threshold, updated_at = NOW() WHERE product_id = :id';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute(['low_warning_threshold' => $threshold, 'id' => $id]);
+    }
 }

@@ -45,7 +45,7 @@ class DevDatabaseActivation
                     'ibs_product_cost_histories',
                     'ibs_product_stock_histories',
                 ],
-                'testable_after' => 'Supplier create/edit, business source create/edit, product/variant create/edit, cost/stock change on dev.',
+                'testable_after' => 'Supplier create/edit, business source create/edit, product create, product variant/option entry, and cost/stock change on dev (Group B ready).',
                 'still_blocked' => 'No OpenCart/WooCommerce sync, no automatic product import, no production activation.',
             ],
             [

@@ -41,8 +41,9 @@ v0.4.2.2 adds `/dev-db-activation` with read-only table verification for Groups 
 
 ### Next steps (current)
 
-1. **Manual dev DB apply/test first** — use `/dev-db-activation` table verification after each migration group.
-2. **Then v0.4.3** Return Receive Submit Foundation — only after dev DB write testing passes.
+1. **Product / variant entry testing** — use `/product-control` with Group B ready; enter products and variants/options before launch.
+2. **Group C manual order apply/test later** — apply migration 0005 when ready, then test manual orders and workflow.
+3. **Then v0.4.3** Return Receive Submit Foundation — only after dev DB write testing passes.
 
 ### Next suggested builds (after dev DB activation testing)
 

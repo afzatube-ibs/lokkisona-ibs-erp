@@ -23,6 +23,9 @@ class ProductControlController extends Controller
         $this->authorize('product_control.view');
         ActivityLog::record('product_control_access', 'Product Control read foundation page viewed');
 
+        $productReadInventory = $this->buildProductReadInventory();
+        $productVariantReadInventory = $this->buildProductVariantReadInventory();
+
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
             'breadcrumbs' => [
@@ -30,8 +33,10 @@ class ProductControlController extends Controller
                 ['label' => 'Product Control', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
-            'productReadInventory' => $this->buildProductReadInventory(),
-            'productVariantReadInventory' => $this->buildProductVariantReadInventory(),
+            'productReadInventory' => $productReadInventory,
+            'productVariantReadInventory' => $productVariantReadInventory,
+            'productSelectOptions' => $this->productSelectOptionsFromInventory($productReadInventory),
+            'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
             'currentSupplier' => $this->currentSupplier(),
             'purpose' => $this->purpose(),
             'futureSyncedStructure' => $this->futureSyncedStructure(),
@@ -48,8 +53,12 @@ class ProductControlController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeGate' => WriteGate::productControl(),
-            'writeGateReady' => WriteGate::productControl()['ready'],
+            'writeGateProductCreate' => WriteGate::productCreateForm(),
+            'writeGateProductCreateReady' => WriteGate::productCreateForm()['ready'],
+            'writeGateVariantForm' => WriteGate::productVariantForm(),
+            'writeGateVariantFormReady' => WriteGate::productVariantForm()['ready'],
+            'writeGateCostStock' => WriteGate::productCostStockForm(),
+            'writeGateCostStockReady' => WriteGate::productCostStockForm()['ready'],
         ]);
     }
 
@@ -102,6 +111,71 @@ class ProductControlController extends Controller
             $result = $service->updateProductCostStock((int) ($_POST['product_id'] ?? 0), $_POST);
         }
         $this->redirectWithWriteResult('/product-control', $result);
+    }
+
+    private function productSelectOptionsFromInventory(array $productReadInventory): array
+    {
+        if (!in_array($productReadInventory['status'] ?? '', ['ok', 'empty'], true)) {
+            return [];
+        }
+
+        if (empty($productReadInventory['rows'])) {
+            return [];
+        }
+
+        $options = [];
+        foreach ($productReadInventory['rows'] as $row) {
+            $id = (int) ($row['product_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $name = trim((string) ($row['product_name'] ?? ''));
+            $label = $name !== '' ? $name . ' (#' . $id . ')' : 'Product #' . $id;
+            $options[] = ['id' => $id, 'label' => $label];
+        }
+
+        return $options;
+    }
+
+    private function buildVariantDisplayFromInventories(array $productReadInventory, array $productVariantReadInventory): array
+    {
+        $display = [
+            'status' => $productVariantReadInventory['status'] ?? 'error',
+            'status_message' => $productVariantReadInventory['status_message'] ?? 'Variant inventory unavailable.',
+            'row_count' => (int) ($productVariantReadInventory['row_count'] ?? 0),
+            'table_exists' => (bool) ($productVariantReadInventory['table_exists'] ?? false),
+            'rows' => [],
+        ];
+
+        if (!in_array($display['status'], ['ok', 'empty'], true)) {
+            return $display;
+        }
+
+        $productNames = [];
+        foreach ($productReadInventory['rows'] ?? [] as $product) {
+            $pid = (int) ($product['product_id'] ?? 0);
+            if ($pid > 0) {
+                $productNames[$pid] = trim((string) ($product['product_name'] ?? ''));
+            }
+        }
+
+        foreach ($productVariantReadInventory['rows'] ?? [] as $variant) {
+            $productId = (int) ($variant['product_id'] ?? 0);
+            $productName = $productNames[$productId] ?? '';
+            $display['rows'][] = [
+                'product_variant_id' => $variant['product_variant_id'] ?? '',
+                'product_id' => $productId,
+                'product_name' => $productName !== '' ? $productName : '(product #' . $productId . ')',
+                'option_name' => $variant['option_name'] ?? '',
+                'option_value' => $variant['option_value'] ?? '',
+                'supplier_model' => $variant['supplier_model'] ?? '',
+                'product_cost' => $variant['product_cost'] ?? '',
+                'vendor_stock' => $variant['vendor_stock'] ?? 0,
+                'status' => $variant['status'] ?? '',
+            ];
+        }
+
+        return $display;
     }
 
     private function buildProductReadInventory()
