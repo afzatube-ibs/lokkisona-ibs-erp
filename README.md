@@ -1,8 +1,21 @@
 # IBS-LK Business Manager
 
-**v0.2.4 Product and Variant Read Foundation**
+**v0.2.5 Opening Balance and Launch Cutover Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.5
+
+v0.2.5 extends the read-only module pattern to Supplier Opening Balances. `/supplier-opening-balances` now shows live read-only inventory for supplier opening balances and launch cutovers while keeping all planning foundation content below. No payable ledger creation, no launch lock action, no database writes, no migrations applied, and no sync.
+
+- `/supplier-opening-balances` calls `SupplierOpeningBalanceReadService` and `LaunchCutoverReadService` through safe `buildEntityReadInventory()` helpers wrapped in try/catch.
+- Read-Only Opening Balance / Launch Cutover Inventory section shows separate cards for `ibs_supplier_opening_balances` and `ibs_launch_cutovers`.
+- Graceful empty states when MySQL is unavailable or migration `0008_supplier_opening_balances_launch_cutovers.sql` is not manually applied yet.
+- SELECT only. No database writes, no payable ledger creation, no launch lock action, and no migration apply from this page.
+
+### Opening Balance and Launch Cutover Read Inventory
+
+Read services delegate to existing repositories and `QueryGuard`. If tables do not exist yet, the page shows "Not applied" badges and clear migration-not-applied messages while the checkpoint stays green.
 
 ## What's New in v0.2.4
 
@@ -172,7 +185,7 @@ The authenticated `/migration-approval` page documents the future apply approval
 
 The authenticated `/migration-execution-lock` page documents the future final execution lock. It protects against wrong environment, dirty Git, failed dry-run, missing approval, missing backup, checksum mismatch, duplicate apply, and emergency stop conditions. It does not execute SQL, unlock execution, write records, or apply migrations.
 
-The authenticated `/supplier-opening-balances` page documents Supplier Opening Balance and Launch Cutover planning. It treats the estimated old/manual payable to Iqbal & Brothers, about 1,200,000 BDT, as a controlled ERP starting balance with cut-off date, owner approval, proof planning, audit planning, and launch lock. It does not create payable ledger records, change stock, upload files, or write opening balance records.
+The authenticated `/supplier-opening-balances` page shows live read-only opening balance and launch cutover inventory (v0.2.5) plus Supplier Opening Balance and Launch Cutover planning content. Read inventory uses `SupplierOpeningBalanceReadService` and `LaunchCutoverReadService` with graceful empty states when the database or `ibs_supplier_opening_balances` / `ibs_launch_cutovers` tables are unavailable. Planning sections treat the estimated old/manual payable to Iqbal & Brothers, about 1,200,000 BDT, as a controlled ERP starting balance with cut-off date, owner approval, proof planning, audit planning, and launch lock. It does not create payable ledger records, change stock, upload files, or write opening balance records.
 
 Draft migration files:
 

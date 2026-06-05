@@ -20,7 +20,9 @@ v0.2.3 wires the first module read inventory into `/suppliers` and `/business-so
 
 v0.2.4 extends the same read-only pattern to `/product-control` with Product and Product Variant read inventory cards.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. Supplier Opening Balances remains planning-only until its read foundation build. Opening balance work remains planning-only until owner-approved write services begin.
+v0.2.5 extends the same read-only pattern to `/supplier-opening-balances` with Supplier Opening Balance and Launch Cutover read inventory cards.
+
+The next major phase should move toward owner-approved write service layer work after manual migration apply. Opening balance write services and launch lock actions remain a future owner-approved build.
 
 ## Semi-Automation Levels
 

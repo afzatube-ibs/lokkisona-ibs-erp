@@ -3,14 +3,20 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\LaunchCutover;
+use App\Models\SupplierOpeningBalance;
 use App\Permission;
+use App\Services\ReadOnly\LaunchCutoverReadService;
+use App\Services\ReadOnly\SupplierOpeningBalanceReadService;
 
 class SupplierOpeningBalancesController extends Controller
 {
     public function index()
     {
         $this->authorize('supplier_opening_balances.view');
-        ActivityLog::record('supplier_opening_balances_access', 'Supplier Opening Balances planning foundation page viewed');
+        ActivityLog::record('supplier_opening_balances_access', 'Supplier Opening Balances read foundation page viewed');
 
         $this->render('supplier-opening-balances.index', [
             'pageTitle' => 'Supplier Opening Balances',
@@ -19,6 +25,8 @@ class SupplierOpeningBalancesController extends Controller
                 ['label' => 'Supplier Opening Balances', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'openingBalanceReadInventory' => $this->buildOpeningBalanceReadInventory(),
+            'launchCutoverReadInventory' => $this->buildLaunchCutoverReadInventory(),
             'rules' => $this->rules(),
             'balanceTypes' => $this->balanceTypes(),
             'openingBalanceFields' => $this->openingBalanceFields(),
@@ -28,6 +36,97 @@ class SupplierOpeningBalancesController extends Controller
             'launchCutoverFields' => $this->launchCutoverFields(),
             'exampleBalance' => $this->exampleBalance(),
         ]);
+    }
+
+    private function buildOpeningBalanceReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            SupplierOpeningBalance::class,
+            SupplierOpeningBalanceReadService::class,
+            'SupplierOpeningBalance',
+            'SupplierOpeningBalanceReadService',
+            'SupplierOpeningBalanceRepository',
+            'supplier opening balance'
+        );
+    }
+
+    private function buildLaunchCutoverReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            LaunchCutover::class,
+            LaunchCutoverReadService::class,
+            'LaunchCutover',
+            'LaunchCutoverReadService',
+            'LaunchCutoverRepository',
+            'launch cutover'
+        );
+    }
+
+    private function buildEntityReadInventory(
+        string $modelClass,
+        string $serviceClass,
+        string $modelShortName,
+        string $readServiceName,
+        string $readRepositoryName,
+        string $recordLabel
+    ) {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => $modelClass::table(),
+            'prefixed_table' => TableName::forModel($modelClass),
+            'model_class' => $modelShortName,
+            'primary_key' => $modelClass::primaryKey(),
+            'columns' => $modelClass::columns(),
+            'read_service' => $readServiceName,
+            'read_repository' => $readRepositoryName,
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new $serviceClass();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0008_supplier_opening_balances_launch_cutovers.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No ' . $recordLabel . ' records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 ' . $recordLabel . ' records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function rules()

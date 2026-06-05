@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.2.4',
-    'release_label' => 'Product and Variant Read Foundation',
+    'version' => '0.2.5',
+    'release_label' => 'Opening Balance and Launch Cutover Read Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',
