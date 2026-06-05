@@ -67,7 +67,7 @@
                 </a>
                 <a href="<?= e(url('/database-safety')) ?>" class="action-link">
                     <span class="action-link-title">Database Safety</span>
-                    <span class="action-link-desc">Review manual migration rules and planned tables</span>
+                    <span class="action-link-desc">Sprint merge QA checklist, dev DB activation guide, and manual migration rules</span>
                 </a>
                 <?php if (\App\Permission::can('migration_runner.view')): ?>
                 <a href="<?= e(url('/migration-runner')) ?>" class="action-link">
@@ -198,6 +198,16 @@
 </div>
 
 <div class="card-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Sprint Merge QA (v0.4.2.1)</h2>
+        </div>
+        <div class="card-body">
+            <p>Post v0.4.2 sprint merge checklist — all routes open, checkpoint green, CSRF on write forms, no auto migration, no live production activation. Manual dev DB activation guide and write module QA matrix.</p>
+            <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Open Sprint Merge QA and Dev Database Activation Checklist</a></p>
+        </div>
+    </div>
+
     <?php if (\App\Permission::can('migration_runner.view')): ?>
     <div class="card">
         <div class="card-header">

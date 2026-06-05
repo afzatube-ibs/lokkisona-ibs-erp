@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2',
-    'release_label' => 'Dispatch Report Create Foundation',
+    'version' => '0.4.2.1',
+    'release_label' => 'Sprint Merge QA and Dev Database Activation Checklist',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

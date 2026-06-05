@@ -1,6 +1,97 @@
 <div class="page-header">
     <h1 class="page-title">Database Safety</h1>
-    <p class="page-description">Manual migration rules, draft migration files, dry-run validation planning, approval gate planning, execution lock planning, migration runner planning, build automation boundaries, and future database planning.</p>
+    <p class="page-description">Manual migration rules, sprint merge QA checklist, dev database activation guide, draft migration files, dry-run validation planning, approval gate planning, execution lock planning, migration runner planning, build automation boundaries, and future database planning.</p>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--color-primary, #2563eb);">
+    <div class="card-header">
+        <h2 class="card-title">Sprint Merge QA and Dev Database Activation Checklist (v0.4.2.1)</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description">Post v0.4.2 sprint merge gate — QA and documentation only. Write foundations are code-ready; database activation remains manual on dev/staging first. No live production activation yet.</p>
+        <table class="data-table" style="width: 100%; margin-top: 1rem;">
+            <thead>
+                <tr>
+                    <th>Check</th>
+                    <th>Requirement</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($sprintMergeChecklist as $row): ?>
+                    <tr>
+                        <td><strong><?= e($row['item']) ?></strong></td>
+                        <td><?= e($row['detail']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <h3 style="margin-top: 1.5rem;">Manual Dev Database Activation Guide</h3>
+        <ul class="feature-list">
+            <?php foreach ($devActivationGuide as $step): ?>
+                <li><?= e($step) ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <?php if (!empty($migrationPhaseMap)): ?>
+        <h3 style="margin-top: 1rem;">Migration phase map (write enablement)</h3>
+        <table class="data-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Migration</th>
+                    <th>File</th>
+                    <th>Enables</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($migrationPhaseMap as $phase): ?>
+                    <tr>
+                        <td><code><?= e($phase['migration']) ?></code></td>
+                        <td><code><?= e($phase['file']) ?></code></td>
+                        <td><?= e($phase['enables']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+        <p class="page-description" style="margin-top: 1rem;"><?= e($v042ActivationNote ?? '') ?></p>
+        <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a> · <a href="<?= e(url('/build-queue')) ?>">Open Build Queue</a></p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2 class="card-title">Write Module QA Matrix (v0.3.1–v0.4.2)</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description">Controlled POST write services — forms blocked until required tables exist. Testing status updated manually after dev DB activation.</p>
+        <?php if (!empty($writeModuleMatrix)): ?>
+        <table class="data-table" style="width: 100%; margin-top: 1rem;">
+            <thead>
+                <tr>
+                    <th>Module</th>
+                    <th>Page</th>
+                    <th>Required Tables</th>
+                    <th>Write Service</th>
+                    <th>Safety Status</th>
+                    <th>Migration</th>
+                    <th>Testing Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($writeModuleMatrix as $row): ?>
+                    <tr>
+                        <td><?= e($row['module']) ?></td>
+                        <td><code><?= e($row['page']) ?></code></td>
+                        <td><code><?= e($row['required_tables']) ?></code></td>
+                        <td><code><?= e($row['write_service']) ?></code></td>
+                        <td><?= e($row['safety_status']) ?></td>
+                        <td><code><?= e($row['migration_required']) ?></code></td>
+                        <td><span class="badge badge-warn"><?= e($row['testing_status']) ?></span></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="card-grid">
@@ -203,7 +294,7 @@
             <h2 class="card-title">Write Path Whitelist (planned v0.3.1+)</h2>
         </div>
         <div class="card-body">
-            <p class="page-description">Checkpoint allows mutation SQL only in these directories from v0.3.1 onward. No write services exist in v0.2.9.</p>
+            <p class="page-description">Checkpoint allows mutation SQL only in these directories from v0.3.1 onward. Ten write services exist for v0.3.1–v0.4.2 sprint modules.</p>
             <ul class="feature-list">
                 <?php foreach ($writePathWhitelistDirs as $dir): ?>
                     <li><code><?= e($dir) ?></code></li>

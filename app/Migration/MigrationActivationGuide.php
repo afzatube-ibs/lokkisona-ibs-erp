@@ -3,7 +3,7 @@
 namespace App\Migration;
 
 /**
- * Manual migration apply guide and database activation checklist (v0.3.0).
+ * Manual migration apply guide and database activation checklist (v0.3.0, v0.4.2.1).
  * Documentation only — no SQL execution.
  */
 class MigrationActivationGuide
@@ -62,5 +62,11 @@ class MigrationActivationGuide
             'v0.4.0 manual orders requires 0005 applied and launch lock tested',
             'v0.4.2 dispatch create requires 0006 applied',
         ];
+    }
+
+    public static function v042ActivationNote(): string
+    {
+        return 'v0.4.2 write foundations (supplier through dispatch report create) are code-ready in app/Services/Write/ '
+            . 'but database activation remains manual-only. Apply migrations on dev/staging first; no live production activation yet.';
     }
 }

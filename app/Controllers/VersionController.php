@@ -38,6 +38,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
             'features' => [
+                'v0.4.2.1 Sprint Merge QA: /database-safety shows sprint merge checklist, dev DB activation guide, and write module QA matrix — no live production activation yet',
                 'v0.4.2 Dispatch Report Create: POST /dispatch-reports/create builds dispatch batch from ready_for_dispatch orders with dispatch_report_items and cost snapshots',
                 'v0.4.1 Order Workflow Action: POST /order-workflow/action with state machine transitions and order_workflow_histories audit rows',
                 'v0.4.0 Manual Order Create: POST /manual-orders/create with cost snapshot, duplicate external reference blocking, and bridge to ibs_orders',

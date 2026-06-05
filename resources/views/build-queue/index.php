@@ -3,6 +3,35 @@
     <p class="page-description">Safe planning foundation for one-build-at-a-time development. Planning only; no auto-runner, commit, push, or task chaining is available in this release.</p>
 </div>
 
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2 class="card-title">Next Suggested Builds (After Dev DB Activation)</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description"><?= e($sprintMergeNote ?? '') ?> See <a href="<?= e(url('/database-safety')) ?>">Sprint Merge QA and Dev Database Activation Checklist</a>.</p>
+        <?php if (!empty($postActivationBuilds)): ?>
+        <table class="data-table" style="width: 100%; margin-top: 1rem;">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Title</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($postActivationBuilds as $build): ?>
+                    <tr>
+                        <td><code><?= e($build['version']) ?></code></td>
+                        <td><?= e($build['title']) ?></td>
+                        <td><?= e($build['note']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</div>
+
 <div class="card-grid">
     <div class="card">
         <div class="card-header">

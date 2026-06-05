@@ -1,8 +1,25 @@
 # IBS-LK Business Manager
 
-**v0.4.2 Dispatch Report Create Foundation**
+**v0.4.2.1 Sprint Merge QA and Dev Database Activation Checklist**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2.1
+
+v0.4.2.1 adds a post-sprint-merge QA checkpoint and manual dev database activation checklist. This build is documentation and QA only — no new write actions, no SQL execution, no migration apply, and **no live production database activation yet**.
+
+- `/database-safety` — Sprint Merge QA and Dev Database Activation Checklist with 10 gate items, dev activation guide, migration phase map, and write module QA matrix (10 modules).
+- `/migration-files` — Note that v0.4.2 write foundations are code-ready but database activation remains manual.
+- `/build-queue` — Next suggested builds (v0.4.3–v0.4.5) marked as after dev DB activation testing.
+- `/dashboard` — Quick link to sprint merge QA checklist.
+
+### Manual DB Activation Checklist (summary)
+
+1. Run `tools/check-local.ps1` and confirm `[OK] ALL GREEN`.
+2. Owner backup required before any SQL apply.
+3. Apply migrations manually only: start with **0002 + 0003** (suppliers/products), then **0005** (orders), **0006** (dispatch/returns/payables), **0008** (opening balance/launch cutover).
+4. Verify `ibs_*` tables exist after apply; re-run checkpoint.
+5. Test write forms on dev/staging only — not production.
 
 ## What's New in v0.4.2
 

@@ -29,6 +29,7 @@ class MigrationFilesController extends Controller
             'postApplyVerification' => MigrationActivationGuide::postApplyVerification(),
             'writePhaseGates' => MigrationActivationGuide::writePhaseGates(),
             'fullApplyOrder' => MigrationActivationGuide::applyOrder(),
+            'v042ActivationNote' => MigrationActivationGuide::v042ActivationNote(),
         ]);
     }
 

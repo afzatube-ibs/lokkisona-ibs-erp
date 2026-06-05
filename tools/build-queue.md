@@ -37,7 +37,15 @@ v0.2.9 through v0.4.2 complete the supplier ERP write foundation sprint:
 - v0.3.5–v0.3.6: Opening balance create/approve and launch cutover lock
 - v0.4.0–v0.4.2: Manual order create, workflow actions, dispatch report create
 
-Owner must manually apply migrations before write forms activate on each environment. Recommended next build: v0.4.3+ return receive submit or payable settlement (post-milestone).
+v0.4.2.1 adds sprint merge QA and dev database activation checklist on `/database-safety`. Write foundations are code-ready; owner must manually apply migrations before write forms activate. **No live production activation yet.**
+
+### Next suggested builds (after dev DB activation testing)
+
+- **v0.4.3** Return Receive Submit Foundation — start only after dev/staging QA passes
+- **v0.4.4** Payable Settlement Foundation — requires 0006 applied and prior write paths tested
+- **v0.4.5** Invoice Print Persistence Foundation — requires 0007 applied; after dev DB activation
+
+Owner must manually apply migrations before write forms activate on each environment. Do not start v0.4.3+ until dev DB activation checklist is complete.
 
 ## Semi-Automation Levels
 

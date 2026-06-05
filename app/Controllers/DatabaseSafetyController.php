@@ -5,7 +5,9 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Database;
 use App\Database\QueryGuard;
+use App\Migration\MigrationActivationGuide;
 use App\ReadFoundation\ReadFoundationQa;
+use App\ReadFoundation\SprintMergeQa;
 use App\ReadFoundation\WritePathWhitelist;
 use App\Repositories\ReadOnlyRepositoryRegistry;
 
@@ -32,6 +34,11 @@ class DatabaseSafetyController extends Controller
             'readinessChecklist' => ReadFoundationQa::readinessChecklist(),
             'writePathWhitelistRules' => WritePathWhitelist::rules(),
             'writePathWhitelistDirs' => WritePathWhitelist::allowedDirectories(),
+            'sprintMergeChecklist' => SprintMergeQa::activationChecklist(),
+            'devActivationGuide' => SprintMergeQa::devActivationGuide(),
+            'migrationPhaseMap' => SprintMergeQa::migrationPhaseMap(),
+            'writeModuleMatrix' => SprintMergeQa::writeModuleMatrix(),
+            'v042ActivationNote' => MigrationActivationGuide::v042ActivationNote(),
         ]);
     }
 

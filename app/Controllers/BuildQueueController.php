@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Permission;
+use App\ReadFoundation\SprintMergeQa;
 
 class BuildQueueController extends Controller
 {
@@ -27,6 +28,8 @@ class BuildQueueController extends Controller
             'buildQueueFields' => $this->buildQueueFields(),
             'buildRunFields' => $this->buildRunFields(),
             'redIssueFields' => $this->redIssueFields(),
+            'postActivationBuilds' => SprintMergeQa::postActivationNextBuilds(),
+            'sprintMergeNote' => 'v0.4.2.1 completes sprint merge QA. Next write foundations start only after dev DB activation testing.',
         ]);
     }
 

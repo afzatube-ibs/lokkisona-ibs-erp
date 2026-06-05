@@ -3,6 +3,21 @@
     <p class="page-description">Manual SQL draft inventory for future real database setup. Draft files are review material only and are not executed by the application.</p>
 </div>
 
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--color-warn, #d97706);">
+    <div class="card-header">
+        <h2 class="card-title">v0.4.2 Write Foundation — Manual Activation Required</h2>
+    </div>
+    <div class="card-body">
+        <p class="page-description"><?= e($v042ActivationNote ?? 'v0.4.2 write foundations are code-ready but database activation remains manual.') ?></p>
+        <ul class="feature-list">
+            <li>Supplier, business source, product, variant, cost/stock, opening balance, launch lock, manual order, workflow, and dispatch write services are implemented in code.</li>
+            <li>No application page applies migration SQL automatically.</li>
+            <li>Apply migrations manually on dev/staging, verify tables, re-run checkpoint, then test write forms.</li>
+            <li>No live production database activation until owner completes dev/staging QA on <a href="<?= e(url('/database-safety')) ?>">Database Safety sprint merge checklist</a>.</li>
+        </ul>
+    </div>
+</div>
+
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
