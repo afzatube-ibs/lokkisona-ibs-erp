@@ -62,7 +62,7 @@
         <h2 class="card-title">Write Module QA Matrix (v0.3.1–v0.4.2)</h2>
     </div>
     <div class="card-body">
-        <p class="page-description">Controlled POST write services — forms blocked until required tables exist. Testing status updated manually after dev DB activation.</p>
+        <p class="page-description">Controlled POST write services — forms are table-gated in the UI (v0.4.2.3) and remain blocked with a warning until all required <code>ibs_*</code> tables exist. Use <a href="<?= e(url('/dev-db-activation')) ?>">Dev DB Activation</a> to verify readiness. Testing status updated manually after dev DB activation.</p>
         <?php if (!empty($writeModuleMatrix)): ?>
         <table class="data-table" style="width: 100%; margin-top: 1rem;">
             <thead>

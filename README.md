@@ -1,8 +1,16 @@
 # IBS-LK Business Manager
 
-**v0.4.2.2 Dev Database Activation Helper and Table Verification Foundation**
+**v0.4.2.3 Write Form Table-Gate UI Safety Repair**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2.3
+
+v0.4.2.3 repairs write form UI safety across seven module pages. Write/action forms are hidden with a clear warning when required `ibs_*` tables are missing. Read-only inventory cards and planning content remain visible.
+
+- `App\ReadFoundation\WriteGate` — reusable table-gate helper (INFORMATION_SCHEMA SELECT only).
+- `partials/write-gate-warning.php` — shared blocked-form warning with link to `/dev-db-activation`.
+- Gated pages: `/suppliers`, `/business-sources`, `/product-control`, `/supplier-opening-balances`, `/manual-orders`, `/order-workflow`, `/dispatch-reports`.
 
 ## What's New in v0.4.2.2
 

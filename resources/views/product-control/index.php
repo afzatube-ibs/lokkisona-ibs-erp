@@ -4,7 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
-<?php if (!empty($writeServiceReady)): ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
 <form method="post" action="<?= e(url('/product-control/product/create')) ?>"><?= $csrfField ?? '' ?>
 <label>Product name *<input name="product_name" required style="width:100%"></label>
@@ -19,6 +19,8 @@
 <label>Note<input name="note" style="width:100%"></label>
 <button type="submit">Save cost/stock with history (v0.3.4)</button></form>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Product Inventory</h2>

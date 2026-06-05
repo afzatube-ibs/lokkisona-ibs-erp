@@ -6,6 +6,7 @@ use App\ActivityLog;
 use App\Auth;
 use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\WriteResult;
 
 class Controller
@@ -89,5 +90,10 @@ class Controller
     {
         $this->flash($result->success ? 'success' : 'error', $result->message);
         redirect($path);
+    }
+
+    protected function writeGateStatus(array $physicalTables): array
+    {
+        return WriteGate::status($physicalTables);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\ManualOrderWriteService;
 
 class ManualOrdersController extends Controller
@@ -41,7 +42,8 @@ class ManualOrdersController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeServiceReady' => (new ManualOrderWriteService())->tableReady(),
+            'writeGate' => WriteGate::manualOrders(),
+            'writeGateReady' => WriteGate::manualOrders()['ready'],
         ]);
     }
 

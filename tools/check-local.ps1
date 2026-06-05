@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.4.2.2 Dev Database Activation Helper and Table Verification Foundation"
+$appVersionLabel = "v0.4.2.3 Write Form Table-Gate UI Safety Repair"
 $writePathWhitelistDirs = @("app/Services/Write", "app/Repositories/Write")
 $routeSmokeCount = 0
 
@@ -165,8 +165,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.4\.2\.2") {
-        Fail "Version check failed: /version does not contain v0.4.2.2." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.2."
+    if ($versionResponse.Content -notmatch "v0\.4\.2\.3") {
+        Fail "Version check failed: /version does not contain v0.4.2.3." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.3."
     }
     Ok "Version"
 

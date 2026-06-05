@@ -4,7 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
-<?php view('partials.write-forms-suppliers', ['writeServiceReady' => $writeServiceReady ?? false, 'csrfField' => $csrfField ?? '']); ?>
+<?php view('partials.write-forms-suppliers', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? [], 'csrfField' => $csrfField ?? '']); ?>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier', 'cardTitle' => 'Read-Only Inventory']); ?>
 

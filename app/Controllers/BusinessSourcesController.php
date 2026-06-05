@@ -9,6 +9,7 @@ use App\Models\BusinessSource;
 use App\Permission;
 use App\Csrf;
 use App\Services\ReadOnly\BusinessSourceReadService;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\BusinessSourceWriteService;
 
 class BusinessSourcesController extends Controller
@@ -35,7 +36,8 @@ class BusinessSourcesController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeServiceReady' => (new BusinessSourceWriteService())->tableReady(),
+            'writeGate' => WriteGate::businessSources(),
+            'writeGateReady' => WriteGate::businessSources()['ready'],
         ]);
     }
 

@@ -57,6 +57,7 @@
                 <li><strong>Backup required:</strong> Owner must back up the database before any manual SQL apply.</li>
                 <li><strong>Dev/staging only:</strong> Test write forms on dev/staging first. No live production activation until full QA passes.</li>
                 <li><strong>Read-only checks:</strong> This page uses INFORMATION_SCHEMA SELECT only. No CREATE, ALTER, DROP, or mutation SQL.</li>
+                <li><strong>Write form gating (v0.4.2.3):</strong> Module write/action forms stay hidden until every required table in the matching group shows Ready. Read inventory cards remain visible regardless.</li>
             </ul>
             <p class="page-description"><a href="<?= e(url('/database-safety')) ?>">Database Safety sprint merge checklist</a> · <a href="<?= e(url('/migration-files')) ?>">Migration Files</a></p>
         </div>

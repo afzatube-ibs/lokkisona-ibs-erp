@@ -4,12 +4,16 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
 <form method="post" action="<?= e(url('/dispatch-reports/create')) ?>"><?= $csrfField ?? '' ?>
 <label>Supplier ID (optional)<input type="number" name="supplier_id" min="0"></label>
 <label>Business source ID (optional)<input type="number" name="business_source_id" min="0"></label>
 <button type="submit">Create dispatch report from ready_for_dispatch orders (v0.4.2)</button></form>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
+<?php endif; ?>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Dispatch Report Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No dispatch batch creation. No dispatch lock. No migration apply from this page.</p>

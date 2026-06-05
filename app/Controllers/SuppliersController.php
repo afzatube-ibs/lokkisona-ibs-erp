@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Permission;
 use App\Csrf;
 use App\Services\ReadOnly\SupplierReadService;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\SupplierWriteService;
 
 class SuppliersController extends Controller
@@ -34,7 +35,8 @@ class SuppliersController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeServiceReady' => (new SupplierWriteService())->tableReady(),
+            'writeGate' => WriteGate::suppliers(),
+            'writeGateReady' => WriteGate::suppliers()['ready'],
         ]);
     }
 

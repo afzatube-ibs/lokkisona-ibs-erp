@@ -13,6 +13,7 @@ use App\Services\ReadOnly\OrderItemReadService;
 use App\Services\ReadOnly\OrderReadService;
 use App\Csrf;
 use App\Services\ReadOnly\OrderWorkflowHistoryReadService;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\OrderWorkflowWriteService;
 
 class OrderWorkflowController extends Controller
@@ -48,6 +49,8 @@ class OrderWorkflowController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::orderWorkflow(),
+            'writeGateReady' => WriteGate::orderWorkflow()['ready'],
         ]);
     }
 

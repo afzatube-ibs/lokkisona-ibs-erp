@@ -4,6 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
 <form method="post" action="<?= e(url('/supplier-opening-balances/create')) ?>"><?= $csrfField ?? '' ?>
 <label>Supplier ID *<input type="number" name="supplier_id" required min="1"></label>
@@ -21,6 +22,9 @@
 <button type="submit">Lock launch cutover (v0.3.6)</button></form>
 <?php else: ?><p class="page-description">Launch is locked.</p><?php endif; ?>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
+<?php endif; ?>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Opening Balance / Launch Cutover Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No payable ledger creation. No launch lock action. No migration apply from this page.</p>

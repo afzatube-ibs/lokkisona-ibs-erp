@@ -11,6 +11,7 @@ use App\Permission;
 use App\Csrf;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\ProductCostStockWriteService;
 use App\Services\Write\ProductVariantWriteService;
 use App\Services\Write\ProductWriteService;
@@ -47,7 +48,8 @@ class ProductControlController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeServiceReady' => (new ProductWriteService())->tableReady(),
+            'writeGate' => WriteGate::productControl(),
+            'writeGateReady' => WriteGate::productControl()['ready'],
         ]);
     }
 

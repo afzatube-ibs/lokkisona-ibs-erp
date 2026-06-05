@@ -4,7 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
-<?php if (!empty($writeServiceReady)): ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
 <form method="post" action="<?= e(url('/manual-orders/create')) ?>"><?= $csrfField ?? '' ?>
 <label>Business source ID *<input type="number" name="business_source_id" required min="1"></label>
@@ -15,6 +15,8 @@
 <label>Selling price<input type="number" name="selling_price" step="0.01"></label>
 <button type="submit">Create manual order (v0.4.0)</button></form>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
 <div class="card-grid">

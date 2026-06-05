@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.2',
-    'release_label' => 'Dev Database Activation Helper and Table Verification Foundation',
+    'version' => '0.4.2.3',
+    'release_label' => 'Write Form Table-Gate UI Safety Repair',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

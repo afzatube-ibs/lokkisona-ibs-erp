@@ -4,6 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
 <form method="post" action="<?= e(url('/order-workflow/action')) ?>"><?= $csrfField ?? '' ?>
 <label>Order ID *<input type="number" name="order_id" required min="1"></label>
@@ -11,6 +12,9 @@
 <label>Note<input name="action_note" style="width:100%"></label>
 <button type="submit">Apply workflow action (v0.4.1)</button></form>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
+<?php endif; ?>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Order Workflow Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No order status action. No workflow mutation. No sync/import. No migration apply from this page.</p>

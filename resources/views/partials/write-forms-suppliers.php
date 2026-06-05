@@ -1,4 +1,4 @@
-<?php if (!empty($writeServiceReady)): ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Supplier Create (v0.3.1)</h2></div>
     <div class="card-body">
@@ -28,6 +28,6 @@
         </form>
     </div>
 </div>
-<?php elseif (isset($writeServiceReady)): ?>
-<p class="page-description">Write forms disabled until migration 0003 is manually applied.</p>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>

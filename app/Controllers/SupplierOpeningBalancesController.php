@@ -9,6 +9,7 @@ use App\Models\LaunchCutover;
 use App\Models\SupplierOpeningBalance;
 use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\LaunchCutoverWriteService;
 use App\Services\Write\SupplierOpeningBalanceWriteService;
 use App\Services\ReadOnly\LaunchCutoverReadService;
@@ -42,6 +43,8 @@ class SupplierOpeningBalancesController extends Controller
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
             'launchLocked' => (new LaunchCutoverWriteService())->isLocked(),
+            'writeGate' => WriteGate::supplierOpeningBalances(),
+            'writeGateReady' => WriteGate::supplierOpeningBalances()['ready'],
         ]);
     }
 

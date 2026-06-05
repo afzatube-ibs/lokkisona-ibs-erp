@@ -9,6 +9,7 @@ use App\Models\DispatchReport;
 use App\Permission;
 use App\Csrf;
 use App\Services\ReadOnly\DispatchReportReadService;
+use App\ReadFoundation\WriteGate;
 use App\Services\Write\DispatchReportWriteService;
 
 class DispatchReportsController extends Controller
@@ -42,6 +43,8 @@ class DispatchReportsController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::dispatchReports(),
+            'writeGateReady' => WriteGate::dispatchReports()['ready'],
         ]);
     }
 

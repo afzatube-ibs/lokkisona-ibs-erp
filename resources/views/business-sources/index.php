@@ -4,7 +4,7 @@
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
-<?php if (!empty($writeServiceReady)): ?>
+<?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Business Source Create / Edit</h2></div><div class="card-body">
 <form method="post" action="<?= e(url('/business-sources/create')) ?>"><?= $csrfField ?? '' ?>
 <label>Source name *<input name="source_name" required style="width:100%"></label>
@@ -17,6 +17,8 @@
 <label>Source type *<input name="source_type" required style="width:100%"></label>
 <button type="submit">Save source changes</button></form>
 </div></div>
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory']); ?>
