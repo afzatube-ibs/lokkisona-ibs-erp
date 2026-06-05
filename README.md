@@ -1,8 +1,23 @@
 # IBS-LK Business Manager
 
-**v0.2.8 Admin, Activity, and Invoice Read Foundation**
+**v0.4.2 Dispatch Report Create Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2
+
+v0.4.2 completes the supplier ERP write foundation sprint through dispatch report create. Controlled POST write services live under `app/Services/Write/` and `app/Repositories/Write/` with checkpoint whitelist. Migrations remain manual-only; write forms show when `ibs_*` tables exist.
+
+- `/dispatch-reports` POST create builds dispatch batch from `ready_for_dispatch` orders with line items and cost snapshots.
+- v0.4.1: `/order-workflow` workflow transitions with history rows and state machine validation.
+- v0.4.0: `/manual-orders` manual/external reference order create with cost snapshot and duplicate reference blocking.
+- v0.3.6: Launch cutover lock on `/supplier-opening-balances`.
+- v0.3.5: Opening balance create/approve with payable ledger seeding on approval.
+- v0.3.4: Product cost/stock updates with history tables.
+- v0.3.3: Product and variant create/edit forms on `/product-control`.
+- v0.3.1–v0.3.2: Supplier and business source create/edit on `/suppliers` and `/business-sources`.
+- v0.3.0: Manual migration apply guide on `/migration-files`.
+- v0.2.9: Read Foundation QA gate, full ReadOnlyRepositoryRegistry, write-path whitelist planning.
 
 ## What's New in v0.2.8
 

@@ -10,7 +10,8 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.2.8 Admin, Activity, and Invoice Read Foundation"
+$appVersionLabel = "v0.4.2 Dispatch Report Create Foundation"
+$writePathWhitelistDirs = @("app/Services/Write", "app/Repositories/Write")
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -164,8 +165,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.2\.8") {
-        Fail "Version check failed: /version does not contain v0.2.8." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.2.8."
+    if ($versionResponse.Content -notmatch "v0\.4\.2") {
+        Fail "Version check failed: /version does not contain v0.4.2." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2."
     }
     Ok "Version"
 
@@ -190,6 +191,17 @@ try {
 
     $runtimeFiles = Get-ChildItem -Path @("app", "public", "resources", "routes") -Filter "*.php" -Recurse -File
     foreach ($file in $runtimeFiles) {
+        $relativePath = $file.FullName.Substring($root.Path.Length + 1) -replace "\\", "/"
+        $isWriteWhitelisted = $false
+        foreach ($writePathWhitelistDir in $writePathWhitelistDirs) {
+            if ($relativePath -eq $writePathWhitelistDir -or $relativePath.StartsWith("$writePathWhitelistDir/")) {
+                $isWriteWhitelisted = $true
+                break
+            }
+        }
+        if ($isWriteWhitelisted) {
+            continue
+        }
         $lines = Get-Content -Path $file.FullName
         foreach ($line in $lines) {
             if ($line -match "(?i)CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE") {

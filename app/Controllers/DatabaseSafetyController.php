@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Database;
 use App\Database\QueryGuard;
+use App\ReadFoundation\ReadFoundationQa;
+use App\ReadFoundation\WritePathWhitelist;
 use App\Repositories\ReadOnlyRepositoryRegistry;
 
 class DatabaseSafetyController extends Controller
@@ -24,6 +26,12 @@ class DatabaseSafetyController extends Controller
             'plannedTables' => $this->plannedTables(),
             'queryGuardActive' => QueryGuard::isActive(),
             'readOnlyRepositorySummary' => $this->readOnlyRepositorySummary(),
+            'readFoundationQa' => ReadFoundationQa::coverageSummary(),
+            'readFoundationModulePages' => ReadFoundationQa::modulePages(),
+            'modelPendingTables' => ReadFoundationQa::modelPendingTables(),
+            'readinessChecklist' => ReadFoundationQa::readinessChecklist(),
+            'writePathWhitelistRules' => WritePathWhitelist::rules(),
+            'writePathWhitelistDirs' => WritePathWhitelist::allowedDirectories(),
         ]);
     }
 

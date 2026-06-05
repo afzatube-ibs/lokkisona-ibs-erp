@@ -3,7 +3,9 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Permission;
+use App\Services\Write\ManualOrderWriteService;
 
 class ManualOrdersController extends Controller
 {
@@ -36,7 +38,22 @@ class ManualOrdersController extends Controller
             'plannedManualOrderFields' => $this->plannedManualOrderFields(),
             'plannedManualOrderItemFields' => $this->plannedManualOrderItemFields(),
             'plannedManualOrderAuditFields' => $this->plannedManualOrderAuditFields(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeServiceReady' => (new ManualOrderWriteService())->tableReady(),
         ]);
+    }
+
+    public function create()
+    {
+        $this->authorize('manual_orders.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/manual-orders');
+        }
+        $this->redirectWithWriteResult('/manual-orders', (new ManualOrderWriteService())->create($_POST));
     }
 
     private function currentContext()

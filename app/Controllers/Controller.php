@@ -4,7 +4,9 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Auth;
+use App\Csrf;
 use App\Permission;
+use App\Services\Write\WriteResult;
 
 class Controller
 {
@@ -49,5 +51,43 @@ class Controller
             'permission' => $permission,
         ]);
         exit;
+    }
+
+    protected function requirePost(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+    }
+
+    protected function validateCsrf(): bool
+    {
+        return Csrf::validate($_POST['_csrf'] ?? null);
+    }
+
+    protected function flash(string $key, string $message): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION['flash'][$key] = $message;
+    }
+
+    protected function pullFlash(string $key): ?string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $message = $_SESSION['flash'][$key] ?? null;
+        unset($_SESSION['flash'][$key]);
+
+        return $message;
+    }
+
+    protected function redirectWithWriteResult(string $path, WriteResult $result): void
+    {
+        $this->flash($result->success ? 'success' : 'error', $result->message);
+        redirect($path);
     }
 }

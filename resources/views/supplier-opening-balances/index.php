@@ -1,9 +1,28 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Opening Balance &amp; Launch Cutover</h1>
-    <p class="page-description">Controlled ERP starting balance with live read-only inventory in v0.2.5. Planning foundation content remains below. No payable ledger records are created in this release.</p>
+    <p class="page-description">Opening balance create/approve (v0.3.5) and launch cutover lock (v0.3.6) when migration 0008 is applied.</p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Opening Balance / Launch Cutover Inventory (v0.2.5)</h2>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
+<form method="post" action="<?= e(url('/supplier-opening-balances/create')) ?>"><?= $csrfField ?? '' ?>
+<label>Supplier ID *<input type="number" name="supplier_id" required min="1"></label>
+<label>Amount<input name="amount" type="number" step="0.01"></label>
+<label>Balance type<select name="balance_type"><option value="payable_to_supplier">payable_to_supplier</option><option value="advance_from_supplier">advance_from_supplier</option><option value="neutral_zero_start">neutral_zero_start</option></select></label>
+<label>Cut-off date<input type="date" name="cutoff_date"></label>
+<button type="submit">Create opening balance draft (v0.3.5)</button></form>
+<hr><form method="post" action="<?= e(url('/supplier-opening-balances/approve')) ?>"><?= $csrfField ?? '' ?>
+<label>Balance ID to approve *<input type="number" name="supplier_opening_balance_id" required min="1"></label>
+<button type="submit">Approve opening balance (owner)</button></form>
+<?php if (empty($launchLocked)): ?>
+<hr><form method="post" action="<?= e(url('/supplier-opening-balances/launch-lock')) ?>"><?= $csrfField ?? '' ?>
+<label>Go-live date *<input type="date" name="go_live_date" required></label>
+<label>Cut-off date *<input type="date" name="cutoff_date" required></label>
+<button type="submit">Lock launch cutover (v0.3.6)</button></form>
+<?php else: ?><p class="page-description">Launch is locked.</p><?php endif; ?>
+</div></div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Opening Balance / Launch Cutover Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No payable ledger creation. No launch lock action. No migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $openingBalanceReadInventory, 'cardTitle' => 'Supplier Opening Balances']); ?>

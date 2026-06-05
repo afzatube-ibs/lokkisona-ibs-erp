@@ -1,9 +1,27 @@
 <div class="page-header">
     <h1 class="page-title">Product Control</h1>
-    <p class="page-description">Product Control with live read-only product and variant inventory in v0.2.4. Planning foundation content remains below. No OpenCart sync, no stock changes, no product cost changes, and no database writes in this release.</p>
+    <p class="page-description">Product read inventory plus controlled create/edit (v0.3.3) and cost/stock history updates (v0.3.4) when migration 0003 is applied.</p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Product Inventory (v0.2.4)</h2>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeServiceReady)): ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
+<form method="post" action="<?= e(url('/product-control/product/create')) ?>"><?= $csrfField ?? '' ?>
+<label>Product name *<input name="product_name" required style="width:100%"></label>
+<label>Supplier model<input name="supplier_model" style="width:100%"></label>
+<label>Product cost<input name="product_cost" type="number" step="0.01" style="width:100%"></label>
+<label>Vendor stock<input name="vendor_stock" type="number" value="0" style="width:100%"></label>
+<button type="submit">Create product (v0.3.3)</button></form>
+<hr><form method="post" action="<?= e(url('/product-control/cost-stock')) ?>"><?= $csrfField ?? '' ?>
+<label>Product ID *<input type="number" name="product_id" required min="1"></label>
+<label>New cost<input name="product_cost" type="number" step="0.01"></label>
+<label>New stock<input name="vendor_stock" type="number"></label>
+<label>Note<input name="note" style="width:100%"></label>
+<button type="submit">Save cost/stock with history (v0.3.4)</button></form>
+</div></div>
+<?php endif; ?>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Product Inventory</h2>
 <p class="page-description" style="margin-bottom: 1rem;">Live Read Inventory (SELECT only). No database writes, no sync, no stock change, no product cost change, and no migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $productReadInventory, 'cardTitle' => 'Products']); ?>

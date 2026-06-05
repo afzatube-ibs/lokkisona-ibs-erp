@@ -7,7 +7,9 @@ use App\Database;
 use App\Database\TableName;
 use App\Models\DispatchReport;
 use App\Permission;
+use App\Csrf;
 use App\Services\ReadOnly\DispatchReportReadService;
+use App\Services\Write\DispatchReportWriteService;
 
 class DispatchReportsController extends Controller
 {
@@ -37,7 +39,21 @@ class DispatchReportsController extends Controller
             'performanceRules' => $this->performanceRules(),
             'plannedReportFields' => $this->plannedReportFields(),
             'plannedItemFields' => $this->plannedItemFields(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
         ]);
+    }
+
+    public function create()
+    {
+        $this->authorize('dispatch_reports.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/dispatch-reports');
+        }
+        $this->redirectWithWriteResult('/dispatch-reports', (new DispatchReportWriteService())->createFromReadyOrders($_POST));
     }
 
     private function buildReadInventory()

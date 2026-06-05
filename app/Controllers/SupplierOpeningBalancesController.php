@@ -7,7 +7,10 @@ use App\Database;
 use App\Database\TableName;
 use App\Models\LaunchCutover;
 use App\Models\SupplierOpeningBalance;
+use App\Csrf;
 use App\Permission;
+use App\Services\Write\LaunchCutoverWriteService;
+use App\Services\Write\SupplierOpeningBalanceWriteService;
 use App\Services\ReadOnly\LaunchCutoverReadService;
 use App\Services\ReadOnly\SupplierOpeningBalanceReadService;
 
@@ -35,7 +38,45 @@ class SupplierOpeningBalancesController extends Controller
             'launchChecklist' => $this->launchChecklist(),
             'launchCutoverFields' => $this->launchCutoverFields(),
             'exampleBalance' => $this->exampleBalance(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'launchLocked' => (new LaunchCutoverWriteService())->isLocked(),
         ]);
+    }
+
+    public function create()
+    {
+        $this->authorize('supplier_opening_balances.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/supplier-opening-balances');
+        }
+        $this->redirectWithWriteResult('/supplier-opening-balances', (new SupplierOpeningBalanceWriteService())->create($_POST));
+    }
+
+    public function approve()
+    {
+        $this->authorize('supplier_opening_balances.approve');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/supplier-opening-balances');
+        }
+        $id = (int) ($_POST['supplier_opening_balance_id'] ?? 0);
+        $this->redirectWithWriteResult('/supplier-opening-balances', (new SupplierOpeningBalanceWriteService())->approve($id));
+    }
+
+    public function launchLock()
+    {
+        $this->authorize('supplier_opening_balances.approve');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/supplier-opening-balances');
+        }
+        $this->redirectWithWriteResult('/supplier-opening-balances', (new LaunchCutoverWriteService())->lock($_POST));
     }
 
     private function buildOpeningBalanceReadInventory()

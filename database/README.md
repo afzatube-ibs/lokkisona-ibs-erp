@@ -12,7 +12,7 @@ Database changes must be reviewed and applied by an owner/admin action outside p
 
 The classes under `app/Models/` are the metadata contract layer for these migration drafts. Each model declares its target table, an ordered `$columns` list, and an explicit primary key that mirror the corresponding `database/migrations/*.sql` draft. The models are pure metadata: they contain no PDO connection, no query building, and no read/write logic, so loading or reading a model never touches the database.
 
-Writes are deliberately not implemented in the model classes. A future write service layer (owner-approved) will own all inserts, updates, and deletes once the migrations have been manually applied. The models describe the intended shape only; they do not execute SQL, apply migrations, or create/alter/drop tables. `App\Models\ModelRegistry` provides a read-only, in-memory table-to-model map for planning and coverage display only.
+Writes are deliberately not implemented in the model classes. Owner-approved write services under `app/Services/Write/` and `app/Repositories/Write/` own inserts, updates, and deletes once migrations have been manually applied (v0.3.1 through v0.4.2). The models describe the intended shape only; they do not execute SQL, apply migrations, or create/alter/drop tables. `App\Models\ModelRegistry` provides a read-only, in-memory table-to-model map for planning and coverage display only.
 
 ## Read-Only Repository and Service Layer (v0.2.2)
 

@@ -7,7 +7,9 @@ use App\Database;
 use App\Database\TableName;
 use App\Models\Supplier;
 use App\Permission;
+use App\Csrf;
 use App\Services\ReadOnly\SupplierReadService;
+use App\Services\Write\SupplierWriteService;
 
 class SuppliersController extends Controller
 {
@@ -29,7 +31,34 @@ class SuppliersController extends Controller
             'foundationSections' => $this->foundationSections(),
             'plannedFields' => $this->plannedFields(),
             'accountingTerms' => $this->accountingTerms(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeServiceReady' => (new SupplierWriteService())->tableReady(),
         ]);
+    }
+
+    public function create()
+    {
+        $this->authorize('suppliers.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/suppliers');
+        }
+        $this->redirectWithWriteResult('/suppliers', (new SupplierWriteService())->create($_POST));
+    }
+
+    public function edit()
+    {
+        $this->authorize('suppliers.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/suppliers');
+        }
+        $id = (int) ($_POST['supplier_id'] ?? 0);
+        $this->redirectWithWriteResult('/suppliers', (new SupplierWriteService())->applyEdit($id, $_POST));
     }
 
     private function buildReadInventory()

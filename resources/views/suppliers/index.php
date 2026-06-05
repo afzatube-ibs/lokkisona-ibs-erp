@@ -1,9 +1,12 @@
 <div class="page-header">
     <h1 class="page-title">Suppliers</h1>
-    <p class="page-description">Supplier Foundation with live read-only inventory in v0.2.3. Planning foundation content remains below for architecture reference. No supplier records are written in this release.</p>
+    <p class="page-description">Supplier read inventory plus controlled create/edit write services (v0.3.1–v0.3.2) when migration 0003 is applied.</p>
 </div>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier', 'cardTitle' => 'Read-Only Inventory (v0.2.3)']); ?>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php view('partials.write-forms-suppliers', ['writeServiceReady' => $writeServiceReady ?? false, 'csrfField' => $csrfField ?? '']); ?>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier', 'cardTitle' => 'Read-Only Inventory']); ?>
 
 <h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 

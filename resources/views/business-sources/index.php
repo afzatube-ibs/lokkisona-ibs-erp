@@ -1,9 +1,25 @@
 <div class="page-header">
     <h1 class="page-title">Business Sources</h1>
-    <p class="page-description">Business Source and Sales Channel Foundation with live read-only inventory in v0.2.3. Planning foundation content remains below for architecture reference. No business, source, or channel records are written in this release.</p>
+    <p class="page-description">Business source read inventory plus controlled create/edit (v0.3.1–v0.3.2) when migration 0003 is applied.</p>
 </div>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory (v0.2.3)']); ?>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php if (!empty($writeServiceReady)): ?>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Business Source Create / Edit</h2></div><div class="card-body">
+<form method="post" action="<?= e(url('/business-sources/create')) ?>"><?= $csrfField ?? '' ?>
+<label>Source name *<input name="source_name" required style="width:100%"></label>
+<label>Source type *<input name="source_type" required placeholder="Ecommerce Website" style="width:100%"></label>
+<label>Website domain<input name="website_domain" style="width:100%"></label>
+<button type="submit">Create source</button></form>
+<hr><form method="post" action="<?= e(url('/business-sources/edit')) ?>"><?= $csrfField ?? '' ?>
+<label>Source ID *<input type="number" name="business_source_id" required min="1"></label>
+<label>Source name *<input name="source_name" required style="width:100%"></label>
+<label>Source type *<input name="source_type" required style="width:100%"></label>
+<button type="submit">Save source changes</button></form>
+</div></div>
+<?php endif; ?>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory']); ?>
 
 <h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
