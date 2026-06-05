@@ -1,12 +1,27 @@
 # IBS-LK Business Manager
 
-**v0.2.2 Database Service Layer Read-Only Foundation**
+**v0.2.3 Supplier and Business Source Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
 
+## What's New in v0.2.3
+
+v0.2.3 wires the v0.2.2 read-only repository layer into the first real module pages: Suppliers and Business Sources. Pages use a hybrid layout — live read-only inventory at the top, planning foundation content below. No CRUD, no database writes, no migrations applied, and no sync.
+
+- `/suppliers` and `/business-sources` call `SupplierReadService` and `BusinessSourceReadService` through controller `buildReadInventory()` helpers wrapped in try/catch.
+- Read-Only Inventory cards show database connection, table readiness, prefixed table name (`ibs_*`), model contract columns, repository/service readiness, row count, and up to 50 SELECT rows when data exists.
+- Graceful empty states when MySQL is unavailable or migration `0003_business_sources_suppliers_products.sql` is not manually applied yet — no blank page and no fatal error.
+- Empty-state copy cites the `ibs_` prefix from `config/database.php` and manual migration requirement.
+- Planning foundation sections (primary supplier/source, architecture cards, planned fields) are preserved under a "Planning Foundation" heading.
+- No create, edit, delete, sync, or migration apply from these pages.
+
+### Supplier and Business Source Read Inventory
+
+Read services delegate to existing repositories and `QueryGuard`. If tables do not exist yet, pages show "Not applied" badges and a clear migration-not-applied message while the checkpoint stays green.
+
 ## What's New in v0.2.2
 
-v0.2.2 adds a read-only database service/repository foundation on top of the v0.2.1 model contracts. This build prepares SELECT-only access structure only: no CRUD screens, no database writes, no migrations applied, and planning pages still show planning data.
+v0.2.2 adds a read-only database service/repository foundation on top of the v0.2.1 model contracts. This build prepares SELECT-only access structure only: no CRUD screens, no database writes, no migrations applied, and module pages were still planning-only until v0.2.3.
 
 - Added `app/Database/` helpers: `Connection`, `TableName` (prefix-aware), `QueryGuard`, and `ReadOnlyQueryException`.
 - Evolved `App\Database` facade to delegate PDO creation to `App\Database\Connection` while keeping `check()` for health and database safety pages.
@@ -370,7 +385,7 @@ No users table is created automatically and no database user records are written
 
 ## Supplier Management
 
-The authenticated `/suppliers` page documents the Supplier Foundation only. It shows the current primary supplier (Iqbal & Brothers), supplier operation purpose, future supplier account structure, future payable/settlement, product cost/stock, order fulfillment and return/damage deduction links, and multi-supplier/multi-business readiness.
+The authenticated `/suppliers` page shows live read-only supplier inventory (v0.2.3) plus Supplier Foundation planning content. The read inventory uses `SupplierReadService` with graceful empty states when the database or `ibs_suppliers` table is unavailable. Planning sections document the current primary supplier (Iqbal & Brothers), supplier operation purpose, future supplier account structure, future payable/settlement, product cost/stock, order fulfillment and return/damage deduction links, and multi-supplier/multi-business readiness.
 
 Operations begin with Iqbal & Brothers and the Lokkisona order workflow, but the architecture is channel-neutral and not hard-coded to a single supplier or sales channel.
 
@@ -378,17 +393,17 @@ Planned supplier fields documented only: supplier name, contact person, phone, e
 
 Supplier accounting wording: Product Cost Payable, Supplier Invoice, Additional Payable, Return/Damage Deduction, Payment Made to Supplier, Advance Received from Supplier, Net Payable to Supplier.
 
-No suppliers table is created automatically and no supplier records are written in v0.1.26.
+No suppliers table is created automatically and no supplier records are written in this release. When migration `0003` is manually applied with the `ibs_` prefix, the page shows up to 50 read-only rows.
 
 ## Business Source & Sales Channel Management
 
-The authenticated `/business-sources` page documents the Business Source and Sales Channel Foundation only. It shows the current primary source (Lokkisona.com), the current primary supplier relationship (Iqbal & Brothers), future source/channel structure, manual/offline order support, ecommerce channel support, marketplace/channel support, multi-business readiness, and how orders will later connect to supplier workflow, dispatch, returns, and payable.
+The authenticated `/business-sources` page shows live read-only business source inventory (v0.2.3) plus Business Source and Sales Channel Foundation planning content. The read inventory uses `BusinessSourceReadService` with graceful empty states when the database or `ibs_business_sources` table is unavailable. Planning sections document the current primary source (Lokkisona.com), the current primary supplier relationship (Iqbal & Brothers), future source/channel structure, manual/offline order support, ecommerce channel support, marketplace/channel support, multi-business readiness, and how orders will later connect to supplier workflow, dispatch, returns, and payable.
 
 The first source is Lokkisona.com, but the architecture is not hard-coded to one website. Future source types include Ecommerce Website, Manual Order, Offline Retail, Marketplace, Wholesale, and Other.
 
 Planned business/source fields documented only: business name, channel name, source type, website/domain, order source label, status, default supplier, default workflow, created at, updated at.
 
-No business, source, or sales channel tables are created automatically and no database records are written in v0.1.26.
+No business, source, or sales channel tables are created automatically and no database records are written in this release. When migration `0003` is manually applied with the `ibs_` prefix, the page shows up to 50 read-only rows.
 
 ## Product Control
 

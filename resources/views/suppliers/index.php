@@ -1,7 +1,11 @@
 <div class="page-header">
     <h1 class="page-title">Suppliers</h1>
-    <p class="page-description">Supplier Foundation for future database-backed supplier operations. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No supplier records are written in this release.</p>
+    <p class="page-description">Supplier Foundation with live read-only inventory in v0.2.3. Planning foundation content remains below for architecture reference. No supplier records are written in this release.</p>
 </div>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

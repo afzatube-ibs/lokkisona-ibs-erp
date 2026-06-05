@@ -1,7 +1,11 @@
 <div class="page-header">
     <h1 class="page-title">Business Sources</h1>
-    <p class="page-description">Business Source and Sales Channel Foundation for future channel-neutral order workflows. A read-only repository layer is prepared in v0.2.2, but this page still shows planning data only. No business, source, or channel records are written in this release.</p>
+    <p class="page-description">Business Source and Sales Channel Foundation with live read-only inventory in v0.2.3. Planning foundation content remains below for architecture reference. No business, source, or channel records are written in this release.</p>
 </div>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">
