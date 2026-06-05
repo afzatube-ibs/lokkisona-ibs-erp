@@ -13,7 +13,7 @@
             <li>Supplier, business source, product, variant, cost/stock, opening balance, launch lock, manual order, workflow, and dispatch write services are implemented in code.</li>
             <li>No application page applies migration SQL automatically.</li>
             <li>Apply migrations manually on dev/staging, verify tables, re-run checkpoint, then test write forms.</li>
-            <li>No live production database activation until owner completes dev/staging QA on <a href="<?= e(url('/database-safety')) ?>">Database Safety sprint merge checklist</a>.</li>
+            <li>No live production database activation until owner completes dev/staging QA on <a href="<?= e(url('/database-safety')) ?>">Database Safety sprint merge checklist</a> and <a href="<?= e(url('/dev-db-activation')) ?>">Dev DB Activation table verification</a>.</li>
         </ul>
     </div>
 </div>

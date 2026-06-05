@@ -53,7 +53,7 @@
         </table>
         <?php endif; ?>
         <p class="page-description" style="margin-top: 1rem;"><?= e($v042ActivationNote ?? '') ?></p>
-        <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a> · <a href="<?= e(url('/build-queue')) ?>">Open Build Queue</a></p>
+        <p class="page-description"><a href="<?= e(url('/migration-files')) ?>">Open Migration Files planning</a> · <a href="<?= e(url('/dev-db-activation')) ?>">Open Dev DB Activation helper</a> · <a href="<?= e(url('/build-queue')) ?>">Open Build Queue</a></p>
     </div>
 </div>
 

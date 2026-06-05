@@ -37,7 +37,12 @@ v0.2.9 through v0.4.2 complete the supplier ERP write foundation sprint:
 - v0.3.5–v0.3.6: Opening balance create/approve and launch cutover lock
 - v0.4.0–v0.4.2: Manual order create, workflow actions, dispatch report create
 
-v0.4.2.1 adds sprint merge QA and dev database activation checklist on `/database-safety`. Write foundations are code-ready; owner must manually apply migrations before write forms activate. **No live production activation yet.**
+v0.4.2.2 adds `/dev-db-activation` with read-only table verification for Groups A–F. Owner applies migrations manually on dev/staging, verifies table readiness, then tests write forms.
+
+### Next steps (current)
+
+1. **Manual dev DB apply/test first** — use `/dev-db-activation` table verification after each migration group.
+2. **Then v0.4.3** Return Receive Submit Foundation — only after dev DB write testing passes.
 
 ### Next suggested builds (after dev DB activation testing)
 

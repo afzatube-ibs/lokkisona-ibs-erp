@@ -72,6 +72,12 @@ class Permission
                 'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M9 12l2 2 4-4"/>',
             ],
             [
+                'label' => 'Dev DB Activation',
+                'path' => '/dev-db-activation',
+                'permission' => 'dev_db_activation.view',
+                'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M12 12v4"/><path d="M12 8h.01"/>',
+            ],
+            [
                 'label' => 'Migration Runner',
                 'path' => '/migration-runner',
                 'permission' => 'migration_runner.view',

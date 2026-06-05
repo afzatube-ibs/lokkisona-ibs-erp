@@ -29,7 +29,7 @@ class BuildQueueController extends Controller
             'buildRunFields' => $this->buildRunFields(),
             'redIssueFields' => $this->redIssueFields(),
             'postActivationBuilds' => SprintMergeQa::postActivationNextBuilds(),
-            'sprintMergeNote' => 'v0.4.2.1 completes sprint merge QA. Next write foundations start only after dev DB activation testing.',
+            'sprintMergeNote' => 'v0.4.2.2 adds /dev-db-activation table verification. Manual dev DB apply and write-form testing first. v0.4.3 Return Receive Submit only after dev DB write testing passes.',
         ]);
     }
 

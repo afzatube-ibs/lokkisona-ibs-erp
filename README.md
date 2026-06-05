@@ -1,8 +1,17 @@
 # IBS-LK Business Manager
 
-**v0.4.2.1 Sprint Merge QA and Dev Database Activation Checklist**
+**v0.4.2.2 Dev Database Activation Helper and Table Verification Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.4.2.2
+
+v0.4.2.2 adds a dev database activation helper page with read-only table verification. Helper/checklist only — no SQL execution, no automatic migration apply, no new write features.
+
+- `/dev-db-activation` — Current activation status, manual-only rules, backup/dev warnings, migration apply order, Groups A–F table readiness (Ready / Not applied / Unavailable), after-apply test flow, and global blocked actions.
+- Table checks use INFORMATION_SCHEMA SELECT only — no CREATE, ALTER, DROP, or mutation SQL.
+- `/database-safety` and `/migration-files` link to the new helper page.
+- `/build-queue` — Next step: manual dev DB apply/test first, then v0.4.3 only after write testing.
 
 ## What's New in v0.4.2.1
 

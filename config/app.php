@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.1',
-    'release_label' => 'Sprint Merge QA and Dev Database Activation Checklist',
+    'version' => '0.4.2.2',
+    'release_label' => 'Dev Database Activation Helper and Table Verification Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

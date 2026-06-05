@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.4.2.1 Sprint Merge QA and Dev Database Activation Checklist"
+$appVersionLabel = "v0.4.2.2 Dev Database Activation Helper and Table Verification Foundation"
 $writePathWhitelistDirs = @("app/Services/Write", "app/Repositories/Write")
 $routeSmokeCount = 0
 
@@ -152,7 +152,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/migration-execution-lock", "/supplier-opening-balances", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/dev-db-activation", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/migration-execution-lock", "/supplier-opening-balances", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
     $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"
@@ -165,8 +165,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.4\.2\.1") {
-        Fail "Version check failed: /version does not contain v0.4.2.1." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.1."
+    if ($versionResponse.Content -notmatch "v0\.4\.2\.2") {
+        Fail "Version check failed: /version does not contain v0.4.2.2." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.2."
     }
     Ok "Version"
 
