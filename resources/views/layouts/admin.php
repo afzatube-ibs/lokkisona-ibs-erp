@@ -1,43 +1,66 @@
+<?php
+/* Nav section labels — maps first path of each group to a label.
+ * Rendered inline before the first item in each group. */
+$navSectionMap = [
+    '/dashboard'             => 'Core',
+    '/roles-permissions'     => 'Admin',
+    '/database-safety'       => 'Dev / Database',
+    '/suppliers'             => 'Operations',
+    '/supplier-payables'     => 'Finance',
+    '/status-mapping'        => 'Tools & Sync',
+];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle ?? $appName) ?> — <?= e($appName) ?></title>
+    <!-- Prevent dark-mode flash: apply saved theme before CSS renders -->
+    <script>(function(){try{var t=localStorage.getItem('ibs-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}}());</script>
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
-    <div class="admin-shell">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <div class="brand-mark">IBS</div>
-                <div class="brand-text">
-                    <span class="brand-name">IBS-LK</span>
-                    <span class="brand-sub">Business Manager</span>
-                </div>
+<div class="admin-shell">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-mark">IBS</div>
+            <div class="brand-text">
+                <span class="brand-name">IBS-LK</span>
+                <span class="brand-sub">Business Manager</span>
             </div>
-            <nav class="sidebar-nav">
-                <?php foreach ($navItems ?? [] as $item): ?>
-                <a href="<?= e(url($item['path'])) ?>" class="nav-item <?= strpos($currentPath ?? '', $item['path']) !== false ? 'active' : '' ?>">
+        </div>
+
+        <nav class="sidebar-nav">
+            <?php foreach ($navItems ?? [] as $item): ?>
+                <?php if (isset($navSectionMap[$item['path']])): ?>
+                    <span class="nav-section-label"><?= e($navSectionMap[$item['path']]) ?></span>
+                <?php endif; ?>
+                <a href="<?= e(url($item['path'])) ?>"
+                   class="nav-item <?= strpos($currentPath ?? '', $item['path']) !== false ? 'active' : '' ?>">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><?= $item['icon'] ?></svg>
                     <?= e($item['label']) ?>
                 </a>
-                <?php endforeach; ?>
-            </nav>
-            <div class="sidebar-footer">
-                <span class="version-badge">v<?= e($appVersion) ?></span>
-            </div>
-        </aside>
+            <?php endforeach; ?>
+        </nav>
 
-        <div class="main-wrapper">
-            <header class="topbar">
-                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-                </button>
-                <?php if (!empty($breadcrumbs)): ?>
+        <div class="sidebar-footer">
+            <span class="version-badge">v<?= e($appVersion) ?></span>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+
+        <header class="topbar">
+            <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+
+            <?php if (!empty($breadcrumbs)): ?>
                 <nav class="breadcrumbs" aria-label="Breadcrumb">
                     <?php foreach ($breadcrumbs as $crumb): ?>
                         <?php if (!empty($crumb['active'])): ?>
@@ -48,23 +71,51 @@
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </nav>
-                <?php endif; ?>
-                <div class="topbar-actions">
-                    <span class="user-badge"><?= e($currentUser ?? 'User') ?> · <?= e($currentRole ?? 'owner') ?></span>
-                    <a href="<?= e(url('/logout')) ?>" class="btn btn-ghost btn-sm">Sign out</a>
-                </div>
-            </header>
+            <?php endif; ?>
 
-            <main class="main-content">
-                <?= $content ?>
-            </main>
+            <div class="topbar-actions">
+                <span class="user-badge"><?= e($currentUser ?? 'User') ?> · <?= e($currentRole ?? 'owner') ?></span>
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+                <a href="<?= e(url('/logout')) ?>" class="btn btn-ghost btn-sm">Sign out</a>
+            </div>
+        </header>
 
-            <footer class="app-footer">
-                <span>&copy; <?= date('Y') ?> IBS-LK Business Manager</span>
-                <span>Runtime PHP <?= e(PHP_VERSION) ?> · v<?= e($appVersion) ?> <?= e($appReleaseLabel) ?></span>
-            </footer>
+        <div class="dev-mode-banner">
+            <strong>DEV / TEST MODE</strong>
+            <span class="dev-sep">·</span>No live sync
+            <span class="dev-sep">·</span>No payable finalization
+            <span class="dev-sep">·</span>No stock deduction
+            <span class="dev-sep">·</span>Opening balance draft only
         </div>
+
+        <main class="main-content">
+            <?= $content ?>
+        </main>
+
+        <footer class="app-footer">
+            <span>&copy; <?= date('Y') ?> IBS-LK Business Manager</span>
+            <span>PHP <?= e(PHP_VERSION) ?> · v<?= e($appVersion) ?> <?= e($appReleaseLabel) ?></span>
+        </footer>
+
     </div>
-    <script src="<?= e(asset('js/app.js')) ?>"></script>
+</div>
+<script src="<?= e(asset('js/app.js')) ?>"></script>
 </body>
 </html>

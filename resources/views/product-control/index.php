@@ -5,7 +5,7 @@
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Product / Variant Setup Notes</h2></div>
     <div class="card-body">
         <ul class="feature-list">
@@ -25,14 +25,14 @@
             <?php if (!empty($writeGateProductCreateReady)): ?>
             <form method="post" action="<?= e(url('/product-control/product/create')) ?>">
                 <?= $csrfField ?? '' ?>
-                <div class="form-grid" style="display: grid; gap: 0.75rem; max-width: 640px;">
-                    <label>Product name *<input type="text" name="product_name" required class="form-input" style="width:100%"></label>
-                    <label>Supplier model<input type="text" name="supplier_model" class="form-input" style="width:100%" placeholder="e.g. IBS-STROLLER"></label>
-                    <label>Product cost<input type="number" name="product_cost" step="0.01" min="0" class="form-input" style="width:100%"></label>
-                    <label>Vendor stock<input type="number" name="vendor_stock" min="0" value="0" class="form-input" style="width:100%"></label>
-                    <label>Low warning<input type="number" name="low_warning_threshold" min="0" class="form-input" style="width:100%" placeholder="Warning only"></label>
-                    <button type="submit" class="btn btn-primary">Create product</button>
-                </div>
+        <div class="form-grid">
+            <label>Product name *<input type="text" name="product_name" required class="form-input"></label>
+            <label>Supplier model<input type="text" name="supplier_model" class="form-input" placeholder="e.g. IBS-STROLLER"></label>
+            <label>Product cost<input type="number" name="product_cost" step="0.01" min="0" class="form-input"></label>
+            <label>Vendor stock<input type="number" name="vendor_stock" min="0" value="0" class="form-input"></label>
+            <label>Low warning<input type="number" name="low_warning_threshold" min="0" class="form-input" placeholder="Warning only"></label>
+            <button type="submit" class="btn btn-primary">Create product</button>
+        </div>
             </form>
             <?php else: ?>
             <?php view('partials.write-gate-warning', ['writeGateReady' => false, 'writeGate' => $writeGateProductCreate ?? []]); ?>
@@ -46,28 +46,28 @@
             <?php if (!empty($writeGateVariantFormReady)): ?>
             <form method="post" action="<?= e(url('/product-control/variant/create')) ?>">
                 <?= $csrfField ?? '' ?>
-                <div class="form-grid" style="display: grid; gap: 0.75rem; max-width: 640px;">
+                <div class="form-grid">
                     <label>Product *
                         <?php if (!empty($productSelectOptions)): ?>
-                        <select name="product_id" required class="form-input" style="width:100%">
+                        <select name="product_id" required class="form-input">
                             <option value="">ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Select product ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</option>
                             <?php foreach ($productSelectOptions as $option): ?>
                             <option value="<?= e((string) $option['id']) ?>"><?= e($option['label']) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <?php else: ?>
-                        <input type="number" name="product_id" required min="1" class="form-input" style="width:100%" placeholder="Product ID (create a product first)">
+                        <input type="number" name="product_id" required min="1" class="form-input" placeholder="Product ID (create a product first)">
                         <span class="page-description">No products loaded ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â enter Product ID manually or create a product first.</span>
                         <?php endif; ?>
                     </label>
-                    <label>Option Name *<input type="text" name="option_name" required class="form-input" style="width:100%" placeholder="e.g. Color"></label>
-                    <label>Option Value *<input type="text" name="option_value" required class="form-input" style="width:100%" placeholder="e.g. Black"></label>
-                    <label>Supplier Model<input type="text" name="supplier_model" class="form-input" style="width:100%" placeholder="Recommended ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â e.g. IBS-STROLLER-BLACK"></label>
-                    <label>Product Cost *<input type="number" name="product_cost" step="0.01" min="0" required class="form-input" style="width:100%"></label>
-                    <label>Vendor Stock *<input type="number" name="vendor_stock" min="0" value="0" required class="form-input" style="width:100%"></label>
-                    <label>Low Warning<input type="number" name="low_warning_threshold" min="0" class="form-input" style="width:100%" placeholder="Saved on parent product"></label>
+                    <label>Option Name *<input type="text" name="option_name" required class="form-input" placeholder="e.g. Color"></label>
+                    <label>Option Value *<input type="text" name="option_value" required class="form-input" placeholder="e.g. Black"></label>
+                    <label>Supplier Model<input type="text" name="supplier_model" class="form-input" placeholder="Recommended ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â e.g. IBS-STROLLER-BLACK"></label>
+                    <label>Product Cost *<input type="number" name="product_cost" step="0.01" min="0" required class="form-input"></label>
+                    <label>Vendor Stock *<input type="number" name="vendor_stock" min="0" value="0" required class="form-input"></label>
+                    <label>Low Warning<input type="number" name="low_warning_threshold" min="0" class="form-input" placeholder="Saved on parent product"></label>
                     <label>Status
-                        <select name="status" class="form-input" style="width:100%">
+                        <select name="status" class="form-input">
                             <option value="active">active</option>
                             <option value="inactive">inactive</option>
                         </select>
@@ -87,12 +87,12 @@
             <?php if (!empty($writeGateCostStockReady)): ?>
             <form method="post" action="<?= e(url('/product-control/cost-stock')) ?>">
                 <?= $csrfField ?? '' ?>
-                <div class="form-grid" style="display: grid; gap: 0.75rem; max-width: 640px;">
-                    <label>Product ID *<input type="number" name="product_id" required min="1" class="form-input" style="width:100%"></label>
-                    <label>Variant ID <input type="number" name="product_variant_id" min="1" class="form-input" style="width:100%" placeholder="Optional — use for variant/option cost-stock change"></label>
-                    <label>New cost<input type="number" name="product_cost" step="0.01" min="0" class="form-input" style="width:100%"></label>
-                    <label>New stock<input type="number" name="vendor_stock" min="0" class="form-input" style="width:100%"></label>
-                    <label>Note<input type="text" name="note" class="form-input" style="width:100%"></label>
+                <div class="form-grid">
+                    <label>Product ID *<input type="number" name="product_id" required min="1" class="form-input"></label>
+                    <label>Variant ID <input type="number" name="product_variant_id" min="1" class="form-input" placeholder="Optional — use for variant/option cost-stock change"></label>
+                    <label>New cost<input type="number" name="product_cost" step="0.01" min="0" class="form-input"></label>
+                    <label>New stock<input type="number" name="vendor_stock" min="0" class="form-input"></label>
+                    <label>Note<input type="text" name="note" class="form-input"></label>
                     <button type="submit" class="btn btn-primary">Save cost/stock with history</button>
                 </div>
             </form>
@@ -103,12 +103,12 @@
     </div>
 </div>
 
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Audit Confirmation: Cost / Stock History Notes (latest 20)</h2></div>
     <div class="card-body">
         <p class="page-description"><?= e($costStockHistoryDisplay['status_message'] ?? 'Cost/stock audit history is not fully ready yet.') ?></p>
         <?php if (!empty($costStockHistoryDisplay['rows'])): ?>
-        <table class="data-table" style="width:100%; margin-top: 1rem;">
+        <table class="data-table mt-1">
             <thead>
                 <tr>
                     <th>Product</th>
@@ -143,17 +143,17 @@
             </tbody>
         </table>
         <?php elseif (!empty($costStockHistoryDisplay['cost_table_exists']) || !empty($costStockHistoryDisplay['stock_table_exists'])): ?>
-        <p class="page-description" style="margin-top: 1rem;">No audit history rows yet. Save cost/stock with a note using the form above.</p>
+        <p class="page-description mt-1">No audit history rows yet. Save cost/stock with a note using the form above.</p>
         <?php endif; ?>
     </div>
 </div>
 
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Product Variants / Options (up to 50 rows)</h2></div>
     <div class="card-body">
         <p class="page-description"><?= e($variantDisplay['status_message'] ?? '') ?></p>
         <?php if (!empty($variantDisplay['rows'])): ?>
-        <table class="data-table" style="width:100%; margin-top: 1rem;">
+        <table class="data-table mt-1">
             <thead>
                 <tr>
                     <th>Variant ID</th>
@@ -182,21 +182,21 @@
             </tbody>
         </table>
         <?php elseif (!empty($variantDisplay['table_exists'])): ?>
-        <p class="page-description" style="margin-top: 1rem;">No variant/option rows yet. Add a variant using the form above.</p>
+        <p class="page-description mt-1">No variant/option rows yet. Add a variant using the form above.</p>
         <?php endif; ?>
     </div>
 </div>
 
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Product Inventory</h2>
-<p class="page-description" style="margin-bottom: 1rem;">Live Read Inventory (SELECT only). No sync, no migration apply from this page.</p>
+<h2 class="section-heading mt-0 mb-075">Read-Only Product Inventory</h2>
+<p class="page-description mb-1">Live Read Inventory (SELECT only). No sync, no migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $productReadInventory, 'cardTitle' => 'Products']); ?>
 <?php view('partials.read-inventory-card', ['readInventory' => $productVariantReadInventory, 'cardTitle' => 'Product Variants (raw read inventory)']); ?>
 <?php view('partials.read-inventory-card', ['readInventory' => $productCostHistoryReadInventory, 'cardTitle' => 'Product Cost History (raw read inventory)']); ?>
 <?php view('partials.read-inventory-card', ['readInventory' => $productStockHistoryReadInventory, 'cardTitle' => 'Product Stock History (raw read inventory)']); ?>
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<h2 class="section-heading mt-15 mb-1">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

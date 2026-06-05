@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.9',
-    'release_label' => 'Manual Order Create QA and Audit Visibility Repair',
+    'version' => '0.4.3.0',
+    'release_label' => 'IBS-LK Light/Dark Modern SaaS UI Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

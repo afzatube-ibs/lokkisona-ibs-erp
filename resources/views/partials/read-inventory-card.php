@@ -75,12 +75,12 @@ $shouldRedactColumn = static function (string $column, array $inventory): bool {
             </div>
         </dl>
 
-        <?php if (!empty($inventory['columns'])): ?>
-            <p class="page-description" style="margin-top: 1rem;"><strong>Model columns:</strong> <?= e(implode(', ', $inventory['columns'])) ?></p>
-        <?php endif; ?>
+    <?php if (!empty($inventory['columns'])): ?>
+        <p class="page-description mt-1"><strong>Model columns:</strong> <?= e(implode(', ', $inventory['columns'])) ?></p>
+    <?php endif; ?>
 
-        <?php if (!empty($inventory['rows'])): ?>
-            <table class="data-table" style="margin-top: 1rem; width: 100%;">
+    <?php if (!empty($inventory['rows'])): ?>
+        <table class="data-table mt-1">
                 <thead>
                     <tr>
                         <?php foreach ($inventory['columns'] as $column): ?>
@@ -103,14 +103,15 @@ $shouldRedactColumn = static function (string $column, array $inventory): bool {
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <p class="page-description" style="margin-top: 0.75rem;"><?= e($inventory['status_message'] ?? '') ?></p>
-        <?php else: ?>
-            <p class="page-description" style="margin-top: 1rem;">
-                <span class="badge badge-warn">Empty state</span>
-                <?= e($inventory['status_message'] ?? 'Read inventory unavailable.') ?>
-            </p>
-        <?php endif; ?>
+        <p class="page-description mt-075"><?= e($inventory['status_message'] ?? '') ?></p>
+    <?php else: ?>
+        <div class="empty-state">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/></svg>
+            <span class="empty-state-text"><span class="badge badge-warn">Empty state</span></span>
+            <span class="empty-state-sub"><?= e($inventory['status_message'] ?? 'Read inventory unavailable.') ?></span>
+        </div>
+    <?php endif; ?>
 
-        <p class="page-description" style="margin-top: 0.75rem;">SELECT only. No database writes in this release. See <a href="<?= e(url('/database-safety')) ?>">Database Safety</a> for repository inventory and manual migration rules.</p>
+    <p class="page-description mt-075">SELECT only. No database writes in this release. See <a href="<?= e(url('/database-safety')) ?>">Database Safety</a> for repository inventory and manual migration rules.</p>
     </div>
 </div>
