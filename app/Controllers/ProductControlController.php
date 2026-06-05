@@ -7,10 +7,14 @@ use App\Database;
 use App\Database\TableName;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\ProductCostHistory;
+use App\Models\ProductStockHistory;
 use App\Permission;
 use App\Csrf;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
+use App\Services\ReadOnly\ProductCostHistoryReadService;
+use App\Services\ReadOnly\ProductStockHistoryReadService;
 use App\ReadFoundation\WriteGate;
 use App\Services\Write\ProductCostStockWriteService;
 use App\Services\Write\ProductVariantWriteService;
@@ -137,6 +141,112 @@ class ProductControlController extends Controller
         return $options;
     }
 
+
+    private function buildCostStockHistoryDisplay(array $productReadInventory, array $productVariantReadInventory, array $costHistoryInventory, array $stockHistoryInventory): array
+    {
+        $display = [
+            'status_message' => 'Cost/stock history tables are not fully ready yet.',
+            'cost_status_message' => $costHistoryInventory['status_message'] ?? 'Cost history unavailable.',
+            'stock_status_message' => $stockHistoryInventory['status_message'] ?? 'Stock history unavailable.',
+            'cost_table_exists' => (bool) ($costHistoryInventory['table_exists'] ?? false),
+            'stock_table_exists' => (bool) ($stockHistoryInventory['table_exists'] ?? false),
+            'rows' => [],
+        ];
+
+        $productNames = [];
+        foreach ($productReadInventory['rows'] ?? [] as $product) {
+            $productId = (int) ($product['product_id'] ?? 0);
+            if ($productId > 0) {
+                $productNames[$productId] = trim((string) ($product['product_name'] ?? ''));
+            }
+        }
+
+        $variantLabels = [];
+        foreach ($productVariantReadInventory['rows'] ?? [] as $variant) {
+            $variantId = (int) ($variant['product_variant_id'] ?? 0);
+            if ($variantId <= 0) {
+                continue;
+            }
+
+            $labelParts = [];
+            $optionName = trim((string) ($variant['option_name'] ?? ''));
+            $optionValue = trim((string) ($variant['option_value'] ?? ''));
+            $supplierModel = trim((string) ($variant['supplier_model'] ?? ''));
+
+            if ($optionName !== '' || $optionValue !== '') {
+                $labelParts[] = trim($optionName . ': ' . $optionValue, ': ');
+            }
+
+            if ($supplierModel !== '') {
+                $labelParts[] = $supplierModel;
+            }
+
+            $variantLabels[$variantId] = $labelParts ? implode(' / ', $labelParts) : 'Variant #' . $variantId;
+        }
+
+        if (in_array($costHistoryInventory['status'] ?? '', ['ok', 'empty'], true)) {
+            foreach ($costHistoryInventory['rows'] ?? [] as $row) {
+                $productId = (int) ($row['product_id'] ?? 0);
+                $variantId = (int) ($row['product_variant_id'] ?? 0);
+
+                $display['rows'][] = [
+                    'type' => 'Cost',
+                    'history_id' => $row['product_cost_history_id'] ?? '',
+                    'sort_id' => (int) ($row['product_cost_history_id'] ?? 0),
+                    'product_id' => $productId,
+                    'product_name' => $productNames[$productId] ?? ('Product #' . $productId),
+                    'product_variant_id' => $variantId,
+                    'variant_label' => $variantId > 0 ? ($variantLabels[$variantId] ?? ('Variant #' . $variantId)) : 'Product level',
+                    'old_value' => $row['old_cost'] ?? '',
+                    'new_value' => $row['new_cost'] ?? '',
+                    'change_type' => 'cost_update',
+                    'note' => $row['note'] ?? '',
+                    'created_at' => $row['created_at'] ?? '',
+                ];
+            }
+        }
+
+        if (in_array($stockHistoryInventory['status'] ?? '', ['ok', 'empty'], true)) {
+            foreach ($stockHistoryInventory['rows'] ?? [] as $row) {
+                $productId = (int) ($row['product_id'] ?? 0);
+                $variantId = (int) ($row['product_variant_id'] ?? 0);
+
+                $display['rows'][] = [
+                    'type' => 'Stock',
+                    'history_id' => $row['product_stock_history_id'] ?? '',
+                    'sort_id' => (int) ($row['product_stock_history_id'] ?? 0),
+                    'product_id' => $productId,
+                    'product_name' => $productNames[$productId] ?? ('Product #' . $productId),
+                    'product_variant_id' => $variantId,
+                    'variant_label' => $variantId > 0 ? ($variantLabels[$variantId] ?? ('Variant #' . $variantId)) : 'Product level',
+                    'old_value' => $row['old_stock'] ?? '',
+                    'new_value' => $row['new_stock'] ?? '',
+                    'change_type' => $row['change_type'] ?? 'stock_update',
+                    'note' => $row['note'] ?? '',
+                    'created_at' => $row['created_at'] ?? '',
+                ];
+            }
+        }
+
+        usort($display['rows'], function (array $a, array $b): int {
+            $timeCompare = strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? ''));
+            if ($timeCompare !== 0) {
+                return $timeCompare;
+            }
+
+            return ((int) ($b['sort_id'] ?? 0)) <=> ((int) ($a['sort_id'] ?? 0));
+        });
+
+        $display['rows'] = array_slice($display['rows'], 0, 20);
+
+        if (!empty($display['rows'])) {
+            $display['status_message'] = 'Showing latest cost/stock history changes with saved notes.';
+        } elseif ($display['cost_table_exists'] || $display['stock_table_exists']) {
+            $display['status_message'] = 'History tables are ready. No cost/stock history rows yet.';
+        }
+
+        return $display;
+    }
     private function buildVariantDisplayFromInventories(array $productReadInventory, array $productVariantReadInventory): array
     {
         $display = [
@@ -202,6 +312,30 @@ class ProductControlController extends Controller
         );
     }
 
+
+    private function buildProductCostHistoryReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ProductCostHistory::class,
+            ProductCostHistoryReadService::class,
+            'ProductCostHistory',
+            'ProductCostHistoryReadService',
+            'ProductCostHistoryRepository',
+            'product cost history'
+        );
+    }
+
+    private function buildProductStockHistoryReadInventory()
+    {
+        return $this->buildEntityReadInventory(
+            ProductStockHistory::class,
+            ProductStockHistoryReadService::class,
+            'ProductStockHistory',
+            'ProductStockHistoryReadService',
+            'ProductStockHistoryRepository',
+            'product stock history'
+        );
+    }
     private function buildEntityReadInventory(
         string $modelClass,
         string $serviceClass,
@@ -244,7 +378,7 @@ class ProductControlController extends Controller
 
             if (!$tableExists) {
                 $defaults['status'] = 'table_missing';
-                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0003_business_sources_suppliers_products.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available â€” migration `0003_business_sources_suppliers_products.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
 
                 return $defaults;
             }
@@ -359,7 +493,7 @@ class ProductControlController extends Controller
             ],
             [
                 'field' => 'Low Warning',
-                'rule' => 'Warning only — does not auto-block orders, dispatch, or payable workflows.',
+                'rule' => 'Warning only â€” does not auto-block orders, dispatch, or payable workflows.',
             ],
         ];
     }
@@ -413,7 +547,7 @@ class ProductControlController extends Controller
                 'Vendor Stock belongs to internal ERP product/variant, not to each website/source.',
                 'Lokkisona.com (OpenCart) and Sonamoni.com.bd (WooCommerce) source products may map to the same ERP product/variant.',
                 'Same supplier cost can be shared across mapped source products.',
-                'Stock deduction later combines demand from all business sources — see Sync Preview planning foundation.',
+                'Stock deduction later combines demand from all business sources â€” see Sync Preview planning foundation.',
             ],
         ];
     }

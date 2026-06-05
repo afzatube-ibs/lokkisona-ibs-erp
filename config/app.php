@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.2.5',
-    'release_label' => 'Product Variant / Option Entry Safety and UI Repair',
+    'version' => '0.4.2.6',
+    'release_label' => 'Cost Stock History Visibility Repair',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',
