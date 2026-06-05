@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.4.2.5 Product Variant / Option Entry Safety and UI Repair"
+$appVersionLabel = ""
 $writePathWhitelistDirs = @("app/Services/Write", "app/Repositories/Write")
 $routeSmokeCount = 0
 
@@ -55,6 +55,16 @@ function Show-Footer {
         }
     }
     Write-Host "========================================"
+}
+
+function Get-AppConfigValue($key) {
+    $appConfigPath = Join-Path $root "config/app.php"
+    $configContent = Get-Content -Raw -Path $appConfigPath
+    if ($configContent -match "'$key'\s*=>\s*'([^']*)'") {
+        return $Matches[1]
+    }
+
+    Fail "Could not read '$key' from config/app.php." "Version" "config/app.php" "Ensure config/app.php defines '$key'."
 }
 
 function Find-Php {
@@ -126,6 +136,10 @@ function Wait-ForServer($baseUrl) {
 
 Set-Location $root
 
+$appVersion = Get-AppConfigValue "version"
+$appReleaseLabel = Get-AppConfigValue "release_label"
+$appVersionLabel = "v$appVersion $appReleaseLabel"
+
 try {
     $php = Find-Php
     $phpFiles = Get-ChildItem -Path @("app", "config", "public", "resources", "routes") -Filter "*.php" -Recurse -File
@@ -165,8 +179,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.4\.2\.5") {
-        Fail "Version check failed: /version does not contain v0.4.2.5." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.4.2.5."
+    if ($versionResponse.Content -notmatch [regex]::Escape("v$appVersion")) {
+        Fail "Version check failed: /version does not contain v$appVersion." "Version" "/version" "Update config/app.php and VersionController so /version displays v$appVersion."
     }
     Ok "Version"
 
