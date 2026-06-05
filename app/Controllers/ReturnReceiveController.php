@@ -3,14 +3,18 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\ReturnReceive;
 use App\Permission;
+use App\Services\ReadOnly\ReturnReceiveReadService;
 
 class ReturnReceiveController extends Controller
 {
     public function index()
     {
         $this->authorize('return_receive.view');
-        ActivityLog::record('return_receive_access', 'Return Receive and Review Batch planning foundation page viewed');
+        ActivityLog::record('return_receive_access', 'Return Receive read foundation page viewed');
 
         $this->render('return-receive.index', [
             'pageTitle' => 'Return Receive',
@@ -19,6 +23,7 @@ class ReturnReceiveController extends Controller
                 ['label' => 'Return Receive', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'supplierReturnFlow' => $this->supplierReturnFlow(),
@@ -41,6 +46,67 @@ class ReturnReceiveController extends Controller
             'plannedItemFields' => $this->plannedItemFields(),
             'plannedAdjustmentFields' => $this->plannedAdjustmentFields(),
         ]);
+    }
+
+    private function buildReadInventory()
+    {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => ReturnReceive::table(),
+            'prefixed_table' => TableName::forModel(ReturnReceive::class),
+            'model_class' => 'ReturnReceive',
+            'primary_key' => ReturnReceive::primaryKey(),
+            'columns' => ReturnReceive::columns(),
+            'read_service' => 'ReturnReceiveReadService',
+            'read_repository' => 'ReturnReceiveRepository',
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new ReturnReceiveReadService();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0006_dispatch_returns_payables.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No return receive records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 return receive records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentContext()

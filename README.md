@@ -1,8 +1,23 @@
 # IBS-LK Business Manager
 
-**v0.2.6 Order and Order Item Read Foundation**
+**v0.2.7 Dispatch, Return, and Payable Read Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.7
+
+v0.2.7 extends the read-only module pattern to Dispatch Reports, Return Receive, and Supplier Payables. Each page shows live read-only inventory while keeping all planning foundation content below. No dispatch batch creation, no return submit, no payable ledger creation, no supplier payment, no database writes, no migrations applied.
+
+- `/dispatch-reports` calls `DispatchReportReadService` for `ibs_dispatch_reports`.
+- `/return-receive` calls `ReturnReceiveReadService` for `ibs_return_receives`.
+- `/supplier-payables` calls `PayableLedgerReadService` for `ibs_payable_ledgers`.
+- New SELECT-only repositories and read services for DispatchReport, ReturnReceive, and PayableLedger.
+- Graceful empty states when MySQL is unavailable or migration `0006_dispatch_returns_payables.sql` is not manually applied yet.
+- SELECT only. No database writes and no migration apply from these pages.
+
+### Dispatch, Return, and Payable Read Inventory
+
+Read services delegate to repositories and `QueryGuard`. If tables do not exist yet, pages show "Not applied" badges and clear migration-not-applied messages while the checkpoint stays green.
 
 ## What's New in v0.2.6
 

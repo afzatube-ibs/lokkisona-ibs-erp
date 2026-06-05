@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.2.6',
-    'release_label' => 'Order and Order Item Read Foundation',
+    'version' => '0.2.7',
+    'release_label' => 'Dispatch, Return, and Payable Read Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

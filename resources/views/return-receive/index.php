@@ -1,7 +1,14 @@
 <div class="page-header">
     <h1 class="page-title">Return Receive</h1>
-    <p class="page-description">Return Receive &amp; Review Batch Planning Foundation — owner/admin controlled. No return tables, no payable adjustment records, no order/dispatch/payable links, no OpenCart connection, and no return records are written in this release.</p>
+    <p class="page-description">Return Receive &amp; Review Batch with live read-only inventory in v0.2.7. Planning foundation content remains below. No return receive submit, no payable adjustment, and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Return Receive Inventory (v0.2.7)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No return receive submit. No return batch action. No migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Return Receives']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

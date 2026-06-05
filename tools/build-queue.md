@@ -24,7 +24,9 @@ v0.2.5 extends the same read-only pattern to `/supplier-opening-balances` with S
 
 v0.2.6 extends the same read-only pattern to `/order-workflow` with Order, Order Item, and Order Workflow History read inventory cards plus new SELECT-only repositories and read services.
 
-The next major phase should move toward owner-approved write service layer work after manual migration apply. Order workflow actions, opening balance write services, and launch lock actions remain future owner-approved builds.
+v0.2.7 extends the same read-only pattern to `/dispatch-reports`, `/return-receive`, and `/supplier-payables` with DispatchReport, ReturnReceive, and PayableLedger read inventory cards.
+
+The next major phase should move toward owner-approved write service layer work after manual migration apply. Dispatch, return, payable, order workflow, opening balance write services, and launch lock actions remain future owner-approved builds.
 
 ## Semi-Automation Levels
 

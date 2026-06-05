@@ -1,7 +1,14 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Payables</h1>
-    <p class="page-description">Supplier Payable &amp; Settlement Planning Foundation. No payable/settlement tables, no order/dispatch links, no OpenCart connection, and no payable records are written in this release.</p>
+    <p class="page-description">Supplier Payable &amp; Settlement with live read-only inventory in v0.2.7. Planning foundation content remains below. No payable ledger creation, no supplier payment, and no database writes in this release.</p>
 </div>
+
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Payable Ledger Inventory (v0.2.7)</h2>
+<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No payable ledger creation. No supplier payment. No settlement action. No migration apply from this page.</p>
+
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Payable Ledgers']); ?>
+
+<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">

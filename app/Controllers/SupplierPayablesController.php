@@ -3,14 +3,18 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Database;
+use App\Database\TableName;
+use App\Models\PayableLedger;
 use App\Permission;
+use App\Services\ReadOnly\PayableLedgerReadService;
 
 class SupplierPayablesController extends Controller
 {
     public function index()
     {
         $this->authorize('supplier_payables.view');
-        ActivityLog::record('supplier_payables_access', 'Supplier Payable and Settlement planning foundation page viewed');
+        ActivityLog::record('supplier_payables_access', 'Supplier Payable read foundation page viewed');
 
         $this->render('supplier-payables.index', [
             'pageTitle' => 'Supplier Payables',
@@ -19,6 +23,7 @@ class SupplierPayablesController extends Controller
                 ['label' => 'Supplier Payables', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'productCostPayable' => $this->productCostPayable(),
@@ -36,6 +41,67 @@ class SupplierPayablesController extends Controller
             'plannedPaymentFields' => $this->plannedPaymentFields(),
             'plannedDeductionFields' => $this->plannedDeductionFields(),
         ]);
+    }
+
+    private function buildReadInventory()
+    {
+        $databaseStatus = Database::check();
+        $defaults = [
+            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
+            'service_ready' => false,
+            'logical_table' => PayableLedger::table(),
+            'prefixed_table' => TableName::forModel(PayableLedger::class),
+            'model_class' => 'PayableLedger',
+            'primary_key' => PayableLedger::primaryKey(),
+            'columns' => PayableLedger::columns(),
+            'read_service' => 'PayableLedgerReadService',
+            'read_repository' => 'PayableLedgerRepository',
+            'table_exists' => false,
+            'row_count' => 0,
+            'rows' => [],
+            'status' => 'error',
+            'status_message' => 'Read inventory could not be loaded safely.',
+        ];
+
+        try {
+            $service = new PayableLedgerReadService();
+            $defaults['service_ready'] = true;
+
+            if (!$defaults['database_connected']) {
+                $defaults['status'] = 'not_connected';
+                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
+
+                return $defaults;
+            }
+
+            $tableExists = $service->tableExists();
+            $defaults['table_exists'] = $tableExists;
+
+            if (!$tableExists) {
+                $defaults['status'] = 'table_missing';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0006_dispatch_returns_payables.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+
+                return $defaults;
+            }
+
+            $rowCount = $service->count();
+            $defaults['row_count'] = $rowCount;
+            $defaults['rows'] = $service->all(50, 0);
+
+            if ($rowCount === 0) {
+                $defaults['status'] = 'empty';
+                $defaults['status_message'] = 'Table ready. No payable ledger records yet (read-only; no writes in this release).';
+
+                return $defaults;
+            }
+
+            $defaults['status'] = 'ok';
+            $defaults['status_message'] = 'Showing up to 50 payable ledger records (SELECT only).';
+
+            return $defaults;
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function currentContext()
