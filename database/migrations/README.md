@@ -26,6 +26,7 @@ Draft files in this directory:
 - `0005_orders_manual_orders_workflow.sql`
 - `0006_dispatch_returns_payables.sql`
 - `0007_invoices_printing_supplier_tools.sql`
+- `0008_supplier_opening_balances_launch_cutovers.sql`
 
 Each draft must keep this header:
 

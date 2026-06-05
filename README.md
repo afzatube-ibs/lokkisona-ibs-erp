@@ -1,8 +1,18 @@
 # IBS-LK Business Manager
 
-**Version 0.1.26 - Supplier Opening Balance and Launch Cutover Planning Foundation**
+**v0.2.0 Real Database Schema Foundation**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension — no OCMOD, no ZIP installer. Deploy via Git.
+
+## What's New in v0.2.0
+
+v0.2.0 establishes the real database schema foundation. These additions are schema/skeleton scaffolding only; the application still does not execute any SQL, and schema changes remain manual owner/admin actions.
+
+- `app/Models/` folder with 16 model skeleton classes (`ActivityLog`, `BusinessSource`, `DispatchReport`, `Invoice`, `LaunchCutover`, `Order`, `OrderItem`, `OrderWorkflowHistory`, `PayableLedger`, `Product`, `ProductVariant`, `ReturnReceive`, `Role`, `Supplier`, `SupplierOpeningBalance`, `User`).
+- `database/migrations/` SQL draft files `0002` through `0008`, covering core users/roles/activity, business sources/suppliers/products, status mapping/sync, orders/manual orders/workflow, dispatch/returns/payables, invoices/printing/supplier tools, and supplier opening balances/launch cutovers.
+- New draft `0008_supplier_opening_balances_launch_cutovers.sql` adds the `supplier_opening_balances`, `supplier_opening_balance_adjustments`, `supplier_opening_balance_audits`, and `launch_cutovers` tables.
+
+All migration files remain manual drafts (`DRAFT ONLY` / `DO NOT AUTO RUN`) and are never executed by application page load.
 
 ## Requirements
 
@@ -112,6 +122,7 @@ Draft migration files:
 - `0005_orders_manual_orders_workflow.sql`
 - `0006_dispatch_returns_payables.sql`
 - `0007_invoices_printing_supplier_tools.sql`
+- `0008_supplier_opening_balances_launch_cutovers.sql`
 
 Migration draft safety workflow:
 

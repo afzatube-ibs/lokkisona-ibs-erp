@@ -10,7 +10,7 @@ $serverProcess = $null
 $serverStarted = $false
 $redIssues = @()
 $checkpointFailed = $false
-$appVersionLabel = "v0.1.26 Supplier Opening Balance and Launch Cutover Planning Foundation"
+$appVersionLabel = "v0.2.0 Real Database Schema Foundation"
 $routeSmokeCount = 0
 
 function Add-RedIssue($issue, $area, $filePage, $whatToFix) {
@@ -164,8 +164,8 @@ try {
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $loginResponse = Invoke-WebRequest -Uri "$baseUrl/login" -Method "POST" -Body @{ username = "admin"; password = "admin" } -WebSession $session -MaximumRedirection 5 -UseBasicParsing -TimeoutSec 10
     $versionResponse = Invoke-WebRequest -Uri "$baseUrl/version" -Method "GET" -WebSession $session -UseBasicParsing -TimeoutSec 10
-    if ($versionResponse.Content -notmatch "v0\.1\.26") {
-        Fail "Version check failed: /version does not contain v0.1.26." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.1.26."
+    if ($versionResponse.Content -notmatch "v0\.2\.0") {
+        Fail "Version check failed: /version does not contain v0.2.0." "Version" "/version" "Update config/app.php and VersionController so /version displays v0.2.0."
     }
     Ok "Version"
 
