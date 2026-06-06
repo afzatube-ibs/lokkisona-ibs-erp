@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.8.0',
-    'release_label' => 'Release Candidate Hardening',
+    'version' => '1.0.0',
+    'release_label' => 'Production Launch',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

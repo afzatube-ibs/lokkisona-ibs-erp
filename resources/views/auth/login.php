@@ -15,7 +15,7 @@
             <div class="login-brand">
                 <div class="brand-mark brand-mark-lg">IBS</div>
                 <h1 class="login-title">IBS-LK Business Manager</h1>
-                <p class="login-subtitle">Standalone ERP foundation</p>
+                <p class="login-subtitle">Supplier fulfillment ERP — Lokkisona / Sonamoni</p>
                 <span class="version-pill">v<?= e(config('app.version')) ?> <?= e(config('app.release_label')) ?></span>
             </div>
 
@@ -39,7 +39,9 @@
                 <button type="submit" class="btn btn-primary btn-block">Sign In</button>
             </form>
 
-            <p class="login-hint">Default credentials: <code>admin</code> / <code>admin</code></p>
+            <?php if (!empty($showDevCredentials)): ?>
+            <p class="login-hint">Local dev only: <code>admin</code> / <code>admin</code> · <code>supplier</code> / <code>supplier</code></p>
+            <?php endif; ?>
         </div>
 
         <footer class="login-footer">

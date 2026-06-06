@@ -1,7 +1,20 @@
 <div class="page-header">
     <h1 class="page-title">Version</h1>
-    <p class="page-description">Release information and platform details.</p>
+    <p class="page-description">Release information and platform details — v<?= e($info['version'] ?? '') ?> <?= e($info['codename'] ?? '') ?>.</p>
 </div>
+
+<?php if (($info['version'] ?? '') === '1.0.0'): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Production Launch</h2></div>
+    <div class="card-body">
+        <p class="page-description">v1.0.0 is the production-ready release. Complete staging QA, then follow <code>docs/PRODUCTION-LAUNCH.md</code> on the server (credentials, migrations, opening balance, controlled OpenCart sync). Stock deduction and live full sync remain blocked until separate owner builds.</p>
+        <ul class="feature-list">
+            <li>Staging: <code>docs/STAGING-QA-CHECKLIST.md</code></li>
+            <li>Handoff: <code>docs/V1.0.0-PRODUCTION-LAUNCH-HANDOFF.md</code></li>
+        </ul>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="version-hero">
     <div class="version-hero-mark">IBS</div>

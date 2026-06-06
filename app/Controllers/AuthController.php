@@ -12,6 +12,7 @@ class AuthController extends Controller
         view('auth.login', [
             'pageTitle' => 'Sign In',
             'error' => $_SESSION['login_error'] ?? null,
+            'showDevCredentials' => config('app.env', 'local') === 'local',
         ]);
         unset($_SESSION['login_error']);
     }

@@ -1,6 +1,20 @@
 # IBS-LK Business Manager
 
-**v0.5.6 Post-Staging Module Foundations**
+**v1.0.0 Production Launch**
+
+Standalone supplier fulfillment ERP for Lokkisona / Sonamoni (Iqbal & Brothers). Production cutover: `docs/PRODUCTION-LAUNCH.md` · Staging QA: `docs/STAGING-QA-CHECKLIST.md`.
+
+## What's New in v1.0.0
+
+- Production launch release tag — order workflow through settlements, return batch payables, controlled OpenCart Test Sync
+- Login page production polish (no dev credentials hint when `env` is not `local`)
+- Updated production and staging launch documentation
+
+## What's New in v0.8.0
+
+- Release candidate hardening — uniform version labels, settlements `url()` forms, finance routes stable
+
+## What's New in v0.5.6
 
 ## What's New in v0.5.6
 
