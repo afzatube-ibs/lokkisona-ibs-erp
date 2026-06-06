@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.5.2',
-    'release_label' => 'Staging Product Sync Deploy',
+    'version' => '1.6.2',
+    'release_label' => 'Modern SaaS UI Phase 3',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

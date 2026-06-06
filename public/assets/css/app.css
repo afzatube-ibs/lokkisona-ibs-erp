@@ -1,88 +1,181 @@
-/* IBS-LK Business Manager v0.4.5.0 — Responsive layout + UI foundation */
-
 /* =========================================================================
-   DESIGN TOKENS — Light theme (default)
+   DESIGN TOKENS — Modern SaaS system (v1.6 UI revamp)
+   Light theme (default)
+
+   Token layers:
+     1. Primitive scale  — raw neutral/brand ramps (not used directly in components)
+     2. Semantic surface — --surface-0/1/2, --border-*, --text-*, --ring-focus
+     3. Status           — --success/warn/error/info (+ soft backgrounds)
+     4. Compat aliases   — legacy --color-* names kept pointing at the new values
+                           so existing component CSS keeps working.
+   Components should prefer the semantic + status tokens. Avoid hardcoded hex.
    ========================================================================= */
 :root {
-    --color-primary:        #1a4d8c;
-    --color-primary-dark:   #0f3460;
-    --color-primary-light:  #2d6cb5;
-    --color-accent:         #e8a317;
-    --color-success:        #16a34a;
-    --color-warn:           #d97706;
-    --color-error:          #dc2626;
-    --color-info:           #0891b2;
+    /* ---- Brand ramp ---- */
+    --brand-50:   #eef4fb;
+    --brand-100:  #d9e6f6;
+    --brand-300:  #7aa7da;
+    --brand-500:  #2563b0;   /* primary */
+    --brand-600:  #1f5398;
+    --brand-700:  #18406f;
+    --accent:     #e8a317;
 
-    --color-bg:             #f0f4f8;
-    --color-bg-subtle:      #e8edf3;
-    --color-surface:        #ffffff;
-    --color-surface-raised: #ffffff;
-    --color-border:         #e2e8f0;
-    --color-border-strong:  #cbd5e1;
+    /* ---- Neutral ramp (cool slate, modern SaaS) ---- */
+    --n-0:   #ffffff;
+    --n-25:  #fbfcfe;
+    --n-50:  #f6f8fb;
+    --n-100: #eef2f7;
+    --n-150: #e6ecf3;
+    --n-200: #dde4ee;
+    --n-300: #cbd5e1;
+    --n-500: #64748b;
+    --n-600: #475569;
+    --n-700: #334155;
+    --n-800: #1e293b;
+    --n-900: #0f172a;
 
-    --color-text:           #1e293b;
-    --color-text-muted:     #64748b;
-    --color-text-subtle:    #94a3b8;
+    /* ---- 2. Semantic: surfaces ---- */
+    --surface-0:            var(--n-50);    /* app background */
+    --surface-1:            var(--n-0);     /* cards / panels */
+    --surface-2:            var(--n-100);   /* raised / hover / inset */
+    --surface-muted:        var(--n-100);   /* subtle inset panels */
+    --overlay:              rgba(15, 23, 42, 0.45);
 
-    --color-sidebar:        #0f2744;
-    --color-sidebar-hover:  #1a3a5c;
-    --color-sidebar-active: rgba(255,255,255,0.12);
-    --color-sidebar-text:   rgba(255,255,255,0.75);
+    /* ---- Semantic: borders ---- */
+    --border-default:       #e3e8f0;
+    --border-subtle:        #eef2f7;
+    --border-strong:        #cdd6e2;
+    --ring-focus:           rgba(37, 99, 176, 0.35);
+
+    /* ---- Semantic: text ---- */
+    --text-primary:         #1a2435;
+    --text-secondary:       #5b6677;
+    --text-tertiary:        #8a94a6;
+    --text-on-brand:        #ffffff;
+
+    /* ---- 3. Status (foreground + soft bg) ---- */
+    --success:              #15924f;
+    --success-soft:         rgba(21, 146, 79, 0.10);
+    --warn:                 #c2780a;
+    --warn-soft:            rgba(194, 120, 10, 0.12);
+    --error:                #d83a36;
+    --error-soft:           rgba(216, 58, 54, 0.10);
+    --info:                 #0e7aa6;
+    --info-soft:            rgba(14, 122, 166, 0.10);
+
+    /* ---- Sidebar (modernized navy) ---- */
+    --color-sidebar:        #0e1f38;
+    --color-sidebar-hover:  rgba(255,255,255,0.06);
+    --color-sidebar-active: rgba(122, 167, 218, 0.16);
+    --color-sidebar-text:   rgba(226,232,240,0.72);
 
     --font-family:          'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-    --radius:               8px;
+    /* ---- Radii ---- */
+    --radius-sm:            8px;
+    --radius:               10px;
+    --radius-md:            10px;
     --radius-lg:            14px;
+    --radius-xl:            18px;
     --radius-full:          9999px;
 
-    --shadow-sm:            0 1px 2px rgba(15,39,68,0.06);
-    --shadow:               0 1px 3px rgba(15,39,68,0.07), 0 1px 2px rgba(15,39,68,0.05);
-    --shadow-md:            0 4px 16px rgba(15,39,68,0.08), 0 2px 6px rgba(15,39,68,0.05);
+    /* ---- Shadows (soft, layered) ---- */
+    --shadow-sm:            0 1px 2px rgba(16,32,58,0.05);
+    --shadow:               0 1px 2px rgba(16,32,58,0.05), 0 2px 6px rgba(16,32,58,0.05);
+    --shadow-md:            0 2px 4px rgba(16,32,58,0.05), 0 8px 24px rgba(16,32,58,0.08);
+    --shadow-lg:            0 12px 40px rgba(16,32,58,0.12);
 
     --sidebar-width:        240px;
-
-    --kpi-accent-primary:   var(--color-primary);
-    --kpi-accent-info:      var(--color-info);
-    --kpi-accent-warn:      var(--color-warn);
-    --kpi-accent-success:   var(--color-success);
-    --kpi-accent-error:     var(--color-error);
-    --kpi-accent-muted:     var(--color-text-muted);
-    --kpi-accent-purple:    #7c3aed;
-    --kpi-accent-cyan:      #0e7490;
-    --color-primary-soft:   rgba(26, 77, 140, 0.08);
-    --workflow-stage-active-bg: rgba(26, 77, 140, 0.06);
     --topbar-height:        60px;
     --devbanner-height:     36px;
 
     --transition-fast:      0.12s ease;
-    --transition:           0.18s ease;
+    --transition:           0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---- 4. Compatibility aliases (legacy --color-* names) ---- */
+    --color-primary:        var(--brand-500);
+    --color-primary-dark:   var(--brand-700);
+    --color-primary-light:  var(--brand-300);
+    --color-accent:         var(--accent);
+    --color-success:        var(--success);
+    --color-warn:           var(--warn);
+    --color-error:          var(--error);
+    --color-info:           var(--info);
+
+    --color-bg:             var(--surface-0);
+    --color-bg-subtle:      var(--surface-2);
+    --color-surface:        var(--surface-1);
+    --color-surface-raised: var(--surface-1);
+    --color-border:         var(--border-default);
+    --color-border-strong:  var(--border-strong);
+
+    --color-text:           var(--text-primary);
+    --color-text-muted:     var(--text-secondary);
+    --color-text-subtle:    var(--text-tertiary);
+
+    --kpi-accent-primary:   var(--brand-500);
+    --kpi-accent-info:      var(--info);
+    --kpi-accent-warn:      var(--warn);
+    --kpi-accent-success:   var(--success);
+    --kpi-accent-error:     var(--error);
+    --kpi-accent-muted:     var(--text-secondary);
+    --kpi-accent-purple:    #7c3aed;
+    --kpi-accent-cyan:      #0e7490;
+    --color-primary-soft:   rgba(37, 99, 176, 0.08);
+    --workflow-stage-active-bg: rgba(37, 99, 176, 0.06);
 }
 
 /* =========================================================================
-   DARK THEME OVERRIDES
+   DARK THEME OVERRIDES — first-class, premium (not dimmed light)
    ========================================================================= */
 [data-theme="dark"] {
-    --color-bg:             #0f172a;
-    --color-bg-subtle:      #1a2540;
-    --color-surface:        #1e293b;
-    --color-surface-raised: #263248;
-    --color-border:         #334155;
-    --color-border-strong:  #475569;
+    --surface-0:            #0c1322;   /* app background */
+    --surface-1:            #131c2e;   /* cards */
+    --surface-2:            #1b2740;   /* raised / hover */
+    --overlay:              rgba(0, 0, 0, 0.6);
 
-    --color-text:           #f1f5f9;
-    --color-text-muted:     #94a3b8;
-    --color-text-subtle:    #64748b;
+    --border-default:       #283449;
+    --border-subtle:        #1e2a3e;
+    --border-strong:        #3a4961;
+    --ring-focus:           rgba(122, 167, 218, 0.45);
 
-    --color-sidebar:        #0a1628;
-    --color-sidebar-hover:  #162038;
-    --color-sidebar-active: rgba(255,255,255,0.10);
+    --text-primary:         #eef2f8;
+    --text-secondary:       #a6b2c4;
+    --text-tertiary:        #717f95;
+    --text-on-brand:        #ffffff;
 
-    --shadow-sm:            0 1px 2px rgba(0,0,0,0.3);
-    --shadow:               0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-    --shadow-md:            0 4px 16px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2);
+    --success:              #34d17e;
+    --success-soft:         rgba(52, 209, 126, 0.14);
+    --warn:                 #f0b34a;
+    --warn-soft:            rgba(240, 179, 74, 0.15);
+    --error:                #f87171;
+    --error-soft:           rgba(248, 113, 113, 0.14);
+    --info:                 #38bdf8;
+    --info-soft:            rgba(56, 189, 248, 0.14);
 
-    --color-primary-soft:   rgba(45, 108, 181, 0.18);
-    --workflow-stage-active-bg: rgba(45, 108, 181, 0.14);
+    --color-sidebar:        #0a1322;
+    --color-sidebar-hover:  rgba(255,255,255,0.05);
+    --color-sidebar-active: rgba(122, 167, 218, 0.18);
+    --color-sidebar-text:   rgba(214,222,233,0.70);
+
+    --brand-300:            #8fb4e0;
+    --brand-500:            #4f8fd4;
+
+    --shadow-sm:            0 1px 2px rgba(0,0,0,0.4);
+    --shadow:               0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md:            0 2px 6px rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.45);
+    --shadow-lg:            0 16px 48px rgba(0,0,0,0.55);
+
+    --color-primary-soft:   rgba(79, 143, 212, 0.18);
+    --workflow-stage-active-bg: rgba(79, 143, 212, 0.14);
+}
+
+/* Smooth theme transition (respect reduced-motion) */
+@media (prefers-reduced-motion: no-preference) {
+    body, .card, .sidebar, .topbar, .data-table, .btn, input, select, textarea,
+    .stat-card, .modal-panel, .badge {
+        transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+    }
 }
 
 /* =========================================================================
@@ -185,21 +278,29 @@ hr {
 }
 
 .btn:focus-visible {
-    outline: 2px solid var(--color-primary-light);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring-focus);
 }
 
 .btn-primary {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--text-on-brand);
     border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
     background: var(--color-primary-dark);
     border-color: var(--color-primary-dark);
-    color: #fff;
+    color: var(--text-on-brand);
     text-decoration: none;
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-success {
@@ -250,6 +351,19 @@ hr {
     background: var(--color-bg-subtle);
     color: var(--color-text);
     border-color: var(--color-border-strong);
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border-color: var(--border-default);
+}
+
+.btn-secondary:hover {
+    background: color-mix(in srgb, var(--surface-2) 80%, var(--text-primary) 8%);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
     text-decoration: none;
 }
 
@@ -305,8 +419,8 @@ hr {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: var(--color-primary-light);
-    box-shadow: 0 0 0 3px rgba(45,108,181,0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--ring-focus);
 }
 
 select.form-input,
@@ -337,6 +451,12 @@ select.form-input,
 
 .form-grid-wide {
     max-width: 760px;
+}
+
+.form-input-sm {
+    width: auto;
+    padding: 0.375rem 2rem 0.375rem 0.6rem;
+    font-size: 0.8125rem;
 }
 
 .form-grid label {
@@ -401,8 +521,9 @@ select.form-input,
     width: 100%;
     max-width: 420px;
     background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
     padding: 2.5rem 2rem;
 }
 
@@ -437,7 +558,7 @@ select.form-input,
     margin: 0 0 0.25rem;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-primary-dark);
+    color: var(--text-primary);
 }
 
 .login-subtitle {
@@ -449,7 +570,7 @@ select.form-input,
 .version-pill {
     display: inline-block;
     padding: 0.25rem 0.75rem;
-    background: var(--color-bg);
+    background: var(--surface-2);
     color: var(--color-primary);
     font-size: 0.75rem;
     font-weight: 600;
@@ -570,7 +691,7 @@ select.form-input,
     font-weight: 500;
     font-size: 0.875rem;
     transition: background var(--transition-fast), color var(--transition-fast);
-    border-left: 3px solid transparent;
+    position: relative;
     text-decoration: none;
 }
 
@@ -583,7 +704,19 @@ select.form-input,
 .nav-item.active {
     background: var(--color-sidebar-active);
     color: #fff;
-    border-left-color: var(--color-accent);
+    font-weight: 600;
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 1.1rem;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
 }
 
 .nav-icon {
@@ -685,7 +818,9 @@ select.form-input,
 /* Topbar */
 .topbar {
     height: var(--topbar-height);
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
     border-bottom: 1px solid var(--color-border);
     display: flex;
     align-items: center;
@@ -799,9 +934,9 @@ select.form-input,
 
 /* DEV / TEST MODE banner */
 .dev-mode-banner {
-    background: #fffbeb;
-    border-bottom: 1px solid #fde68a;
-    color: #78350f;
+    background: var(--warn-soft);
+    border-bottom: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+    color: var(--warn);
     font-size: 0.75rem;
     font-weight: 500;
     padding: 0 1.5rem;
@@ -817,23 +952,14 @@ select.form-input,
 
 .dev-mode-banner strong {
     font-weight: 700;
-    color: #92400e;
+    color: var(--warn);
     margin-right: 0.625rem;
+    letter-spacing: 0.02em;
 }
 
 .dev-mode-banner .dev-sep {
     margin: 0 0.5rem;
     opacity: 0.4;
-}
-
-[data-theme="dark"] .dev-mode-banner {
-    background: rgba(234,179,8,0.08);
-    border-bottom-color: rgba(234,179,8,0.2);
-    color: #fde68a;
-}
-
-[data-theme="dark"] .dev-mode-banner strong {
-    color: #fcd34d;
 }
 
 /* Main content */
@@ -902,7 +1028,7 @@ select.form-input,
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border-subtle);
     overflow: hidden;
     max-width: 100%;
     min-width: 0;
@@ -915,7 +1041,7 @@ select.form-input,
 
 .card-header {
     padding: 1rem 1.375rem;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -1176,26 +1302,24 @@ select.form-input,
 .badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.2rem 0.55rem;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
     font-size: 0.6875rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    border-radius: 6px;
+    border-radius: var(--radius-full);
     white-space: nowrap;
+    border: 1px solid transparent;
 }
 
-.badge-ok      { background: #dcfce7; color: #166534; }
-.badge-warn    { background: #fef3c7; color: #92400e; }
-.badge-fail    { background: #fee2e2; color: #991b1b; }
-.badge-info    { background: #e0f2fe; color: #0369a1; }
-.badge-neutral { background: var(--color-bg-subtle); color: var(--color-text-muted); }
-
-[data-theme="dark"] .badge-ok      { background: rgba(22,163,74,0.15);  color: #86efac; }
-[data-theme="dark"] .badge-warn    { background: rgba(217,119,6,0.15);  color: #fcd34d; }
-[data-theme="dark"] .badge-fail    { background: rgba(220,38,38,0.15);  color: #fca5a5; }
-[data-theme="dark"] .badge-info    { background: rgba(8,145,178,0.15);  color: #67e8f9; }
-[data-theme="dark"] .badge-neutral { background: rgba(100,116,139,0.15); color: var(--color-text-muted); }
+.badge-ok,
+.badge-success { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 22%, transparent); }
+.badge-warn    { background: var(--warn-soft);    color: var(--warn);    border-color: color-mix(in srgb, var(--warn) 22%, transparent); }
+.badge-fail,
+.badge-error   { background: var(--error-soft);   color: var(--error);   border-color: color-mix(in srgb, var(--error) 22%, transparent); }
+.badge-info    { background: var(--info-soft);    color: var(--info);    border-color: color-mix(in srgb, var(--info) 22%, transparent); }
+.badge-neutral { background: var(--surface-2);    color: var(--text-secondary); border-color: var(--border-default); }
 
 /* =========================================================================
    STATUS BANNERS
@@ -2850,11 +2974,19 @@ body.modal-open { overflow: hidden; }
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--color-text-muted);
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 .pcc-field input[readonly] {
-    background: var(--color-bg);
-    color: var(--color-text-muted);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border-style: dashed;
+    cursor: not-allowed;
+}
+.pcc-field input:not([readonly]):not([type=checkbox]) {
+    background: var(--surface-1);
 }
 .pcc-variant-section { margin-top: 1rem; }
 .pcc-variant-table .pcc-inline-input {
@@ -3110,4 +3242,52 @@ body.modal-open { overflow: hidden; }
     .table-scroll { overflow: visible; }
     .print-document-card { border: none; }
     .print-document-card .card-header { border-bottom: 2px solid #111; }
+}
+
+/* =========================================================================
+   SYNC PREVIEW — action hierarchy bar (Phase 2)
+   ========================================================================= */
+.sync-action-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.875rem;
+    align-items: end;
+}
+
+.sync-action {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.sync-action-wide {
+    grid-column: span 1;
+}
+
+.sync-action-step {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+}
+
+.sync-import-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.35;
+}
+
+.sync-import-confirm input {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .sync-action-bar { grid-template-columns: 1fr; }
 }

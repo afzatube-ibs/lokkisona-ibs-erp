@@ -17,7 +17,7 @@ view('partials.write-gate-warning', [
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Status Mapping Writes</h2></div>
     <div class="card-body">
-        <form method="post" action="/status-mapping/create" class="form-grid">
+        <form method="post" action="<?= e(url('/status-mapping/create')) ?>" class="form-grid">
             <?= $csrfField ?? '' ?>
             <label>Business Source ID<input type="number" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>" min="1" required></label>
             <label>Source Status<input type="text" name="source_status" placeholder="Supplier Processing" required></label>
@@ -25,7 +25,7 @@ view('partials.write-gate-warning', [
             <label>Workflow Group<input type="text" name="workflow_group" value="workflow"></label>
             <button type="submit" class="btn btn-primary">Save Mapping</button>
         </form>
-        <form method="post" action="/status-mapping/seed-defaults" style="margin-top:1rem;">
+        <form method="post" action="<?= e(url('/status-mapping/seed-defaults')) ?>" style="margin-top:1rem;">
             <?= $csrfField ?? '' ?>
             <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
             <button type="submit" class="btn btn-secondary">Seed Lokkisona Defaults</button>
@@ -51,7 +51,7 @@ view('partials.write-gate-warning', [
                         <td><?= !empty($row['is_active']) ? 'Yes' : 'No' ?></td>
                         <td>
                             <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
-                            <form method="post" action="/status-mapping/toggle" style="display:inline;">
+                            <form method="post" action="<?= e(url('/status-mapping/toggle')) ?>" style="display:inline;">
                                 <?= $csrfField ?? '' ?>
                                 <input type="hidden" name="status_mapping_id" value="<?= e((string) ($row['status_mapping_id'] ?? '')) ?>">
                                 <input type="hidden" name="is_active" value="<?= !empty($row['is_active']) ? '0' : '1' ?>">

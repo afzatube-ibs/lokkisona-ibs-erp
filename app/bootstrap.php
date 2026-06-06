@@ -86,7 +86,10 @@ function url($path = '')
 
 function asset($path)
 {
-    return url('/assets/' . ltrim($path, '/'));
+    $version = (string) config('app.version', '1');
+    $query = $version !== '' ? '?v=' . rawurlencode($version) : '';
+
+    return url('/assets/' . ltrim($path, '/') . $query);
 }
 
 function e($value)

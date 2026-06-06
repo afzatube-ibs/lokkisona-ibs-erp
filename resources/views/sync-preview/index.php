@@ -17,29 +17,42 @@ view('partials.write-gate-warning', [
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Test Sync Actions</h2></div>
     <div class="card-body">
-        <form method="post" action="/sync-preview/run-test-sync" style="display:inline-block;margin-right:0.5rem;">
-            <?= $csrfField ?? '' ?>
-            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
-            <button type="submit" class="btn btn-primary">Run Test Sync</button>
-        </form>
-        <form method="post" action="/sync-preview/import" style="display:inline-block;">
-            <?= $csrfField ?? '' ?>
-            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
-            <input type="hidden" name="sync_preview_id" value="<?= e((string) ($testSyncPreview['latest_preview']['sync_preview_id'] ?? '')) ?>">
-            <label style="display:inline-flex;align-items:center;gap:0.35rem;margin-right:0.5rem;">
-                <input type="checkbox" name="import_confirmation" value="1" required>
-                Owner confirms eligible preview import
-            </label>
-            <button type="submit" class="btn btn-secondary">Import Eligible Rows</button>
-        </form>
-        <?php if (!empty($warehouseProductPullAvailable)): ?>
-        <form method="post" action="/sync-preview/pull-warehouse-products" style="display:inline-block;margin-left:0.5rem;">
-            <?= $csrfField ?? '' ?>
-            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
-            <button type="submit" class="btn btn-secondary">Pull warehouse products</button>
-        </form>
-        <?php endif; ?>
-        <p class="page-description" style="margin-top:0.75rem;">Full Sync stays hidden. One request only — no background loops. Warehouse pull upserts only <strong>From Warehouse = Yes</strong> OpenCart products into Product Control (does not overwrite supplier cost/stock).</p>
+        <div class="sync-action-bar">
+            <?php if (!empty($warehouseProductPullAvailable)): ?>
+            <div class="sync-action">
+                <span class="sync-action-step">Step 1 · Optional</span>
+                <form method="post" action="<?= e(url('/sync-preview/pull-warehouse-products')) ?>">
+                    <?= $csrfField ?? '' ?>
+                    <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+                    <button type="submit" class="btn btn-secondary btn-block">Pull warehouse products</button>
+                </form>
+            </div>
+            <?php endif; ?>
+
+            <div class="sync-action">
+                <span class="sync-action-step">Step 2 · Preview</span>
+                <form method="post" action="<?= e(url('/sync-preview/run-test-sync')) ?>">
+                    <?= $csrfField ?? '' ?>
+                    <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+                    <button type="submit" class="btn btn-primary btn-block">Run Test Sync</button>
+                </form>
+            </div>
+
+            <div class="sync-action sync-action-wide">
+                <span class="sync-action-step">Step 3 · Owner import</span>
+                <form method="post" action="<?= e(url('/sync-preview/import')) ?>">
+                    <?= $csrfField ?? '' ?>
+                    <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+                    <input type="hidden" name="sync_preview_id" value="<?= e((string) ($testSyncPreview['latest_preview']['sync_preview_id'] ?? '')) ?>">
+                    <label class="sync-import-confirm">
+                        <input type="checkbox" name="import_confirmation" value="1" required>
+                        <span>Owner confirms eligible preview import</span>
+                    </label>
+                    <button type="submit" class="btn btn-success btn-block">Import Eligible Rows</button>
+                </form>
+            </div>
+        </div>
+        <p class="page-description" style="margin-top:1rem;">Full Sync stays hidden. One request only — no background loops. Warehouse pull upserts only <strong>From Warehouse = Yes</strong> OpenCart products into Product Control (does not overwrite supplier cost/stock).</p>
     </div>
 </div>
 <?php endif; ?>

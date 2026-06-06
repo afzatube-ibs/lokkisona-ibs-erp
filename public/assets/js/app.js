@@ -45,10 +45,15 @@
         });
     }
 
-    /* Apply saved theme on load (also done inline in <head> to prevent flash) */
+    /* Apply saved theme on load (also done inline in <head> to prevent flash).
+       If nothing saved, follow the OS preference. */
     try {
         var saved = localStorage.getItem(THEME_KEY);
-        if (saved) { applyTheme(saved); }
+        if (saved) {
+            applyTheme(saved);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            applyTheme(DARK_VALUE);
+        }
     } catch (e) { /* storage blocked */ }
 
     /* ── Dispatch batch selection summary ── */
