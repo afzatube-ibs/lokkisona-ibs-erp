@@ -1,14 +1,5 @@
 <?php
-/* Nav section labels — maps first path of each group to a label.
- * Rendered inline before the first item in each group. */
-$navSectionMap = [
-    '/dashboard'             => 'Core',
-    '/roles-permissions'     => 'Admin',
-    '/database-safety'       => 'Dev / Database',
-    '/suppliers'             => 'Operations',
-    '/supplier-payables'     => 'Finance',
-    '/status-mapping'        => 'Tools & Sync',
-];
+$showDevBanner = in_array($appEnv ?? 'local', ['local', 'staging'], true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,16 +27,11 @@ $navSectionMap = [
         </div>
 
         <nav class="sidebar-nav">
-            <?php foreach ($navItems ?? [] as $item): ?>
-                <?php if (isset($navSectionMap[$item['path']])): ?>
-                    <span class="nav-section-label"><?= e($navSectionMap[$item['path']]) ?></span>
-                <?php endif; ?>
-                <a href="<?= e(url($item['path'])) ?>"
-                   class="nav-item <?= strpos($currentPath ?? '', $item['path']) !== false ? 'active' : '' ?>">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><?= $item['icon'] ?></svg>
-                    <?= e($item['label']) ?>
-                </a>
-            <?php endforeach; ?>
+            <?php view('partials.sidebar-nav', [
+                'navNavigation' => $navNavigation ?? [],
+                'currentPath' => $currentPath ?? '',
+                'appEnv' => $appEnv ?? 'local',
+            ]); ?>
         </nav>
 
         <div class="sidebar-footer">
@@ -107,13 +93,14 @@ $navSectionMap = [
             </div>
         </header>
 
+        <?php if (!empty($showDevBanner)): ?>
         <div class="dev-mode-banner">
             <strong>DEV / TEST MODE</strong>
             <span class="dev-sep">·</span>No live sync
-            <span class="dev-sep">·</span>No payable finalization
             <span class="dev-sep">·</span>No stock deduction
-            <span class="dev-sep">·</span>Opening balance draft only
+            <span class="dev-sep">·</span>Owner approval required for payables
         </div>
+        <?php endif; ?>
 
         <main class="main-content">
             <?= $content ?>

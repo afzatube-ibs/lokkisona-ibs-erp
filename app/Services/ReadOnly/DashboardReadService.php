@@ -5,6 +5,7 @@ namespace App\Services\ReadOnly;
 use App\ActivityLog;
 use App\Database\Connection;
 use App\Database\QueryGuard;
+use App\Domain\OrderWorkflowStatus;
 use App\Repositories\Write\OrderWriteRepository;
 use PDO;
 
@@ -88,10 +89,12 @@ class DashboardReadService
 
         $repo = new OrderWriteRepository();
         $activeOrders = 0;
+        $shippedAwaitingDispatch = 0;
         if ($repo->tableExists()) {
             foreach (['new_order', 'order_received', 'packaging', 'shipped', 'dispatch_report_created', 'delivery_stop', 'hub_return', 'order_returning'] as $status) {
                 $activeOrders += count($repo->findByStatus($status, 50));
             }
+            $shippedAwaitingDispatch = count($repo->findByStatus('shipped', 50));
         }
 
         return [
@@ -100,8 +103,93 @@ class DashboardReadService
             'dispatch_snapshot_total' => $dispatchTotal,
             'pending_returns' => $pendingReturns,
             'active_fulfillment_orders' => $activeOrders,
-            'sync_status' => 'Not connected — planning only',
+            'shipped_awaiting_dispatch' => $shippedAwaitingDispatch,
         ];
+    }
+
+    /**
+     * @return array<int, array{status: string, label: string, count: int, url: string}>
+     */
+    public function workflowStageCounts(): array
+    {
+        $repo = new OrderWriteRepository();
+        if (!$repo->tableExists()) {
+            return [];
+        }
+
+        $stages = [
+            'new_order',
+            'order_received',
+            'packaging',
+            'shipped',
+            'dispatch_report_created',
+            'delivery_stop',
+            'hub_return',
+            'order_returning',
+        ];
+
+        $rows = [];
+        foreach ($stages as $status) {
+            $count = count($repo->findByStatus($status, 50));
+            if ($count === 0) {
+                continue;
+            }
+            $rows[] = [
+                'status' => $status,
+                'label' => OrderWorkflowStatus::groupDisplayLabel($status),
+                'count' => $count,
+                'url' => '/order-workflow?status=' . rawurlencode($status),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, array{label: string, count: int, url: string, tone: string}>
+     */
+    public function needsAttention(): array
+    {
+        $metrics = $this->ownerMetrics();
+        $items = [];
+
+        if ((int) ($metrics['shipped_awaiting_dispatch'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Shipped — awaiting dispatch report',
+                'count' => (int) $metrics['shipped_awaiting_dispatch'],
+                'url' => '/dispatch-reports',
+                'tone' => 'warn',
+            ];
+        }
+
+        if ((int) ($metrics['pending_draft_entries'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Payable drafts pending approval',
+                'count' => (int) $metrics['pending_draft_entries'],
+                'url' => '/supplier-payables',
+                'tone' => 'warn',
+            ];
+        }
+
+        if ((int) ($metrics['pending_returns'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Returns pending receive / review',
+                'count' => (int) $metrics['pending_returns'],
+                'url' => '/return-receive',
+                'tone' => 'info',
+            ];
+        }
+
+        if ((int) ($metrics['active_fulfillment_orders'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Active fulfillment orders',
+                'count' => (int) $metrics['active_fulfillment_orders'],
+                'url' => '/order-workflow',
+                'tone' => 'primary',
+            ];
+        }
+
+        return $items;
     }
 
     public function recentNotes(): array

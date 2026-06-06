@@ -25,8 +25,11 @@ class DashboardController extends Controller
             'isSupplierView' => $isSupplier,
             'supplierTasks' => $isSupplier ? $service->supplierTaskCounts() : [],
             'ownerMetrics' => $isSupplier ? [] : $service->ownerMetrics(),
+            'workflowStageCounts' => $isSupplier ? [] : $service->workflowStageCounts(),
+            'needsAttention' => $isSupplier ? [] : $service->needsAttention(),
             'recentNotes' => $service->recentNotes(),
             'currentRole' => $role,
+            'welcomeDate' => date('l, d F Y'),
         ]);
     }
 }

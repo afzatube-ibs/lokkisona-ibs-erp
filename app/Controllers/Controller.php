@@ -20,6 +20,8 @@ class Controller
         $data['currentUser'] = Auth::user();
         $data['currentRole'] = Auth::role();
         $data['navItems'] = Permission::menuItems();
+        $data['navNavigation'] = Permission::menuNavigation();
+        $data['appEnv'] = config('app.env', 'local');
         $data['currentPath'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $data['canUseCalculator'] = Permission::can('supplier_calculator.view');
         $data['canUseQuickInvoice'] = Permission::can('supplier_quick_invoice.manage');

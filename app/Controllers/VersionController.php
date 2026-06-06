@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-07',
+            'release_date' => '2026-06-08',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.1.0 UI/UX Revamp: NexaERP-inspired owner command center — tiered sidebar (Primary Fulfillment/Finance/Catalog ~12 links, collapsed Setup & Admin / System / Developer tiers), env-gated DEV banner (local/staging only), dashboard welcome strip + 6 KPI cards + workflow breakdown + needs-attention widgets + recent activity; supplier dashboard keeps 4-link nav with matching KPI card styling; full dark/light theme via CSS tokens — no business-logic, schema, or route changes',
                 'v1.0.0 Production Launch: first production-ready release tag — full supplier fulfillment ERP for Iqbal & Brothers (order workflow, dispatch snapshots, payables, return batch deductions, settlements, reports, controlled OpenCart Test Sync); follow docs/PRODUCTION-LAUNCH.md on the server for credentials, migrations, opening balance cutover, and owner-approved live import (1–3 orders first); stock deduction and live full sync remain blocked until separate owner builds',
                 'v0.8.0 Release Candidate Hardening: stability + consistency pass — all 9 operations page subtitles now show "v<version> — <release label>", settlements form actions use the url() helper (no hardcoded paths), every one of the 69 routes verified to resolve to a real controller method, all controllers lint-clean (no duplicate methods, balanced braces — SupplierPayablesController::netPayableFormula confirmed intact), supplier role confirmed scoped away from payables/settlements/sync/migrations, no mojibake; no new schema, no new features',
                 'v0.7.3 Operations UI Completion: refactored dispatch-reports, return-receive, supplier-payables, sync-preview, status-mapping, invoice-printing to the gold-standard layout — compact safety strips replacing Safety Badges cards, primary actions first, all developer/planning content in collapsed planning-collapsible; removed the obsolete "Future Return Batch Plan" card (batching is live); added return-batch detail rows showing each return line; added OC Order Status to workflow cards; dynamic version on manual-orders/order-workflow subtitles; dashboard collapsible standardized',
