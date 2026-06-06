@@ -6,6 +6,14 @@ Run the local checkpoint after every build or foundation change:
 powershell -ExecutionPolicy Bypass -File tools/check-local.ps1
 ```
 
+Before ERP staging deploy (product sync from `staging.lokkisona.com`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/staging-product-sync-readiness.ps1
+```
+
+See [docs/STAGING-PRODUCT-SYNC.md](../docs/STAGING-PRODUCT-SYNC.md).
+
 The checkpoint:
 
 - Auto-detects PHP, checking `D:\xampp\php\php.exe` (Office PC), `E:\xampp\php\php.exe` (Home PC), `C:\xampp\php\php.exe`, then `php` from PATH.
