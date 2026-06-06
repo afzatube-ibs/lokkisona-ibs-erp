@@ -1,6 +1,6 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Settlements</h1>
-    <p class="page-description">Supplier settlement workflow — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Draft → Prepared → Owner Approved → Paid → Closed. Apply migration 0009 manually before write forms appear.</p>
+    <p class="ops-page-subtitle">Draft → Prepared → Owner Approved → Paid → Closed settlement periods.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -25,42 +25,26 @@ foreach ($settlementRows as $sRow) {
     }
 }
 ?>
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Open Periods</span>
-            <span class="stat-value"><?= e((string) $openCount) ?></span>
-        </div>
+<div class="kpi-grid kpi-grid-4">
+    <div class="kpi-card kpi-accent-primary">
+        <span class="kpi-label">Open Periods</span>
+        <span class="kpi-value"><?= e((string) $openCount) ?></span>
+        <span class="kpi-hint">Draft, prepared, or approved</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-warn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Awaiting Payment</span>
-            <span class="stat-value"><?= e((string) $awaitingPayment) ?></span>
-        </div>
+    <div class="kpi-card kpi-accent-warn">
+        <span class="kpi-label">Awaiting Payment</span>
+        <span class="kpi-value"><?= e((string) $awaitingPayment) ?></span>
+        <span class="kpi-hint">Owner approved, not paid</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-info">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Open Closing Value</span>
-            <span class="stat-value"><?= e(number_format($openValue, 2)) ?> BDT</span>
-        </div>
+    <div class="kpi-card kpi-accent-info">
+        <span class="kpi-label">Open Closing Value</span>
+        <span class="kpi-value"><?= e(number_format($openValue, 2)) ?></span>
+        <span class="kpi-hint">BDT · open periods total</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-success">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Closed Periods</span>
-            <span class="stat-value"><?= e((string) $closedCount) ?></span>
-        </div>
+    <div class="kpi-card kpi-accent-success">
+        <span class="kpi-label">Closed Periods</span>
+        <span class="kpi-value"><?= e((string) $closedCount) ?></span>
+        <span class="kpi-hint">Fully closed settlements</span>
     </div>
 </div>
 

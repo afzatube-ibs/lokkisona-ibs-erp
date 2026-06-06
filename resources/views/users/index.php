@@ -1,14 +1,19 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Users</h1>
-    <p class="page-description">User Management with live read-only inventory. Planning foundation content remains below. No user creation, no password change, and no database writes in this release.</p>
+    <p class="ops-page-subtitle">User management — config-based login active; no database user writes in this release.</p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only User Inventory (v0.2.8)</h2>
-<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No user creation. No password change. No migration apply from this page. Sensitive fields are redacted in row display.</p>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only User Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No user creation. No password change. No migration apply from this page. Sensitive fields are redacted in row display.</p>
+        <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Users']); ?>
+    </div>
+</details>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Users']); ?>
-
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
 <div class="card-grid">
     <div class="card">
@@ -108,3 +113,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>

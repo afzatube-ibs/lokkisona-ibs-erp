@@ -1,6 +1,6 @@
-<div class="page-header">
-    <h1 class="page-title">Supplier Opening Balance &amp; Launch Cutover</h1>
-    <p class="page-description">Opening balance create/approve and launch cutover lock — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Available when migration 0008 is applied.</p>
+<div class="page-header page-header-compact">
+    <h1 class="page-title">Supplier Opening Balances</h1>
+    <p class="ops-page-subtitle">Opening balance create/approve and launch cutover lock when migration 0008 is applied.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -26,13 +26,13 @@
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Opening Balance / Launch Cutover Inventory</h2>
-<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No payable ledger creation. No launch lock action. No migration apply from this page.</p>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Inventory &amp; Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No payable ledger creation. No launch lock action. No migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $openingBalanceReadInventory, 'cardTitle' => 'Supplier Opening Balances']); ?>
 <?php view('partials.read-inventory-card', ['readInventory' => $launchCutoverReadInventory, 'cardTitle' => 'Launch Cutovers']); ?>
-
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
 
 <div class="card-grid">
     <div class="card">
@@ -212,3 +212,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>

@@ -1,14 +1,12 @@
 <?php use App\Domain\ReturnReceiveType; ?>
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Return Receive</h1>
-    <p class="page-description">Vendor Return Receive — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Confirm returned parcel/product received using ERP order and product details. <?= e($stageNote ?? '') ?></p>
+    <p class="ops-page-subtitle">Confirm returned parcel received using ERP order and product details. <?= e($stageNote ?? '') ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="ops-safety-strip" style="margin-bottom:1.5rem;padding:0.65rem 1rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:0.8125rem;">
-    <strong>Safety:</strong> Receiving confirmation only · No payable · No supplier ledger · No stock movement · No invoice · No live sync
-</div>
+<?php view('partials.ops-safety-strip', ['message' => 'Receiving confirmation only · No payable · No supplier ledger · No stock movement · No invoice · No live sync']); ?>
 
 <?php
 $renderPendingSection = static function (

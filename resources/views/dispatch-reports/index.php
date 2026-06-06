@@ -1,13 +1,11 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Dispatch Reports</h1>
-    <p class="page-description">Daily Dispatch Report &amp; locked cost snapshots — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Iqbal &amp; Brothers. Eligible orders must be Shipped. Max 50 orders per batch. No payable, stock, invoice, or live sync.</p>
+    <p class="ops-page-subtitle">Daily dispatch batches from shipped orders — max 50 per batch, locked cost snapshots.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="ops-safety-strip" style="margin-bottom:1.5rem;padding:0.65rem 1rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:0.8125rem;">
-    <strong>Safety:</strong> No payable · No stock deducted · No invoice · No live sync · Cost snapshot is immutable once locked
-</div>
+<?php view('partials.ops-safety-strip', ['message' => 'No payable · No stock deducted · No invoice · No live sync · Cost snapshot is immutable once locked']); ?>
 
 <?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom: 1.5rem;">

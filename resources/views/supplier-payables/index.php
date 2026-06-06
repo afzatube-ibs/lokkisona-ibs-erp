@@ -1,41 +1,27 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Supplier Payables</h1>
-    <p class="page-description">Supplier Account / Payable Ledger — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Dispatch locked cost snapshots become Product Cost Payable drafts. Owner approval required before entries post to running balance.</p>
+    <p class="ops-page-subtitle">Dispatch locked cost snapshots become payable drafts — owner approval required before posting.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="ops-safety-strip" style="margin-bottom:1.5rem;padding:0.65rem 1rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:0.8125rem;">
-    <strong>Safety:</strong> All entries are draft until owner posts them · Payable uses locked dispatch snapshots only · No live sync
-</div>
+<?php view('partials.ops-safety-strip', ['message' => 'All entries are draft until owner posts them · Payable uses locked dispatch snapshots only · No live sync']); ?>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Net Payable</span>
-            <span class="stat-value"><?= e(number_format((float) ($ledgerSummary['net_payable'] ?? 0), 2)) ?> BDT</span>
-        </div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-accent-primary">
+        <span class="kpi-label">Net Payable</span>
+        <span class="kpi-value"><?= e(number_format((float) ($ledgerSummary['net_payable'] ?? 0), 2)) ?></span>
+        <span class="kpi-hint">BDT · running balance</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-warn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Pending Approval</span>
-            <span class="stat-value"><?= e((string) ($ledgerSummary['draft_count'] ?? 0)) ?> draft(s)</span>
-        </div>
+    <div class="kpi-card kpi-accent-warn">
+        <span class="kpi-label">Pending Approval</span>
+        <span class="kpi-value"><?= e((string) ($ledgerSummary['draft_count'] ?? 0)) ?></span>
+        <span class="kpi-hint">Draft entries awaiting post</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon stat-icon-success">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <div class="stat-content">
-            <span class="stat-label">Posted Entries</span>
-            <span class="stat-value"><?= e((string) ($ledgerSummary['posted_count'] ?? 0)) ?></span>
-        </div>
+    <div class="kpi-card kpi-accent-success">
+        <span class="kpi-label">Posted Entries</span>
+        <span class="kpi-value"><?= e((string) ($ledgerSummary['posted_count'] ?? 0)) ?></span>
+        <span class="kpi-hint">Approved ledger rows</span>
     </div>
 </div>
 

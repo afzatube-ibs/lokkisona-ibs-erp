@@ -1,6 +1,6 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Business Sources</h1>
-    <p class="page-description">Business source read inventory plus controlled create/edit — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Available when migration 0003 is applied.</p>
+    <p class="ops-page-subtitle">Business source create/edit when migration 0003 is applied.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -21,9 +21,11 @@
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory']); ?>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Inventory &amp; Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'business source', 'cardTitle' => 'Read-Only Inventory']); ?>
 
 <div class="card-grid">
     <div class="card">
@@ -167,3 +169,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>

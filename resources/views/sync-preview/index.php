@@ -1,6 +1,6 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Sync Preview</h1>
-    <p class="page-description">Test Sync &amp; controlled import — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Demo mode or live OpenCart reads. Max 50 orders per request, supplier-handled only, owner-approved import only.</p>
+    <p class="ops-page-subtitle">Test Sync and controlled import — max 50 orders, supplier-handled only, owner-approved import.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -48,13 +48,11 @@ view('partials.write-gate-warning', [
                 <li><?= e($rule) ?></li>
             <?php endforeach; ?>
         </ul>
-        <div class="stats-grid" style="margin-top:1rem;">
+        <div class="kpi-grid kpi-grid-inline" style="margin-top:1rem;">
             <?php foreach (($testSyncPreview['preview_counts'] ?? []) as $label => $count): ?>
-            <div class="stat-card">
-                <div class="stat-content">
-                    <span class="stat-label"><?= e(str_replace('_', ' ', $label)) ?></span>
-                    <span class="stat-value"><?= e((string) $count) ?></span>
-                </div>
+            <div class="kpi-card kpi-accent-muted">
+                <span class="kpi-label"><?= e(str_replace('_', ' ', $label)) ?></span>
+                <span class="kpi-value"><?= e((string) $count) ?></span>
             </div>
             <?php endforeach; ?>
         </div>

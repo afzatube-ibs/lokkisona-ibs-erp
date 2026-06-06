@@ -7,9 +7,9 @@ $displayActionNote = static function (?string $note): string {
 $statusFilter = $statusFilter ?? null;
 $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 ?>
-<div class="page-header">
-    <h1 class="page-title">Vendor Fulfillment / Order Workflow</h1>
-    <p class="page-description">v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?> · Supplier fulfillment workflow. Filter by stage, create manual orders in-page, and advance orders through allowed actions. Created Report batches are on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>.</p>
+<div class="page-header page-header-compact">
+    <h1 class="page-title">Order Workflow</h1>
+    <p class="ops-page-subtitle">Filter by stage, create manual orders in-page, and advance through allowed actions. Created Report batches on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

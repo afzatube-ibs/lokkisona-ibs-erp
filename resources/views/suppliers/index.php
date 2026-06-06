@@ -1,14 +1,16 @@
-<div class="page-header">
+<div class="page-header page-header-compact">
     <h1 class="page-title">Suppliers</h1>
-    <p class="page-description">Supplier read inventory plus controlled create/edit write services — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Available when migration 0003 is applied.</p>
+    <p class="ops-page-subtitle">Supplier create/edit when migration 0003 is applied.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 <?php view('partials.write-forms-suppliers', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? [], 'csrfField' => $csrfField ?? '']); ?>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier', 'cardTitle' => 'Read-Only Inventory']); ?>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Inventory &amp; Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'recordLabel' => 'supplier', 'cardTitle' => 'Read-Only Inventory']); ?>
 
 <div class="card-grid">
     <div class="card">
@@ -132,3 +134,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>
