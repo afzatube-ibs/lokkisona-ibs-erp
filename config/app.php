@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.2.0',
-    'release_label' => 'Ops UI Alignment',
+    'version' => '1.2.1',
+    'release_label' => 'Dashboard Metrics Fix',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

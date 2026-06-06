@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-09',
+            'release_date' => '2026-06-10',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.2.1 Dashboard Metrics Fix: accurate COUNT(*) for dashboard and supplier task KPIs — replaces count(findByStatus LIMIT 50) that silently capped Active Orders, Shipped Awaiting Dispatch, workflow breakdown, and supplier task grid at 50; adds OrderWriteRepository::countByStatus, countByStatuses, countReturnPending — read-only metrics only, no UI or schema changes',
                 'v1.2.0 Ops UI Alignment: extends v1.1.0 design system to daily ops pages — shared ops-safety-strip partial, kpi-grid replaces stats-grid on payables/settlements/sync-preview, compact page headers, workflow stage card accent borders, setup-tier pages (users, roles, suppliers, business-sources, opening-balances) collapse planning/reference into planning-collapsible — visual only, no business-logic or schema changes',
                 'v1.1.0 UI/UX Revamp: NexaERP-inspired owner command center — tiered sidebar (Primary Fulfillment/Finance/Catalog ~12 links, collapsed Setup & Admin / System / Developer tiers), env-gated DEV banner (local/staging only), dashboard welcome strip + 6 KPI cards + workflow breakdown + needs-attention widgets + recent activity; supplier dashboard keeps 4-link nav with matching KPI card styling; full dark/light theme via CSS tokens — no business-logic, schema, or route changes',
                 'v1.0.0 Production Launch: first production-ready release tag — full supplier fulfillment ERP for Iqbal & Brothers (order workflow, dispatch snapshots, payables, return batch deductions, settlements, reports, controlled OpenCart Test Sync); follow docs/PRODUCTION-LAUNCH.md on the server for credentials, migrations, opening balance cutover, and owner-approved live import (1–3 orders first); stock deduction and live full sync remain blocked until separate owner builds',

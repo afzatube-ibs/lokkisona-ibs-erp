@@ -11,6 +11,17 @@ use PDO;
 
 class DashboardReadService
 {
+    private const ACTIVE_FULFILLMENT_STATUSES = [
+        'new_order',
+        'order_received',
+        'packaging',
+        'shipped',
+        'dispatch_report_created',
+        'delivery_stop',
+        'hub_return',
+        'order_returning',
+    ];
+
     public function supplierTaskCounts(): array
     {
         $repo = new OrderWriteRepository();
@@ -30,14 +41,14 @@ class DashboardReadService
         ];
 
         foreach ($tasks as &$task) {
-            $task['count'] = count($repo->findByStatus($task['status'], 50));
+            $task['count'] = $repo->countByStatus($task['status']);
         }
         unset($task);
 
         $pendingReturns = 0;
         try {
-            $pendingReturns = count($repo->findReturnPending('hub_courier_return', 'hub_return', 50))
-                + count($repo->findReturnPending('customer_return_to_supplier', 'order_returning', 50));
+            $pendingReturns = $repo->countReturnPending('hub_courier_return', 'hub_return')
+                + $repo->countReturnPending('customer_return_to_supplier', 'order_returning');
         } catch (\Throwable $e) {
             $pendingReturns = 0;
         }
@@ -91,10 +102,8 @@ class DashboardReadService
         $activeOrders = 0;
         $shippedAwaitingDispatch = 0;
         if ($repo->tableExists()) {
-            foreach (['new_order', 'order_received', 'packaging', 'shipped', 'dispatch_report_created', 'delivery_stop', 'hub_return', 'order_returning'] as $status) {
-                $activeOrders += count($repo->findByStatus($status, 50));
-            }
-            $shippedAwaitingDispatch = count($repo->findByStatus('shipped', 50));
+            $activeOrders = $repo->countByStatuses(self::ACTIVE_FULFILLMENT_STATUSES);
+            $shippedAwaitingDispatch = $repo->countByStatus('shipped');
         }
 
         return [
@@ -117,20 +126,9 @@ class DashboardReadService
             return [];
         }
 
-        $stages = [
-            'new_order',
-            'order_received',
-            'packaging',
-            'shipped',
-            'dispatch_report_created',
-            'delivery_stop',
-            'hub_return',
-            'order_returning',
-        ];
-
         $rows = [];
-        foreach ($stages as $status) {
-            $count = count($repo->findByStatus($status, 50));
+        foreach (self::ACTIVE_FULFILLMENT_STATUSES as $status) {
+            $count = $repo->countByStatus($status);
             if ($count === 0) {
                 continue;
             }

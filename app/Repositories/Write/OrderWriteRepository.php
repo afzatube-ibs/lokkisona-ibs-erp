@@ -89,6 +89,88 @@ class OrderWriteRepository extends BaseWriteRepository
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function countByStatus(string $status): int
+    {
+        if (!$this->tableExists()) {
+            return 0;
+        }
+
+        $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE ibs_status = :status';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['status' => $status]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return (int) ($row['row_count'] ?? 0);
+    }
+
+    /**
+     * @param array<int, string> $statuses
+     */
+    public function countByStatuses(array $statuses): int
+    {
+        if (!$this->tableExists() || $statuses === []) {
+            return 0;
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach (array_values($statuses) as $index => $status) {
+            $key = 'status_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $status;
+        }
+
+        $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE ibs_status IN (' . implode(', ', $placeholders) . ')';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return (int) ($row['row_count'] ?? 0);
+    }
+
+    public function countReturnPending(string $returnType, string $ibsStatus): int
+    {
+        if (!$this->tableExists() || $returnType === '' || $ibsStatus === '') {
+            return 0;
+        }
+
+        $ordersTable = $this->escapeIdentifier($this->table());
+        $excludeSql = '';
+
+        $itemsTable = config('database.prefix', 'ibs_') . 'return_batch_items';
+        $receivesTable = config('database.prefix', 'ibs_') . 'return_receives';
+        $database = config('database.database', '');
+        $checkSql = 'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table';
+        $check = $this->pdo->prepare($checkSql);
+
+        foreach ([$itemsTable, $receivesTable] as $tableName) {
+            $check->execute(['schema' => $database, 'table' => $tableName]);
+            $checkRow = $check->fetch(\PDO::FETCH_ASSOC);
+            if (((int) ($checkRow['table_count'] ?? 0)) === 0) {
+                return $this->countByStatus($ibsStatus);
+            }
+        }
+
+        $excludeSql = ' AND o.order_id NOT IN ('
+            . 'SELECT i.order_id FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
+            . 'INNER JOIN `' . $this->escapeIdentifier($receivesTable) . '` r ON r.return_receive_id = i.return_receive_id '
+            . 'WHERE i.order_id IS NOT NULL AND r.return_type = :return_type AND r.status = :receive_status'
+            . ')';
+
+        $sql = 'SELECT COUNT(*) AS row_count FROM `' . $ordersTable . '` o '
+            . 'WHERE o.ibs_status = :ibs_status' . $excludeSql;
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'ibs_status' => $ibsStatus,
+            'return_type' => $returnType,
+            'receive_status' => 'received',
+        ]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return (int) ($row['row_count'] ?? 0);
+    }
+
     public function findShippedEligible(int $limit = 50, bool $excludeDispatched = true): array
     {
         if (!$this->tableExists()) {
