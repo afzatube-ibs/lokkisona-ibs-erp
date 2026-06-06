@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderWorkflowHistory;
 use App\Permission;
+use App\Repositories\DispatchReportRepository;
 use App\Services\ReadOnly\OrderItemReadService;
 use App\Services\ReadOnly\OrderReadService;
 use App\Csrf;
@@ -53,6 +54,7 @@ class OrderWorkflowController extends Controller
             'writeGate' => WriteGate::orderWorkflow(),
             'writeGateReady' => WriteGate::orderWorkflow()['ready'],
             'workflowBoard' => $this->buildWorkflowBoard(),
+            'createdReportSection' => $this->buildCreatedReportSection(),
             'dispatchDevNote' => OrderWorkflowStatus::DISPATCH_DEV_NOTE,
             'syncImportRuleNote' => OrderWorkflowStatus::SYNC_IMPORT_RULE_NOTE,
             'vendorReturnFuture' => $this->vendorReturnFuture(),
@@ -81,76 +83,63 @@ class OrderWorkflowController extends Controller
 
     private function buildWorkflowBoard(): array
     {
+        $dispatchModuleReady = WriteGate::dispatchReports()['ready'] ?? false;
         $board = [];
         foreach (OrderWorkflowStatus::groupOrder() as $statusCode) {
+            if ($statusCode === 'dispatch_report_created') {
+                continue;
+            }
+
             $board[$statusCode] = [
                 'code' => $statusCode,
-                'label' => OrderWorkflowStatus::label($statusCode),
+                'label' => OrderWorkflowStatus::groupDisplayLabel($statusCode),
                 'orders' => [],
             ];
         }
 
-        $orders = [];
-        try {
-            $orderService = new OrderReadService();
-            if ($orderService->tableExists()) {
-                $orders = $orderService->all(50, 0);
-            }
-        } catch (\Throwable $e) {
-            return array_values($board);
-        }
-
+        $orders = $this->loadWorkflowOrders();
+        $dispatchReferences = $this->loadDispatchOrderReferences();
         $historyService = new OrderWorkflowHistoryReadService();
         $historyReady = $historyService->tableExists();
 
         foreach ($orders as $order) {
             $rawStatus = (string) ($order['ibs_status'] ?? 'new_order');
             $normalized = OrderWorkflowStatus::normalize($rawStatus);
+            $orderId = (int) ($order['order_id'] ?? 0);
+            $dispatchReference = $dispatchReferences[$orderId] ?? null;
+
+            if ($normalized === 'dispatch_report_created') {
+                continue;
+            }
+
+            if ($dispatchReference !== null && $dispatchReference !== '') {
+                continue;
+            }
+
             if (!isset($board[$normalized])) {
                 $board[$normalized] = [
                     'code' => $normalized,
-                    'label' => OrderWorkflowStatus::label($normalized),
+                    'label' => OrderWorkflowStatus::groupDisplayLabel($normalized),
                     'orders' => [],
                 ];
             }
 
-            $orderId = (int) ($order['order_id'] ?? 0);
-            $actions = [];
-            foreach (OrderWorkflowStatus::allowedActionCodes($normalized) as $toStatus) {
-                $actions[] = [
-                    'code' => $toStatus,
-                    'label' => OrderWorkflowStatus::actionLabel($normalized, $toStatus),
-                    'requires_note' => OrderWorkflowStatus::requiresNoteForTransition($normalized, $toStatus),
-                    'requires_checkbox' => OrderWorkflowStatus::requiresCheckbox($normalized, $toStatus),
-                    'checkbox_label' => OrderWorkflowStatus::checkboxLabel($normalized, $toStatus),
-                    'requires_confirm' => OrderWorkflowStatus::requiresConfirmDialog($normalized, $toStatus),
-                    'is_dispatch_gate' => $normalized === 'shipped' && $toStatus === 'dispatch_report_created',
-                ];
-            }
-
-            $histories = $historyReady && $orderId > 0
-                ? $historyService->findByOrderId($orderId, 10)
-                : [];
-            foreach ($histories as $index => $historyRow) {
-                $histories[$index]['from_label'] = OrderWorkflowStatus::label((string) ($historyRow['from_status'] ?? ''));
-                $histories[$index]['to_label'] = OrderWorkflowStatus::label((string) ($historyRow['to_status'] ?? ''));
-            }
-
-            $board[$normalized]['orders'][] = [
-                'order_id' => $orderId,
-                'order_reference' => (string) ($order['order_reference'] ?? ''),
-                'customer_name' => (string) ($order['customer_name'] ?? ''),
-                'ibs_status' => $normalized,
-                'ibs_status_label' => OrderWorkflowStatus::label($normalized),
-                'legacy_status' => $rawStatus !== $normalized ? $rawStatus : null,
-                'actions' => $actions,
-                'status_info_note' => OrderWorkflowStatus::statusInfoNote($normalized),
-                'histories' => $histories,
-            ];
+            $board[$normalized]['orders'][] = $this->buildWorkflowOrderCard(
+                $order,
+                $normalized,
+                $rawStatus,
+                $dispatchModuleReady,
+                $dispatchReference,
+                $historyReady ? $historyService : null
+            );
         }
 
         $ordered = [];
         foreach (OrderWorkflowStatus::groupOrder() as $statusCode) {
+            if ($statusCode === 'dispatch_report_created') {
+                continue;
+            }
+
             if (!empty($board[$statusCode]['orders'])) {
                 $ordered[] = $board[$statusCode];
             }
@@ -166,6 +155,190 @@ class OrderWorkflowController extends Controller
         }
 
         return $ordered;
+    }
+
+    private function buildCreatedReportSection(): array
+    {
+        $section = [
+            'code' => 'dispatch_report_created',
+            'label' => OrderWorkflowStatus::groupDisplayLabel('dispatch_report_created'),
+            'info_note' => OrderWorkflowStatus::COURIER_FLOW_NOTE,
+            'orders' => [],
+        ];
+
+        $orders = $this->loadWorkflowOrders();
+        $dispatchReferences = $this->loadDispatchOrderReferences();
+        $historyService = new OrderWorkflowHistoryReadService();
+        $historyReady = $historyService->tableExists();
+
+        foreach ($orders as $order) {
+            $orderId = (int) ($order['order_id'] ?? 0);
+            if ($orderId <= 0) {
+                continue;
+            }
+
+            $rawStatus = (string) ($order['ibs_status'] ?? 'new_order');
+            $normalized = OrderWorkflowStatus::normalize($rawStatus);
+            $dispatchReference = $dispatchReferences[$orderId] ?? null;
+            $includedInDispatch = $dispatchReference !== null && $dispatchReference !== '';
+
+            if (!$includedInDispatch && $normalized !== 'dispatch_report_created') {
+                continue;
+            }
+
+            if (!$includedInDispatch) {
+                $dispatchReference = $this->resolveDispatchReferenceFromHistory(
+                    $historyReady ? $historyService->findByOrderId($orderId, 10) : []
+                );
+            }
+
+            $section['orders'][] = $this->buildWorkflowOrderCard(
+                $order,
+                'dispatch_report_created',
+                $rawStatus,
+                WriteGate::dispatchReports()['ready'] ?? false,
+                $dispatchReference,
+                $historyReady ? $historyService : null,
+                true
+            );
+        }
+
+        return $section;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadWorkflowOrders(): array
+    {
+        try {
+            $orderService = new OrderReadService();
+            if (!$orderService->tableExists()) {
+                return [];
+            }
+
+            $ordersById = [];
+            $groupOrder = OrderWorkflowStatus::groupOrder();
+            $perStatus = max(3, (int) floor(50 / max(1, count($groupOrder))));
+
+            foreach ($groupOrder as $statusCode) {
+                foreach ($orderService->findByStatus($statusCode, $perStatus) as $order) {
+                    $orderId = (int) ($order['order_id'] ?? 0);
+                    if ($orderId > 0) {
+                        $ordersById[$orderId] = $order;
+                    }
+                }
+            }
+
+            $dispatchReferences = $this->loadDispatchOrderReferences();
+            foreach (array_keys($dispatchReferences) as $orderId) {
+                if (isset($ordersById[$orderId]) || count($ordersById) >= 50) {
+                    continue;
+                }
+
+                $order = $orderService->findById((int) $orderId);
+                if ($order !== null) {
+                    $ordersById[(int) $orderId] = $order;
+                }
+            }
+
+            return array_values($ordersById);
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function loadDispatchOrderReferences(): array
+    {
+        try {
+            return (new DispatchReportRepository())->findIncludedOrderReferences(50);
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $histories
+     */
+    private function resolveDispatchReferenceFromHistory(array $histories): ?string
+    {
+        foreach ($histories as $historyRow) {
+            $toStatus = OrderWorkflowStatus::normalize((string) ($historyRow['to_status'] ?? ''));
+            if ($toStatus !== 'dispatch_report_created') {
+                continue;
+            }
+
+            $note = trim((string) ($historyRow['action_note'] ?? ''));
+            if (str_starts_with($note, 'Dispatch Report ')) {
+                return trim(substr($note, strlen('Dispatch Report ')));
+            }
+        }
+
+        return null;
+    }
+
+    private function buildWorkflowOrderCard(
+        array $order,
+        string $normalized,
+        string $rawStatus,
+        bool $dispatchModuleReady,
+        ?string $dispatchReference,
+        ?OrderWorkflowHistoryReadService $historyService,
+        bool $createdReportSection = false
+    ): array {
+        $orderId = (int) ($order['order_id'] ?? 0);
+        $actions = [];
+
+        if (!$createdReportSection) {
+            foreach (OrderWorkflowStatus::allowedActionCodes($normalized) as $toStatus) {
+                if ($dispatchModuleReady && $normalized === 'shipped' && $toStatus === 'dispatch_report_created') {
+                    continue;
+                }
+
+                $actions[] = [
+                    'code' => $toStatus,
+                    'label' => OrderWorkflowStatus::actionLabel($normalized, $toStatus),
+                    'requires_note' => OrderWorkflowStatus::requiresNoteForTransition($normalized, $toStatus),
+                    'requires_checkbox' => OrderWorkflowStatus::requiresCheckbox($normalized, $toStatus),
+                    'checkbox_label' => OrderWorkflowStatus::checkboxLabel($normalized, $toStatus),
+                    'requires_confirm' => OrderWorkflowStatus::requiresConfirmDialog($normalized, $toStatus),
+                    'is_dispatch_gate' => $normalized === 'shipped' && $toStatus === 'dispatch_report_created',
+                ];
+            }
+        }
+
+        $histories = $historyService !== null && $orderId > 0
+            ? $historyService->findByOrderId($orderId, 10)
+            : [];
+        foreach ($histories as $index => $historyRow) {
+            $histories[$index]['from_label'] = OrderWorkflowStatus::label((string) ($historyRow['from_status'] ?? ''));
+            $histories[$index]['to_label'] = OrderWorkflowStatus::label((string) ($historyRow['to_status'] ?? ''));
+        }
+
+        if (($dispatchReference === null || $dispatchReference === '') && $histories !== []) {
+            $dispatchReference = $this->resolveDispatchReferenceFromHistory($histories);
+        }
+
+        return [
+            'order_id' => $orderId,
+            'order_reference' => (string) ($order['order_reference'] ?? ''),
+            'customer_name' => (string) ($order['customer_name'] ?? ''),
+            'ibs_status' => $normalized,
+            'ibs_status_label' => OrderWorkflowStatus::label($normalized),
+            'legacy_status' => $rawStatus !== $normalized ? $rawStatus : null,
+            'dispatch_report_reference' => $dispatchReference,
+            'actions' => $actions,
+            'status_info_note' => $createdReportSection
+                ? OrderWorkflowStatus::COURIER_FLOW_NOTE
+                : OrderWorkflowStatus::statusInfoNote($normalized),
+            'dispatch_redirect_note' => (!$createdReportSection && $dispatchModuleReady && $normalized === 'shipped')
+                ? OrderWorkflowStatus::DISPATCH_REPORT_REDIRECT_NOTE
+                : null,
+            'histories' => $histories,
+        ];
     }
 
     private function buildOrderReadInventory()
@@ -334,11 +507,11 @@ class OrderWorkflowController extends Controller
     private function dispatchGate()
     {
         return [
-            'title' => 'Dispatch Report Gate (v0.4.4.0 manual)',
-            'summary' => 'Create Dispatch Report moves status to Dispatch Report Created with required note/reference. No dispatch tables in v0.4.4.0.',
+            'title' => 'Dispatch Report Gate (v0.4.5.0)',
+            'summary' => 'Owner/admin creates the daily dispatch report on Dispatch Reports. Orders move to Created Report / Dispatch Report Created with immutable cost snapshot.',
             'points' => [
-                'Shipped → Create Dispatch Report requires an action note (dispatch reference).',
-                OrderWorkflowStatus::DISPATCH_DEV_NOTE,
+                'Shipped orders stay Shipped until a Daily Dispatch Report batch is created and locked.',
+                OrderWorkflowStatus::DISPATCH_REPORT_REDIRECT_NOTE,
                 OrderWorkflowStatus::COURIER_FLOW_NOTE,
                 'Delivery Stop is allowed only from Shipped (not from Dispatch Report Created or Out For Delivery).',
             ],

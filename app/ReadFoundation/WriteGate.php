@@ -169,6 +169,7 @@ class WriteGate
             'ibs_dispatch_report_items',
             'ibs_orders',
             'ibs_order_items',
+            'ibs_order_workflow_histories',
         ]);
     }
 }

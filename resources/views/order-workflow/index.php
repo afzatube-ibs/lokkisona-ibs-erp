@@ -7,7 +7,7 @@ $displayActionNote = static function (?string $note): string {
 ?>
 <div class="page-header">
     <h1 class="page-title">Order Workflow</h1>
-    <p class="page-description">Fulfillment Workflow Action Foundation (v0.4.4.0). Iqbal &amp; Brothers supplier workflow. Orders grouped by status with allowed supplier actions only. Max 50 orders per load. <?= e($syncImportRuleNote ?? '') ?></p>
+    <p class="page-description">Fulfillment Workflow + Dispatch Report Created visibility (v0.4.5.0). Iqbal &amp; Brothers supplier workflow. Orders grouped by status with allowed supplier actions only. Max 50 orders per load. <?= e($syncImportRuleNote ?? '') ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -16,10 +16,66 @@ $displayActionNote = static function (?string $note): string {
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Workflow Actions (v0.4.4.0)</h2></div>
     <div class="card-body">
-        <p class="page-description" style="margin-bottom: 1rem;">Only allowed supplier actions are shown. Notes required for Hold, Cancelled, Delivery Stop, Return Received, and Create Dispatch Report. Packaging and Shipped moves require staff checkbox confirmation. Courier stages (Dispatch Report Created onward) have no supplier manual buttons except Return Received from Delivery Stop.</p>
-        <?php if (empty($workflowBoard)): ?>
+        <p class="page-description" style="margin-bottom: 1rem;">Only allowed supplier actions are shown. When dispatch tables are active, owner/admin creates the daily batch on Dispatch Reports — not from Shipped. Packaging and Shipped moves require staff checkbox confirmation. Created Report / Dispatch Report Created has no supplier manual buttons.</p>
+
+        <?php if (!empty($createdReportSection)): ?>
+        <div class="workflow-group workflow-group-created-report" style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid var(--border-color, #d8dee4); border-radius: 8px; background: var(--surface-muted, #f6f8fa);">
+            <h3 class="section-heading" style="margin: 0 0 0.5rem;"><?= e($createdReportSection['label'] ?? 'Created Report / Dispatch Report Created') ?> <span class="badge"><?= count($createdReportSection['orders'] ?? []) ?></span></h3>
+            <p class="workflow-info-banner" style="margin-bottom: 1rem;"><?= e($createdReportSection['info_note'] ?? '') ?></p>
+            <?php if (empty($createdReportSection['orders'])): ?>
+                <p class="page-description">No orders in Created Report yet. Shipped orders appear here after owner/admin creates a Daily Dispatch Report on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>.</p>
+            <?php else: ?>
+                <?php foreach ($createdReportSection['orders'] as $order): ?>
+                <div class="card workflow-order-card">
+                    <div class="card-body">
+                        <dl class="info-list" style="margin-bottom: 0.75rem;">
+                            <div class="info-row"><dt>Reference</dt><dd><?= e($order['order_reference']) ?></dd></div>
+                            <div class="info-row"><dt>Customer</dt><dd><?= e($order['customer_name']) ?></dd></div>
+                            <?php if (!empty($order['dispatch_report_reference'])): ?>
+                            <div class="info-row"><dt>Dispatch Report</dt><dd><strong><?= e($order['dispatch_report_reference']) ?></strong></dd></div>
+                            <?php endif; ?>
+                            <div class="info-row"><dt>Status</dt><dd><?= e($order['ibs_status_label']) ?><?php if (!empty($order['legacy_status'])): ?> <span class="badge badge-warn">legacy: <?= e($order['legacy_status']) ?></span><?php endif; ?></dd></div>
+                        </dl>
+                        <?php if (!empty($order['status_info_note'])): ?>
+                        <p class="workflow-info-banner"><?= e($order['status_info_note']) ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($order['histories'])): ?>
+                        <h4 style="margin: 1rem 0 0.5rem;">Workflow History</h4>
+                        <div class="table-scroll">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>When</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Action Note</th>
+                                        <th>Changed By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($order['histories'] as $history): ?>
+                                    <tr>
+                                        <td><?= e((string) ($history['changed_at'] ?? '')) ?></td>
+                                        <td><?= e((string) ($history['from_label'] ?? $history['from_status'] ?? '')) ?></td>
+                                        <td><?= e((string) ($history['to_label'] ?? $history['to_status'] ?? '')) ?></td>
+                                        <td><strong class="audit-note"><?= e($displayActionNote((string) ($history['action_note'] ?? ''))) ?></strong></td>
+                                        <td><?= e((string) ($history['changed_by'] ?? '')) !== '' ? e((string) $history['changed_by']) : '-' ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (empty($workflowBoard) && empty($createdReportSection['orders'] ?? [])): ?>
             <p class="page-description">No orders available for workflow actions yet. Create a manual order first on <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>.</p>
-        <?php else: ?>
+        <?php elseif (!empty($workflowBoard)): ?>
             <?php foreach ($workflowBoard as $group): ?>
             <div class="workflow-group">
                 <h3 class="section-heading" style="margin: 0 0 0.75rem;"><?= e($group['label']) ?> <span class="badge"><?= count($group['orders']) ?></span></h3>
@@ -30,11 +86,17 @@ $displayActionNote = static function (?string $note): string {
                             <div class="info-row"><dt>Order ID</dt><dd><?= e((string) $order['order_id']) ?></dd></div>
                             <div class="info-row"><dt>Reference</dt><dd><?= e($order['order_reference']) ?></dd></div>
                             <div class="info-row"><dt>Customer</dt><dd><?= e($order['customer_name']) ?></dd></div>
+                            <?php if (!empty($order['dispatch_report_reference'])): ?>
+                            <div class="info-row"><dt>Dispatch Report</dt><dd><strong><?= e($order['dispatch_report_reference']) ?></strong></dd></div>
+                            <?php endif; ?>
                             <div class="info-row"><dt>Status</dt><dd><?= e($order['ibs_status_label']) ?><?php if (!empty($order['legacy_status'])): ?> <span class="badge badge-warn">legacy: <?= e($order['legacy_status']) ?></span><?php endif; ?></dd></div>
                         </dl>
 
                         <?php if (!empty($order['status_info_note'])): ?>
                         <p class="workflow-info-banner"><?= e($order['status_info_note']) ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($order['dispatch_redirect_note'])): ?>
+                        <p class="workflow-info-banner"><?= e($order['dispatch_redirect_note']) ?> <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a></p>
                         <?php endif; ?>
 
                         <?php if (!empty($order['actions'])): ?>

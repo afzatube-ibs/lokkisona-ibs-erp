@@ -6,9 +6,11 @@ class OrderWorkflowStatus
 {
     public const RESUME_ACTION = '_resume';
 
-    public const DISPATCH_DEV_NOTE = 'v0.4.4.0 status-only gate. v0.4.5.0 will create the real daily dispatch batch/report and snapshot product cost. No dispatch tables in this release.';
+    public const DISPATCH_DEV_NOTE = 'v0.4.4.0 temporary status-only gate when dispatch tables are missing. When migration 0006 is applied, use Dispatch Reports (v0.4.5.0) to create the daily batch and cost snapshot.';
 
-    public const COURIER_FLOW_NOTE = 'Courier flow will continue by status mapping after dispatch report. No supplier manual action for Out For Delivery or Delivered.';
+    public const COURIER_FLOW_NOTE = 'Courier flow continues by status mapping. Supplier has no manual Out For Delivery / Delivered action.';
+
+    public const DISPATCH_REPORT_REDIRECT_NOTE = 'Create Dispatch Report from Dispatch Reports page.';
 
     public const OUT_FOR_DELIVERY_NOTE = 'Courier/PIT status reflection only. Supplier does not manage courier stages.';
 
@@ -119,6 +121,15 @@ class OrderWorkflowStatus
         $normalized = self::normalize($code);
 
         return self::LABELS[$normalized] ?? $normalized;
+    }
+
+    public static function groupDisplayLabel(string $code): string
+    {
+        if (self::normalize($code) === 'dispatch_report_created') {
+            return 'Created Report / Dispatch Report Created';
+        }
+
+        return self::label($code);
     }
 
     public static function isKnown(string $code): bool

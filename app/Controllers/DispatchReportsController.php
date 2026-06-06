@@ -5,9 +5,14 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Database;
 use App\Database\TableName;
+use App\Domain\DispatchCostSnapshot;
+use App\Domain\DispatchReportReference;
 use App\Models\DispatchReport;
 use App\Permission;
 use App\Csrf;
+use App\Repositories\DispatchReportRepository;
+use App\Repositories\OrderItemRepository;
+use App\Repositories\Write\OrderWriteRepository;
 use App\Services\ReadOnly\DispatchReportReadService;
 use App\ReadFoundation\WriteGate;
 use App\Services\Write\DispatchReportWriteService;
@@ -19,6 +24,12 @@ class DispatchReportsController extends Controller
         $this->authorize('dispatch_reports.view');
         ActivityLog::record('dispatch_reports_access', 'Dispatch Report read foundation page viewed');
 
+        $latestReports = $this->buildLatestReports();
+        $selectedReportId = (int) ($_GET['report_id'] ?? 0);
+        if ($selectedReportId <= 0 && !empty($latestReports[0]['dispatch_report_id'])) {
+            $selectedReportId = (int) $latestReports[0]['dispatch_report_id'];
+        }
+
         $this->render('dispatch-reports.index', [
             'pageTitle' => 'Dispatch Reports',
             'breadcrumbs' => [
@@ -26,6 +37,12 @@ class DispatchReportsController extends Controller
                 ['label' => 'Dispatch Reports', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'eligibleOrders' => $this->buildEligibleOrders(),
+            'latestReports' => $latestReports,
+            'reportDetail' => $this->buildReportDetail($selectedReportId > 0 ? $selectedReportId : null),
+            'selectedReportId' => $selectedReportId,
+            'productLineDevNote' => DispatchReportReference::PRODUCT_LINE_DEV_NOTE,
+            'payableCheckpointNote' => DispatchReportReference::PAYABLE_CHECKPOINT_NOTE,
             'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
@@ -56,7 +73,93 @@ class DispatchReportsController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/dispatch-reports');
         }
-        $this->redirectWithWriteResult('/dispatch-reports', (new DispatchReportWriteService())->createFromReadyOrders($_POST));
+        $this->redirectWithWriteResult('/dispatch-reports', (new DispatchReportWriteService())->createDailyBatch($_POST));
+    }
+
+    private function buildEligibleOrders(): array
+    {
+        try {
+            $orders = (new OrderWriteRepository())->findShippedEligible(50);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        $orderItems = new OrderItemRepository();
+        $eligible = [];
+
+        foreach ($orders as $order) {
+            $orderId = (int) ($order['order_id'] ?? 0);
+            if ($orderId <= 0) {
+                continue;
+            }
+
+            $lineCost = $orderItems->sumSupplierCostByOrderId($orderId);
+            $lineQty = $orderItems->sumQuantityByOrderId($orderId);
+            $snapshot = DispatchCostSnapshot::forOrder($order, $lineCost, $lineQty);
+
+            $eligible[] = array_merge($order, [
+                'preview_cost_snapshot' => $snapshot['product_cost_snapshot'],
+                'preview_item_count' => $snapshot['item_count'],
+            ]);
+        }
+
+        return $eligible;
+    }
+
+    private function buildLatestReports(): array
+    {
+        try {
+            $reports = (new DispatchReportRepository())->latest(20);
+            foreach ($reports as $index => $report) {
+                $reports[$index]['status_label'] = DispatchReportReference::statusLabel(
+                    (string) ($report['status'] ?? '')
+                );
+            }
+
+            return $reports;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    private function buildReportDetail(?int $reportId): ?array
+    {
+        if ($reportId === null || $reportId <= 0) {
+            return null;
+        }
+
+        try {
+            $repository = new DispatchReportRepository();
+            if (!$repository->tableExists()) {
+                return null;
+            }
+
+            $report = $repository->findById($reportId);
+            if ($report === null) {
+                return null;
+            }
+
+            $items = $repository->findItemsWithOrders($reportId);
+            $orderItemRepo = new OrderItemRepository();
+
+            foreach ($items as $index => $item) {
+                $orderId = (int) ($item['order_id'] ?? 0);
+                $items[$index]['product_lines'] = $orderId > 0
+                    ? $orderItemRepo->findByOrderId($orderId)
+                    : [];
+            }
+
+            $report['status_label'] = DispatchReportReference::statusLabel(
+                (string) ($report['status'] ?? '')
+            );
+
+            return [
+                'report' => $report,
+                'items' => $items,
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function buildReadInventory()
@@ -200,9 +303,9 @@ class DispatchReportsController extends Controller
             'title' => 'Batch Reference Rule',
             'summary' => 'Each dispatch report carries a readable batch reference for tracking.',
             'points' => [
-                'Batch/report reference format should follow DDMMYYYY(COUNT_ORDER).',
-                'Example: a 12-order batch on 04 June 2026 would read 04062026(12).',
-                'The reference is generated at creation time and stored on the report.',
+                'Base reference format: DDMMYYYY (example: 06062026).',
+                'Additional same-day batches: DDMMYYYY-P1, DDMMYYYY-P2, DDMMYYYY-P3.',
+                'Order count is stored in total_orders — never embedded in the reference string.',
                 'Reference is channel-neutral and not hard-coded to any single source.',
             ],
         ];
@@ -212,12 +315,13 @@ class DispatchReportsController extends Controller
     {
         return [
             'title' => 'Cost Snapshot / Payable Rule',
-            'summary' => 'A dispatch report captures cost snapshots so payable uses locked values, not live changing cost.',
+            'summary' => 'Dispatch Report is the official supplier payable checkpoint. v0.4.5.0 stores immutable snapshots only.',
             'points' => [
-                'Dispatch report items store a cost snapshot at creation time.',
-                'Dispatch report later creates Product Cost Payable using the cost snapshot, feeding Supplier Payables.',
-                'Live product cost stays editable for planning and future orders.',
-                'Payable must never recalculate from live cost after a snapshot is taken.',
+                'Snapshot supplier cost at dispatch report creation from orders.cost_snapshot_total and/or order_items.supplier_cost_snapshot.',
+                'Never use selling_price or order_total for supplier payable snapshot.',
+                'Old dispatch reports must never recalculate from latest product cost.',
+                DispatchReportReference::PAYABLE_CHECKPOINT_NOTE,
+                DispatchReportReference::PRODUCT_LINE_DEV_NOTE,
             ],
         ];
     }

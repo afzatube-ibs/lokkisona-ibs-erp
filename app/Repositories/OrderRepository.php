@@ -15,6 +15,29 @@ class OrderRepository extends BaseReadOnlyRepository
         return Order::class;
     }
 
+    public function findByStatus(string $status, int $limit = 50): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        try {
+            $limit = max(1, min($limit, 50));
+            $table = TableName::forModel($this->modelClass());
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` '
+                . 'WHERE ibs_status = :status ORDER BY order_id ASC LIMIT ' . $limit;
+            QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['status' => $status]);
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (ReadOnlyQueryException $e) {
+            return [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function latest(int $limit = 20): array
     {
         if (!$this->tableExists()) {

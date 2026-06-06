@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.4.0',
-    'release_label' => 'Fulfillment Workflow Action Foundation',
+    'version' => '0.4.5.0',
+    'release_label' => 'Daily Dispatch Report + Cost Snapshot Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

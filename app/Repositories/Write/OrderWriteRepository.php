@@ -50,6 +50,41 @@ class OrderWriteRepository extends BaseWriteRepository
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function findShippedEligible(int $limit = 50, bool $excludeDispatched = true): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 50));
+        $ordersTable = $this->escapeIdentifier($this->table());
+        $excludeSql = '';
+
+        if ($excludeDispatched) {
+            $itemsTable = config('database.prefix', 'ibs_') . 'dispatch_report_items';
+            $database = config('database.database', '');
+            $checkSql = 'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table';
+            $check = $this->pdo->prepare($checkSql);
+            $check->execute(['schema' => $database, 'table' => $itemsTable]);
+            $checkRow = $check->fetch(\PDO::FETCH_ASSOC);
+
+            if (((int) ($checkRow['table_count'] ?? 0)) > 0) {
+                $excludeSql = ' AND o.order_id NOT IN ('
+                    . 'SELECT i.order_id FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
+                    . 'WHERE i.order_id IS NOT NULL AND i.status = \'included\''
+                    . ')';
+            }
+        }
+
+        $sql = 'SELECT o.* FROM `' . $ordersTable . '` o '
+            . 'WHERE o.ibs_status = :status' . $excludeSql
+            . ' ORDER BY o.order_id ASC LIMIT ' . $limit;
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['status' => 'shipped']);
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function mirrorManualOrderStatusByReference(string $orderReference, string $status): bool
     {
         if ($orderReference === '') {

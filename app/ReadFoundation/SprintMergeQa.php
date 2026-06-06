@@ -166,9 +166,9 @@ class SprintMergeQa
             [
                 'module' => 'Dispatch report create',
                 'page' => '/dispatch-reports',
-                'required_tables' => 'dispatch_reports, dispatch_report_items',
-                'write_service' => 'DispatchReportWriteService',
-                'safety_status' => 'CSRF + table gate + ready_for_dispatch gate',
+                'required_tables' => 'dispatch_reports, dispatch_report_items, orders, order_items, order_workflow_histories',
+                'write_service' => 'DispatchReportWriteService::createDailyBatch',
+                'safety_status' => 'CSRF + table gate + shipped eligibility + duplicate block + immutable cost snapshot + locked on create + workflow dispatch_report_created',
                 'migration_required' => '0006',
                 'testing_status' => 'Pending dev DB activation',
             ],

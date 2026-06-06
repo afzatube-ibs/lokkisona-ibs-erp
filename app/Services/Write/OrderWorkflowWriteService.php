@@ -134,6 +134,54 @@ class OrderWorkflowWriteService
         return WriteResult::ok($message, $orderId);
     }
 
+    public function recordDispatchInclusion(int $orderId, string $dispatchReference): WriteResult
+    {
+        if (!$this->orders->tableExists()) {
+            return WriteResult::fail('Orders table not available.');
+        }
+
+        $order = $this->orders->find($orderId);
+        if ($order === null) {
+            return WriteResult::fail('Order not found.');
+        }
+
+        $fromStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
+        $toStatus = 'dispatch_report_created';
+
+        if ($fromStatus !== 'shipped') {
+            return WriteResult::fail('Dispatch inclusion requires order status Shipped.');
+        }
+
+        $dispatchReference = trim($dispatchReference);
+        $historyNote = 'Dispatch Report ' . $dispatchReference;
+
+        if (!$this->orders->updateStatus($orderId, $toStatus)) {
+            return WriteResult::fail('Failed to update order status to Dispatch Report Created.');
+        }
+
+        $orderReference = (string) ($order['order_reference'] ?? '');
+        if ($orderReference !== '') {
+            $this->orders->mirrorManualOrderStatusByReference($orderReference, $toStatus);
+        }
+
+        $changedBy = $this->resolveChangedById();
+
+        if ($this->history->tableExists()) {
+            $this->history->insert($orderId, null, $fromStatus, $toStatus, $historyNote, $changedBy);
+        }
+
+        ActivityLog::record('order_workflow_action', 'Order workflow: Dispatch Report inclusion', [
+            'order_id' => $orderId,
+            'from' => $fromStatus,
+            'to' => $toStatus,
+            'dispatch_reference' => $dispatchReference,
+            'changed_by' => $changedBy,
+            'user' => Auth::user(),
+        ]);
+
+        return WriteResult::ok('Order included in dispatch report ' . $dispatchReference . '.', $orderId);
+    }
+
     /**
      * @return array{status: string, adjustment_note: ?string}|null
      */

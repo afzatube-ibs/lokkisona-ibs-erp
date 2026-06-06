@@ -1,26 +1,168 @@
 <div class="page-header">
     <h1 class="page-title">Dispatch Reports</h1>
-    <p class="page-description">Dispatch read inventory plus dispatch report create from ready orders (v0.4.2) when migration 0006 is applied.</p>
+    <p class="page-description">Daily Dispatch Report + Cost Snapshot Foundation (v0.4.5.0). Iqbal &amp; Brothers. Eligible orders must be Shipped. Max 50 orders per batch. No payable, stock, invoice, or live sync.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Safety Badges</h2></div>
+    <div class="card-body">
+        <span class="badge badge-ok">No payable created</span>
+        <span class="badge badge-ok">No stock deducted</span>
+        <span class="badge badge-ok">No invoice generated</span>
+        <span class="badge badge-ok">No live sync</span>
+        <span class="badge badge-warn">Immutable cost snapshot only</span>
+    </div>
+</div>
+
+<p class="workflow-info-banner"><?= e($payableCheckpointNote ?? '') ?></p>
+<p class="workflow-info-banner"><?= e($productLineDevNote ?? '') ?></p>
+
 <?php if (!empty($writeGateReady)): ?>
-<div class="card" style="margin-bottom:1.5rem;"><div class="card-body">
-<form method="post" action="<?= e(url('/dispatch-reports/create')) ?>"><?= $csrfField ?? '' ?>
-<label>Supplier ID (optional)<input type="number" name="supplier_id" min="0"></label>
-<label>Business source ID (optional)<input type="number" name="business_source_id" min="0"></label>
-<button type="submit">Create dispatch report from ready_for_dispatch orders (v0.4.2)</button></form>
-</div></div>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Create Daily Dispatch Report</h2></div>
+    <div class="card-body">
+        <p class="page-description" style="margin-bottom: 1rem;">Select shipped orders not yet in a dispatch report. Reference format: DDMMYYYY or DDMMYYYY-P1/P2. Order count stored in total_orders.</p>
+        <?php if (!empty($eligibleOrders)): ?>
+        <form method="post" action="<?= e(url('/dispatch-reports/create')) ?>" class="js-dispatch-batch-form" data-confirm-label="Create daily dispatch report">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="batch_confirmed" value="0" class="js-batch-confirmed">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Order ID</th>
+                            <th>Reference</th>
+                            <th>Customer</th>
+                            <th>Qty</th>
+                            <th>Cost Snapshot Preview</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($eligibleOrders as $order): ?>
+                        <tr>
+                            <td><input type="checkbox" name="order_ids[]" value="<?= e((string) ($order['order_id'] ?? '')) ?>"></td>
+                            <td><?= e((string) ($order['order_id'] ?? '')) ?></td>
+                            <td><?= e((string) ($order['order_reference'] ?? '')) ?></td>
+                            <td><?= e((string) ($order['customer_name'] ?? '')) ?></td>
+                            <td><?= e((string) ($order['preview_item_count'] ?? '0')) ?></td>
+                            <td><?= e((string) ($order['preview_cost_snapshot'] ?? '0.00')) ?></td>
+                            <td>Shipped</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <label class="workflow-confirm-checkbox" style="margin-top: 1rem;">
+                <input type="checkbox" name="batch_confirm_checkbox" value="1" required>
+                <span>I confirm this dispatch report snapshots supplier cost now and does not create payable, stock, invoice, or sync actions.</span>
+            </label>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Create Dispatch Report</button>
+        </form>
+        <?php else: ?>
+        <p class="page-description"><span class="badge badge-warn">No eligible orders</span> No shipped orders are waiting for dispatch report, or all shipped orders are already included.</p>
+        <?php endif; ?>
+    </div>
+</div>
 <?php else: ?>
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Dispatch Report Inventory</h2>
-<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No dispatch batch creation. No dispatch lock. No migration apply from this page.</p>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Latest Dispatch Reports</h2></div>
+    <div class="card-body">
+        <?php if (!empty($latestReports)): ?>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Orders</th>
+                        <th>Total Cost Snapshot</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>View</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($latestReports as $report): ?>
+                    <tr>
+                        <td><strong><?= e((string) ($report['dispatch_reference'] ?? '')) ?></strong></td>
+                        <td><?= e((string) ($report['dispatch_date'] ?? '')) ?></td>
+                        <td><?= e((string) ($report['total_orders'] ?? '0')) ?></td>
+                        <td><?= e((string) ($report['total_product_cost'] ?? '0.00')) ?></td>
+                        <td><span class="badge <?= ($report['status'] ?? '') === 'locked' ? 'badge-ok' : 'badge-warn' ?>"><?= e((string) ($report['status_label'] ?? $report['status'] ?? '')) ?></span></td>
+                        <td><?= e((string) ($report['created_at'] ?? '')) ?></td>
+                        <td><a href="<?= e(url('/dispatch-reports?report_id=' . (int) ($report['dispatch_report_id'] ?? 0))) ?>">Detail</a></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php else: ?>
+        <p class="page-description">No dispatch reports yet.</p>
+        <?php endif; ?>
+    </div>
+</div>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Dispatch Reports']); ?>
+<?php if (!empty($reportDetail['report'])): ?>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Report Detail: <?= e((string) ($reportDetail['report']['dispatch_reference'] ?? '')) ?></h2></div>
+    <div class="card-body">
+        <dl class="info-list" style="margin-bottom: 1rem;">
+            <div class="info-row"><dt>Reference</dt><dd><?= e((string) ($reportDetail['report']['dispatch_reference'] ?? '')) ?></dd></div>
+            <div class="info-row"><dt>Total Orders</dt><dd><?= e((string) ($reportDetail['report']['total_orders'] ?? '0')) ?></dd></div>
+            <div class="info-row"><dt>Total Cost Snapshot</dt><dd><?= e((string) ($reportDetail['report']['total_product_cost'] ?? '0.00')) ?></dd></div>
+            <div class="info-row"><dt>Status</dt><dd><span class="badge <?= ($reportDetail['report']['status'] ?? '') === 'locked' ? 'badge-ok' : 'badge-warn' ?>"><?= e((string) ($reportDetail['report']['status_label'] ?? $reportDetail['report']['status'] ?? '')) ?></span></dd></div>
+            <?php if (!empty($reportDetail['report']['locked_at'])): ?>
+            <div class="info-row"><dt>Locked At</dt><dd><?= e((string) $reportDetail['report']['locked_at']) ?></dd></div>
+            <?php endif; ?>
+            <div class="info-row"><dt>Created</dt><dd><?= e((string) ($reportDetail['report']['created_at'] ?? '')) ?></dd></div>
+        </dl>
+        <?php foreach ($reportDetail['items'] ?? [] as $item): ?>
+        <div class="card workflow-order-card" style="margin-bottom: 1rem;">
+            <div class="card-body">
+                <p><strong>Order <?= e((string) ($item['order_reference'] ?? $item['erp_order_reference'] ?? '')) ?></strong> — <?= e((string) ($item['customer_name'] ?? '')) ?></p>
+                <p class="page-description">Stored cost snapshot: <strong><?= e((string) ($item['product_cost_snapshot'] ?? '0.00')) ?></strong> · Qty: <?= e((string) ($item['item_count'] ?? '0')) ?> · Status: <?= e((string) ($item['ibs_status'] ?? '')) ?></p>
+                <?php if (!empty($item['product_lines'])): ?>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th>Line supplier_cost_snapshot (informational)</th></tr></thead>
+                        <tbody>
+                            <?php foreach ($item['product_lines'] as $line): ?>
+                            <tr>
+                                <td><?= e((string) ($line['product_name'] ?? '')) ?></td>
+                                <td><?= e((string) ($line['variant_label'] ?? '-')) ?></td>
+                                <td><?= e((string) ($line['quantity'] ?? '')) ?></td>
+                                <td><?= e((string) ($line['supplier_cost_snapshot'] ?? '')) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Dispatch Report Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only from raw inventory below. Batch create uses the form above.</p>
+        <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Dispatch Reports']); ?>
+    </div>
+</details>
+
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
 <div class="card-grid">
     <div class="card">
@@ -251,3 +393,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>

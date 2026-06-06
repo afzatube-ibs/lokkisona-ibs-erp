@@ -15,6 +15,50 @@ class OrderItemRepository extends BaseReadOnlyRepository
         return OrderItem::class;
     }
 
+    public function findByOrderId(int $orderId): array
+    {
+        if (!$this->tableExists() || $orderId <= 0) {
+            return [];
+        }
+
+        try {
+            $table = TableName::forModel($this->modelClass());
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` WHERE order_id = :order_id ORDER BY order_item_id ASC';
+            QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['order_id' => $orderId]);
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    public function sumSupplierCostByOrderId(int $orderId): float
+    {
+        $total = 0.0;
+        foreach ($this->findByOrderId($orderId) as $row) {
+            $qty = (int) ($row['quantity'] ?? 0);
+            if ($qty < 1) {
+                $qty = 1;
+            }
+            $total += (float) ($row['supplier_cost_snapshot'] ?? 0) * $qty;
+        }
+
+        return round($total, 2);
+    }
+
+    public function sumQuantityByOrderId(int $orderId): int
+    {
+        $total = 0;
+        foreach ($this->findByOrderId($orderId) as $row) {
+            $qty = (int) ($row['quantity'] ?? 0);
+            $total += $qty > 0 ? $qty : 1;
+        }
+
+        return $total;
+    }
+
     public function latest(int $limit = 20): array
     {
         if (!$this->tableExists()) {

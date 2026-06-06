@@ -28,6 +28,11 @@ class OrderReadService
         return $this->repository->all($limit, $offset);
     }
 
+    public function findByStatus(string $status, int $limit = 50): array
+    {
+        return $this->repository->findByStatus($status, $limit);
+    }
+
     public function latest(int $limit = 20): array
     {
         return $this->repository->latest($limit);

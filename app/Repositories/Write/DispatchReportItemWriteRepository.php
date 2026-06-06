@@ -21,4 +21,22 @@ class DispatchReportItemWriteRepository extends BaseWriteRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+
+    public function existsForOrderId(int $orderId): bool
+    {
+        if (!$this->tableExists() || $orderId <= 0) {
+            return false;
+        }
+
+        $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE order_id = :order_id AND status = :status';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'order_id' => $orderId,
+            'status' => 'included',
+        ]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return ((int) ($row['row_count'] ?? 0)) > 0;
+    }
 }
