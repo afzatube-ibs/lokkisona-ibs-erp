@@ -164,6 +164,16 @@ class DispatchReportWriteService
             return WriteResult::fail('Dispatch report create failed: ' . $e->getMessage());
         }
 
+        $payableNote = '';
+        try {
+            $payableResult = (new PayableLedgerWriteService())->createDraftFromDispatch($reportId);
+            if ($payableResult->success) {
+                $payableNote = ' Product Cost Payable draft created — awaiting owner approval.';
+            }
+        } catch (\Throwable $e) {
+            // Payable draft is optional when ledger table is unavailable.
+        }
+
         ActivityLog::record('dispatch_report_created', 'Daily dispatch report created (locked snapshot)', [
             'dispatch_report_id' => $reportId,
             'dispatch_reference' => $reference,
@@ -173,7 +183,7 @@ class DispatchReportWriteService
         ]);
 
         return WriteResult::ok(
-            'Dispatch report ' . $reference . ' created and locked with ' . count($validatedOrders) . ' order(s).',
+            'Dispatch report ' . $reference . ' created and locked with ' . count($validatedOrders) . ' order(s).' . $payableNote,
             $reportId
         );
     }

@@ -1,7 +1,85 @@
 <div class="page-header">
     <h1 class="page-title">Sync Preview</h1>
-    <p class="page-description">Sync Preview and Import Safety Planning Foundation — planning only. No OpenCart, WooCommerce, or live source connection; no order sync/import, no sync tables, and no sync/import records are written in this release.</p>
+    <p class="page-description">Test Sync + controlled import (v0.5.7). Demo mode or live OpenCart reads. Max 50 orders per request, supplier-handled only, owner-approved import only.</p>
 </div>
+
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<?php
+view('partials.write-gate-warning', [
+    'writeGateReady' => $writeGateReady ?? false,
+    'writeGate' => $writeGate ?? [],
+    'writeGateMessage' => null,
+]);
+?>
+
+<?php if (!empty($canManage) && !empty($writeGateReady)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Test Sync Actions</h2></div>
+    <div class="card-body">
+        <form method="post" action="/sync-preview/run-test-sync" style="display:inline-block;margin-right:0.5rem;">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+            <button type="submit" class="btn btn-primary">Run Test Sync</button>
+        </form>
+        <form method="post" action="/sync-preview/import" style="display:inline-block;">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+            <input type="hidden" name="sync_preview_id" value="<?= e((string) ($testSyncPreview['latest_preview']['sync_preview_id'] ?? '')) ?>">
+            <label style="display:inline-flex;align-items:center;gap:0.35rem;margin-right:0.5rem;">
+                <input type="checkbox" name="import_confirmation" value="1" required>
+                Owner confirms eligible preview import
+            </label>
+            <button type="submit" class="btn btn-secondary">Import Eligible Rows</button>
+        </form>
+        <p class="page-description" style="margin-top:0.75rem;">Full Sync stays hidden. One request only — no background loops.</p>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($testSyncPreview)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Test Sync Preview</h2></div>
+    <div class="card-body">
+        <p><strong>Source:</strong> <?= e($testSyncPreview['source'] ?? '') ?></p>
+        <p><strong>Status:</strong> <?= e($testSyncPreview['status'] ?? '') ?> — <?= e($testSyncPreview['message'] ?? '') ?></p>
+        <ul class="feature-list">
+            <?php foreach (($testSyncPreview['rules'] ?? []) as $rule): ?>
+                <li><?= e($rule) ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <div class="stats-grid" style="margin-top:1rem;">
+            <?php foreach (($testSyncPreview['preview_counts'] ?? []) as $label => $count): ?>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <span class="stat-label"><?= e(str_replace('_', ' ', $label)) ?></span>
+                    <span class="stat-value"><?= e((string) $count) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php if (!empty($testSyncPreview['sample_rows'])): ?>
+        <div class="table-scroll" style="margin-top:1rem;">
+            <table class="data-table">
+                <thead><tr><th>Source Ref</th><th>Source Status</th><th>Mapped</th><th>Preview Status</th><th>Customer</th><th>Total</th></tr></thead>
+                <tbody>
+                    <?php foreach ($testSyncPreview['sample_rows'] as $row): ?>
+                    <tr>
+                        <td><?= e($row['source_order_reference'] ?? '') ?></td>
+                        <td><?= e($row['source_status'] ?? '') ?></td>
+                        <td><?= e($row['mapped_status'] ?? '') ?></td>
+                        <td><?= e($row['preview_status'] ?? '') ?></td>
+                        <td><?= e($row['customer_name'] ?? '') ?></td>
+                        <td><?= e($row['order_total'] ?? '') ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="card-grid">
     <div class="card">

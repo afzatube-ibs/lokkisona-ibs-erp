@@ -166,7 +166,7 @@ try {
         Wait-ForServer $baseUrl
     }
 
-    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/dev-db-activation", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/migration-execution-lock", "/supplier-opening-balances", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
+    $routes = @("/login", "/dashboard", "/activity-log", "/roles-permissions", "/database-safety", "/dev-db-activation", "/migration-runner", "/migration-files", "/migration-dry-run", "/migration-approval", "/migration-execution-lock", "/supplier-opening-balances", "/build-queue", "/health", "/version", "/users", "/suppliers", "/business-sources", "/product-control", "/order-workflow", "/dispatch-reports", "/supplier-payables", "/settlements", "/reports", "/return-receive", "/status-mapping", "/sync-preview", "/invoice-printing", "/supplier-tools", "/manual-orders")
     $script:routeSmokeCount = $routes.Count
     foreach ($route in $routes) {
         $status = Invoke-HttpStatus "$baseUrl$route"

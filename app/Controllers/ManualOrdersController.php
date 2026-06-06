@@ -14,6 +14,8 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
+use App\Repositories\BusinessSourceRepository;
+use App\Repositories\SupplierRepository;
 use App\Services\ReadOnly\ManualOrderItemReadService;
 use App\Services\ReadOnly\ManualOrderReadService;
 use App\Services\ReadOnly\OrderItemReadService;
@@ -27,9 +29,22 @@ class ManualOrdersController extends Controller
     public function index()
     {
         $this->authorize('manual_orders.view');
-        ActivityLog::record('manual_orders_access', 'Manual and External Order planning foundation page viewed');
+        ActivityLog::record('manual_orders_access', 'Manual orders page viewed');
 
         $confirmationNoteMaps = $this->buildManualOrderConfirmationNoteMaps();
+        $manualOrderReadInventory = $this->buildManualOrderReadInventory();
+        $manualOrderItemReadInventory = $this->buildManualOrderItemReadInventory();
+        $orderReadInventory = $this->buildOrderReadInventory();
+        $productReadInventory = $this->buildProductReadInventory();
+        $productVariantReadInventory = $this->buildProductVariantReadInventory();
+        $businessSourceOptions = $this->loadBusinessSourceOptions();
+        $supplierOptions = $this->loadSupplierOptions();
+        $productOptions = $this->productSelectOptionsFromInventory($productReadInventory);
+        $variantOptionsByProduct = $this->variantOptionsByProductFromInventory(
+            $productReadInventory,
+            $productVariantReadInventory
+        );
+        $productCostById = $this->productCostMapFromInventory($productReadInventory);
 
         $this->render('manual-orders.index', [
             'pageTitle' => 'Manual Orders',
@@ -38,12 +53,23 @@ class ManualOrdersController extends Controller
                 ['label' => 'Manual Orders', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
-            'manualOrderReadInventory' => $this->buildManualOrderReadInventory(),
-            'manualOrderItemReadInventory' => $this->buildManualOrderItemReadInventory(),
-            'orderReadInventory' => $this->buildOrderReadInventory(),
+            'manualOrderReadInventory' => $manualOrderReadInventory,
+            'manualOrderItemReadInventory' => $manualOrderItemReadInventory,
+            'orderReadInventory' => $orderReadInventory,
             'orderItemReadInventory' => $this->buildOrderItemReadInventory(),
-            'productReadInventory' => $this->buildProductReadInventory(),
-            'productVariantReadInventory' => $this->buildProductVariantReadInventory(),
+            'productReadInventory' => $productReadInventory,
+            'productVariantReadInventory' => $productVariantReadInventory,
+            'businessSourceOptions' => $businessSourceOptions,
+            'supplierOptions' => $supplierOptions,
+            'productOptions' => $productOptions,
+            'variantOptionsByProduct' => $variantOptionsByProduct,
+            'productCostById' => $productCostById,
+            'recentOrders' => $this->buildRecentOrdersSummary(
+                $manualOrderReadInventory,
+                $manualOrderItemReadInventory,
+                $orderReadInventory,
+                $businessSourceOptions
+            ),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'sonamoniReferencePlan' => $this->sonamoniReferencePlan(),
@@ -539,5 +565,186 @@ class ManualOrdersController extends Controller
         }
 
         return ['manual' => $manual, 'order' => $order];
+    }
+
+    private function loadBusinessSourceOptions(): array
+    {
+        try {
+            $repo = new BusinessSourceRepository();
+            if (!$repo->tableExists()) {
+                return [];
+            }
+
+            $options = [];
+            foreach ($repo->all(100, 0) as $row) {
+                $id = (int) ($row['business_source_id'] ?? 0);
+                if ($id <= 0) {
+                    continue;
+                }
+                $name = trim((string) ($row['source_name'] ?? ''));
+                $label = $name !== '' ? $name : 'Source #' . $id;
+                $options[] = ['id' => $id, 'label' => $label];
+            }
+
+            return $options;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    private function loadSupplierOptions(): array
+    {
+        try {
+            $repo = new SupplierRepository();
+            if (!$repo->tableExists()) {
+                return [];
+            }
+
+            $options = [];
+            foreach ($repo->all(100, 0) as $row) {
+                $id = (int) ($row['supplier_id'] ?? 0);
+                if ($id <= 0) {
+                    continue;
+                }
+                $name = trim((string) ($row['supplier_name'] ?? $row['name'] ?? ''));
+                $options[] = ['id' => $id, 'label' => $name !== '' ? $name : 'Supplier #' . $id];
+            }
+
+            return $options;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    private function productSelectOptionsFromInventory(array $productReadInventory): array
+    {
+        if (!in_array($productReadInventory['status'] ?? '', ['ok', 'empty'], true)) {
+            return [];
+        }
+
+        $options = [];
+        foreach ($productReadInventory['rows'] ?? [] as $row) {
+            $id = (int) ($row['product_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $name = trim((string) ($row['product_name'] ?? ''));
+            $options[] = ['id' => $id, 'label' => $name !== '' ? $name : 'Product #' . $id];
+        }
+
+        return $options;
+    }
+
+    private function variantOptionsByProductFromInventory(array $productReadInventory, array $variantReadInventory): array
+    {
+        if (!in_array($variantReadInventory['status'] ?? '', ['ok', 'empty'], true)) {
+            return [];
+        }
+
+        $productCosts = $this->productCostMapFromInventory($productReadInventory);
+        $map = [];
+
+        foreach ($variantReadInventory['rows'] ?? [] as $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            $variantId = (int) ($row['product_variant_id'] ?? 0);
+            if ($productId <= 0 || $variantId <= 0) {
+                continue;
+            }
+
+            $optionName = trim((string) ($row['option_name'] ?? ''));
+            $optionValue = trim((string) ($row['option_value'] ?? ''));
+            $label = trim($optionName . ($optionValue !== '' ? ': ' . $optionValue : ''));
+            if ($label === '') {
+                $label = 'Variant #' . $variantId;
+            }
+
+            $cost = $row['product_cost'] ?? null;
+            if ($cost === null || $cost === '') {
+                $cost = $productCosts[$productId] ?? 0;
+            }
+
+            $map[$productId][] = [
+                'id' => $variantId,
+                'label' => $label,
+                'cost' => round((float) $cost, 2),
+            ];
+        }
+
+        return $map;
+    }
+
+    private function productCostMapFromInventory(array $productReadInventory): array
+    {
+        $costs = [];
+        foreach ($productReadInventory['rows'] ?? [] as $row) {
+            $id = (int) ($row['product_id'] ?? 0);
+            if ($id > 0) {
+                $costs[$id] = round((float) ($row['product_cost'] ?? 0), 2);
+            }
+        }
+
+        return $costs;
+    }
+
+    private function buildRecentOrdersSummary(
+        array $manualOrderInventory,
+        array $manualItemInventory,
+        array $orderInventory,
+        array $businessSourceOptions
+    ): array {
+        $rows = array_slice($manualOrderInventory['rows'] ?? [], 0, 20);
+        if ($rows === []) {
+            return [];
+        }
+
+        $itemCounts = [];
+        foreach ($manualItemInventory['rows'] ?? [] as $item) {
+            $manualId = (int) ($item['manual_order_id'] ?? 0);
+            if ($manualId > 0) {
+                $itemCounts[$manualId] = ($itemCounts[$manualId] ?? 0) + 1;
+            }
+        }
+
+        $costTotals = [];
+        foreach ($manualItemInventory['rows'] ?? [] as $item) {
+            $manualId = (int) ($item['manual_order_id'] ?? 0);
+            if ($manualId > 0) {
+                $costTotals[$manualId] = ($costTotals[$manualId] ?? 0)
+                    + round((float) ($item['supplier_cost_snapshot'] ?? 0) * (int) ($item['quantity'] ?? 0), 2);
+            }
+        }
+
+        $orderByRef = [];
+        foreach ($orderInventory['rows'] ?? [] as $order) {
+            $ref = trim((string) ($order['order_reference'] ?? ''));
+            if ($ref !== '') {
+                $orderByRef[$ref] = (int) ($order['order_id'] ?? 0);
+            }
+        }
+
+        $sourceLabels = [];
+        foreach ($businessSourceOptions as $opt) {
+            $sourceLabels[(int) $opt['id']] = $opt['label'];
+        }
+
+        $summary = [];
+        foreach ($rows as $row) {
+            $manualId = (int) ($row['manual_order_id'] ?? 0);
+            $ref = trim((string) ($row['manual_order_reference'] ?? ''));
+            $sourceId = (int) ($row['business_source_id'] ?? 0);
+            $summary[] = [
+                'manual_order_id' => $manualId,
+                'manual_order_reference' => $ref,
+                'customer_name' => (string) ($row['customer_name'] ?? ''),
+                'source_label' => $sourceLabels[$sourceId] ?? ('Source #' . $sourceId),
+                'item_count' => $itemCounts[$manualId] ?? 0,
+                'order_total' => (float) ($row['order_total'] ?? 0),
+                'cost_snapshot_total' => $costTotals[$manualId] ?? 0,
+                'created_at' => (string) ($row['created_at'] ?? ''),
+                'order_id' => $orderByRef[$ref] ?? null,
+            ];
+        }
+
+        return $summary;
     }
 }

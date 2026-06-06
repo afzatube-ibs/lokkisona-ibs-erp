@@ -1595,3 +1595,387 @@ select.form-input,
         grid-template-columns: 1fr;
     }
 }
+
+/* Developer collapse + payable ledger helpers */
+.dev-collapse {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.dev-collapse summary {
+    padding: 0.875rem 1.25rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    list-style: none;
+}
+
+.dev-collapse summary::-webkit-details-marker { display: none; }
+
+.dev-collapse-body {
+    padding: 0 1.25rem 1.25rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.card-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.inline-filter-form { margin: 0; }
+
+.inline-form {
+    display: inline-block;
+    margin-right: 0.35rem;
+}
+
+.form-group-full { grid-column: 1 / -1; }
+
+.form-actions { margin-top: 0.5rem; }
+
+.badge-muted {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.page-header-flex {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.report-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.report-summary {
+    padding: 1rem 1.25rem;
+    margin: 0;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.task-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+.task-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    text-decoration: none;
+    transition: box-shadow var(--transition), border-color var(--transition);
+    min-height: 100px;
+}
+
+.task-card:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: var(--shadow-md);
+}
+
+.task-card-active {
+    border-color: var(--color-primary);
+    background: rgba(26, 77, 140, 0.04);
+}
+
+.task-card-count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.task-card-label {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+}
+
+.mt-15 { margin-top: 1.5rem; }
+.mt-1 { margin-top: 1rem; }
+
+/* ── Topbar supplier tools ── */
+.topbar-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.topbar-tool-btn:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+}
+.topbar-tool-btn svg {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+/* ── Modals ── */
+body.modal-open { overflow: hidden; }
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.55);
+}
+.modal-overlay[hidden] { display: none !important; }
+.modal-panel {
+    width: 100%;
+    max-width: 22rem;
+    max-height: 90vh;
+    overflow: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+.modal-panel-wide { max-width: 42rem; }
+.modal-panel-calculator { max-width: 20rem; }
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+.modal-title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+}
+.modal-close {
+    border: none;
+    background: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.modal-body { padding: 1.25rem; }
+.modal-hint {
+    margin: 0.75rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+.modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+.section-subtitle {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* ── Calculator keypad ── */
+.calc-display {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    text-align: right;
+}
+.calc-expression {
+    min-height: 1.25rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+.calc-result {
+    font-size: 1.75rem;
+    font-weight: 600;
+    word-break: break-all;
+}
+.calc-keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+}
+.calc-key {
+    padding: 0.65rem 0.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.calc-key:hover { background: var(--color-bg); }
+.calc-key-op { background: var(--color-primary-soft); color: var(--color-primary); }
+.calc-key-fn { font-size: 0.8125rem; }
+.calc-key-eq {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+/* ── Quick invoice form ── */
+.invoice-form-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.invoice-totals-panel {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+.invoice-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    font-size: 0.875rem;
+}
+.invoice-total-row input { max-width: 8rem; text-align: right; }
+.invoice-total-due {
+    margin-top: 0.35rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 1rem;
+}
+
+/* ── Manual orders ── */
+.manual-order-summary-panel {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+.manual-order-form .section-subtitle {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.9375rem;
+}
+.manual-order-form .section-subtitle:first-of-type {
+    margin-top: 0;
+}
+.manual-order-customer-grid .manual-order-address-field {
+    grid-column: 1 / -1;
+}
+.manual-order-line-items .mo-line-total {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    padding-top: 0.5rem;
+}
+
+/* ── Dashboard engagement tools ── */
+.engage-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.engage-tool-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.engage-tool-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+.engage-tool-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--color-primary);
+}
+.engage-tool-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* ── Quick invoice print page ── */
+.quick-invoice-print-body {
+    margin: 0;
+    padding: 1.5rem;
+    background: #f8fafc;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: #0f172a;
+}
+.quick-invoice-print {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 2rem;
+}
+.qip-actions { margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.qip-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+}
+.qip-supplier { margin: 0; font-size: 1.5rem; }
+.qip-sub { margin: 0.25rem 0 0; color: #64748b; font-size: 0.875rem; }
+.qip-meta { text-align: right; font-size: 0.875rem; }
+.qip-customer h2 { margin: 0 0 0.35rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+.qip-customer-name { font-weight: 600; margin: 0; }
+.qip-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.875rem; }
+.qip-table th, .qip-table td { border: 1px solid #e2e8f0; padding: 0.5rem 0.65rem; }
+.qip-table th { background: #f1f5f9; text-align: left; }
+.qip-table .num { text-align: right; }
+.qip-totals { margin-left: auto; width: min(100%, 280px); font-size: 0.875rem; }
+.qip-total-row { display: flex; justify-content: space-between; padding: 0.3rem 0; }
+.qip-balance { font-size: 1.0625rem; font-weight: 700; border-top: 2px solid #0f172a; margin-top: 0.35rem; padding-top: 0.5rem; }
+.qip-notes { margin-top: 1rem; font-size: 0.875rem; }
+.qip-footer { margin-top: 2rem; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 0.75rem; }
+
+@media print {
+    .sidebar, .topbar, .no-print, .dev-collapse, details, .btn, .btn-print-action, .qip-actions { display: none !important; }
+    .quick-invoice-print-body { padding: 0; background: #fff; }
+    .quick-invoice-print { border: none; border-radius: 0; padding: 0; max-width: none; }
+    .main-content { padding: 0; margin: 0; }
+    .card { box-shadow: none; border: 1px solid #ccc; }
+    .table-scroll { overflow: visible; }
+    .print-document-card { border: none; }
+    .print-document-card .card-header { border-bottom: 2px solid #111; }
+}

@@ -22,6 +22,11 @@ class DispatchReportWriteRepository extends BaseWriteRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    public function find(int $id): ?array
+    {
+        return $this->findById($id);
+    }
+
     public function findReferencesByDispatchDate(string $dispatchDate): array
     {
         if (!$this->tableExists() || $dispatchDate === '') {

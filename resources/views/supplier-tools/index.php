@@ -1,7 +1,71 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Tools</h1>
-    <p class="page-description">Supplier Tools Planning Foundation. These are independent engagement tools only. No supplier tool tables are created automatically and no supplier quick invoice records are written in this release.</p>
+    <p class="page-description">Supplier engagement hub (v0.6.1). Use the <strong>calculator</strong> and <strong>quick invoice</strong> icons in the top header bar, or open them from the supplier dashboard. Independent tools — no ERP payable, stock, or order impact.</p>
 </div>
+
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">How to Access Tools</h2></div>
+    <div class="card-body">
+        <ul class="feature-list">
+            <li><strong>Calculator</strong> — topbar calculator icon (full keypad modal, no saves).</li>
+            <li><strong>Quick Invoice</strong> — topbar invoice icon (multi-product, discount, advance, print).</li>
+            <li>Apply migrations <code>0007</code> + <code>0010</code> manually before invoice generation writes.</li>
+        </ul>
+        <?php if (empty($writeGateReady)): ?>
+            <p class="page-description" style="margin-top:0.75rem;"><?= e($writeGate['message'] ?? 'Tables not ready.') ?></p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php if (!empty($showOwnerLog) && !empty($quickInvoiceLog)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Owner / Admin Quick Invoice History</h2></div>
+    <div class="card-body card-body-flush">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Customer</th>
+                        <th>Subtotal</th>
+                        <th>Balance Due</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($quickInvoiceLog as $entry): ?>
+                    <tr>
+                        <td><?= e((string) ($entry['quick_invoice_reference'] ?? '')) ?></td>
+                        <td><?= e((string) ($entry['customer_name'] ?? '')) ?></td>
+                        <td><?= e(number_format((float) ($entry['subtotal'] ?? $entry['invoice_total'] ?? 0), 2)) ?></td>
+                        <td><?= e(number_format((float) ($entry['balance_due'] ?? $entry['invoice_total'] ?? 0), 2)) ?></td>
+                        <td><?= e((string) ($entry['output_status'] ?? '')) ?></td>
+                        <td><?= e((string) ($entry['created_at'] ?? '')) ?></td>
+                        <td>
+                            <a class="btn btn-sm btn-secondary" href="<?= e(url('/supplier-tools/quick-invoice/print/' . (int) ($entry['supplier_quick_invoice_id'] ?? 0))) ?>">View</a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php elseif (!empty($showOwnerLog)): ?>
+<div class="card mb-15">
+    <div class="card-body">
+        <p class="page-description">No quick invoices yet. Apply migrations 0007 + 0010 to enable DB-backed invoice history.</p>
+    </div>
+</div>
+<?php endif; ?>
+
+<details class="dev-collapse mb-15">
+<summary>Planning Foundation (collapsed)</summary>
+<div class="dev-collapse-body">
 
 <div class="card-grid">
     <div class="card">
@@ -69,104 +133,5 @@
     <?php endforeach; ?>
 </div>
 
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Future Permission / Access Plan</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($futurePermissionPlan as $item): ?>
-                    <li><?= e($item) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Future Audit Plan</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($futureAuditPlan as $item): ?>
-                    <li><?= e($item) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
 </div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Planned supplier_quick_invoices Fields</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($plannedQuickInvoiceFields as $field): ?>
-                    <li><code><?= e($field) ?></code></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Planned supplier_quick_invoice_items Fields</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($plannedQuickInvoiceItemFields as $field): ?>
-                    <li><code><?= e($field) ?></code></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Planned supplier_quick_invoice_audits Fields</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($plannedQuickInvoiceAuditFields as $field): ?>
-                    <li><code><?= e($field) ?></code></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Current Access Mode</h2>
-        </div>
-        <div class="card-body">
-            <dl class="info-list">
-                <div class="info-row">
-                    <dt>Mode</dt>
-                    <dd><?= e($accessMode['mode']) ?></dd>
-                </div>
-                <div class="info-row">
-                    <dt>Current Role</dt>
-                    <dd><?= e($accessMode['role']) ?></dd>
-                </div>
-            </dl>
-            <p class="page-description">Owner and admin can view Supplier Tools planning now. Supplier role can later access only allowed tools. Staff access later is permission-based.</p>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Manual Migration Required</h2>
-        </div>
-        <div class="card-body">
-            <p>No supplier quick invoice, quick invoice item, or quick invoice audit tables are created automatically and no supplier tool records are written in this release.</p>
-            <p class="page-description">No real invoice generator form or calculator is built in this release. Supplier Tools remain independent planning only.</p>
-        </div>
-    </div>
-</div>
+</details>

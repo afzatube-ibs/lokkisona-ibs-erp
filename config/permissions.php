@@ -173,6 +173,10 @@ return [
             'supplier_payables.view',
             'supplier_payables.manage',
         ],
+        'Settlements' => [
+            'settlements.view',
+            'settlements.manage',
+        ],
     ],
     'role_permissions' => [
         'owner' => ['*'],
@@ -256,6 +260,8 @@ return [
             'payables.manage',
             'supplier_payables.view',
             'supplier_payables.manage',
+            'settlements.view',
+            'settlements.manage',
             'settings.view',
             'settings.manage',
         ],
@@ -276,7 +282,14 @@ return [
         'supplier' => [
             'dashboard.view',
             'orders.view',
+            'order_workflow.view',
+            'order_workflow.manage',
+            'return_receive.view',
+            'return_receive.manage',
             'returns.view',
+            'supplier_tools.view',
+            'supplier_quick_invoice.manage',
+            'supplier_calculator.view',
         ],
     ],
 ];

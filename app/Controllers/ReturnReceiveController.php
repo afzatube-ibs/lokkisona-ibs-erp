@@ -23,6 +23,7 @@ use App\Repositories\OrderWorkflowHistoryRepository;
 use App\Repositories\ReturnReceiveRepository;
 use App\Repositories\Write\OrderWriteRepository;
 use App\Services\ReadOnly\ReturnReceiveReadService;
+use App\Services\Write\ReturnBatchWriteService;
 use App\Services\Write\ReturnReceiveWriteService;
 
 class ReturnReceiveController extends Controller
@@ -59,6 +60,8 @@ class ReturnReceiveController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::returnReceive(),
             'writeGateReady' => WriteGate::returnReceive()['ready'],
+            'returnBatches' => (new ReturnBatchWriteService())->listLatest(20),
+            'canApproveBatch' => Permission::can('return_receive.manage'),
             'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
@@ -93,6 +96,18 @@ class ReturnReceiveController extends Controller
             redirect('/return-receive');
         }
         $this->redirectWithWriteResult('/return-receive', (new ReturnReceiveWriteService())->confirmReceive($_POST));
+    }
+
+    public function approveBatch()
+    {
+        $this->authorize('return_receive.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/return-receive');
+        }
+        $id = (int) ($_POST['return_batch_id'] ?? 0);
+        $this->redirectWithWriteResult('/return-receive', (new ReturnBatchWriteService())->approveBatch($id));
     }
 
     private function buildPendingReturns(string $returnType): array

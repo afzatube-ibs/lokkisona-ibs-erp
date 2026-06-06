@@ -1,7 +1,72 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Status Mapping and Sync Planning Foundation — planning only. No OpenCart connection, no order sync, no mapping tables, and no mapping/sync records are written in this release.</p>
+    <p class="page-description">Lokkisona OpenCart status mapping (v0.5.7). Map supplier-handled source statuses into IBS workflow before Test Sync or controlled import. Apply migration 0004 manually first.</p>
 </div>
+
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<?php
+view('partials.write-gate-warning', [
+    'writeGateReady' => $writeGateReady ?? false,
+    'writeGate' => $writeGate ?? [],
+    'writeGateMessage' => null,
+]);
+?>
+
+<?php if (!empty($canManage) && !empty($writeGateReady)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Status Mapping Writes</h2></div>
+    <div class="card-body">
+        <form method="post" action="/status-mapping/create" class="form-grid">
+            <?= $csrfField ?? '' ?>
+            <label>Business Source ID<input type="number" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>" min="1" required></label>
+            <label>Source Status<input type="text" name="source_status" placeholder="Supplier Processing" required></label>
+            <label>IBS Status<input type="text" name="ibs_status" placeholder="new_order" required></label>
+            <label>Workflow Group<input type="text" name="workflow_group" value="workflow"></label>
+            <button type="submit" class="btn btn-primary">Save Mapping</button>
+        </form>
+        <form method="post" action="/status-mapping/seed-defaults" style="margin-top:1rem;">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+            <button type="submit" class="btn btn-secondary">Seed Lokkisona Defaults</button>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($mappingRows)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Active Mappings</h2></div>
+    <div class="card-body card-body-flush">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead><tr><th>ID</th><th>Source</th><th>Source Status</th><th>IBS Status</th><th>Active</th><th>Action</th></tr></thead>
+                <tbody>
+                    <?php foreach ($mappingRows as $row): ?>
+                    <tr>
+                        <td><?= e((string) ($row['status_mapping_id'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['business_source_id'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['source_status'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['ibs_status'] ?? '')) ?></td>
+                        <td><?= !empty($row['is_active']) ? 'Yes' : 'No' ?></td>
+                        <td>
+                            <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
+                            <form method="post" action="/status-mapping/toggle" style="display:inline;">
+                                <?= $csrfField ?? '' ?>
+                                <input type="hidden" name="status_mapping_id" value="<?= e((string) ($row['status_mapping_id'] ?? '')) ?>">
+                                <input type="hidden" name="is_active" value="<?= !empty($row['is_active']) ? '0' : '1' ?>">
+                                <button type="submit" class="btn btn-sm"><?= !empty($row['is_active']) ? 'Deactivate' : 'Activate' ?></button>
+                            </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="card-grid">
     <div class="card">

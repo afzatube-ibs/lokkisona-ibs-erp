@@ -21,6 +21,11 @@ class Controller
         $data['currentRole'] = Auth::role();
         $data['navItems'] = Permission::menuItems();
         $data['currentPath'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $data['canUseCalculator'] = Permission::can('supplier_calculator.view');
+        $data['canUseQuickInvoice'] = Permission::can('supplier_quick_invoice.manage');
+        $data['quickInvoiceGateReady'] = WriteGate::supplierQuickInvoice()['ready'];
+        $data['writeGateMessage'] = WriteGate::WARNING_MESSAGE;
+        $data['csrfField'] = Csrf::field();
 
         ob_start();
         view($view, $data);

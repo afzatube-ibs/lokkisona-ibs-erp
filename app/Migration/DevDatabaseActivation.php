@@ -78,7 +78,7 @@ class DevDatabaseActivation
                     'ibs_payable_adjustments',
                 ],
                 'testable_after' => 'Dispatch report create, dispatch/return/payable read inventory; dispatch write path on dev.',
-                'still_blocked' => 'Return receive submit (v0.4.3+), payable settlement (v0.4.4+), no supplier payment writes yet.',
+                'still_blocked' => 'Live channel sync/import. Payable ledger writes available on /supplier-payables when tables Ready.',
             ],
             [
                 'key' => 'E',
@@ -95,7 +95,7 @@ class DevDatabaseActivation
                     'ibs_supplier_quick_invoice_audits',
                 ],
                 'testable_after' => 'Invoice printing read inventory and supplier tools planning review on dev.',
-                'still_blocked' => 'Invoice print persistence (v0.4.5+), no invoice generation, no print log writes from this release.',
+                'still_blocked' => 'Apply 0010_supplier_quick_invoice_totals.sql after 0007 for professional quick invoice customer/totals fields.',
             ],
             [
                 'key' => 'F',
@@ -125,6 +125,9 @@ class DevDatabaseActivation
             'Step 7: Apply Group C before manual order and workflow action tests.',
             'Step 8: Apply Group D before dispatch, payable, and return read/write path tests.',
             'Step 9: Apply Group E before invoice printing and supplier tools read testing.',
+            'Step 10: Apply 0004_status_mapping_sync_preview.sql before /status-mapping and /sync-preview write tests.',
+            'Step 11: Apply 0009_settlements_workflow.sql before /settlements workflow tests.',
+            'Step 12: Complete docs/STAGING-QA-CHECKLIST.md E2E chain before production cutover.',
         ];
     }
 
@@ -133,9 +136,10 @@ class DevDatabaseActivation
         return [
             'Automatic migration apply from any page, build queue, or checkpoint.',
             'CREATE TABLE, ALTER TABLE, DROP TABLE, or automatic schema modification during page load.',
-            'OpenCart or WooCommerce connection, sync, or import.',
             'Live production database activation before dev/staging QA is complete.',
-            'v0.4.3 Return Receive Submit, v0.4.4 Payable Settlement, v0.4.5 Invoice Print Persistence — not built yet.',
+            'Live OpenCart API until owner sets opencart.enabled=true with credentials on staging/production.',
+            'Full Sync / background import loops (controlled import max 50 only).',
+            'Automatic stock deduction and returned-stock restore (owner-approved module pending).',
             'Any write form on environments where required tables show Not applied.',
         ];
     }

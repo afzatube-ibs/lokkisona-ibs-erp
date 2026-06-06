@@ -42,10 +42,17 @@ class Auth
 
     public static function attempt($username, $password)
     {
+        $role = null;
         $validUser = config('app.auth.username', 'admin');
         $validPass = config('app.auth.password', 'admin');
+        $supplierUser = config('app.auth.supplier_username', 'supplier');
+        $supplierPass = config('app.auth.supplier_password', 'supplier');
 
-        if ($username !== $validUser || $password !== $validPass) {
+        if ($username === $validUser && $password === $validPass) {
+            $role = config('permissions.default_role', 'owner');
+        } elseif ($supplierUser !== '' && $username === $supplierUser && $password === $supplierPass) {
+            $role = 'supplier';
+        } else {
             app_log('Failed login attempt for user: ' . $username, 'warning');
             ActivityLog::record('failed_login', 'Failed login attempt', [
                 'user' => $username,
@@ -58,7 +65,7 @@ class Auth
         session_regenerate_id(true);
         $_SESSION['ibs_authenticated'] = true;
         $_SESSION['ibs_user'] = $username;
-        $_SESSION['ibs_role'] = config('permissions.default_role', 'owner');
+        $_SESSION['ibs_role'] = $role;
         $_SESSION['ibs_login_at'] = time();
 
         app_log('User logged in: ' . $username);

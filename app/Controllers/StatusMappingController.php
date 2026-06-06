@@ -3,7 +3,11 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
+use App\Repositories\Write\StatusMappingWriteRepository;
+use App\Services\Write\StatusMappingWriteService;
 
 class StatusMappingController extends Controller
 {
@@ -12,6 +16,8 @@ class StatusMappingController extends Controller
         $this->authorize('status_mapping.view');
         ActivityLog::record('status_mapping_access', 'Status Mapping and Sync Planning foundation page viewed');
 
+        $sourceId = (int) config('opencart.business_source_id', 1);
+
         $this->render('status-mapping.index', [
             'pageTitle' => 'Status Mapping',
             'breadcrumbs' => [
@@ -19,6 +25,14 @@ class StatusMappingController extends Controller
                 ['label' => 'Status Mapping', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'mappingRows' => (new StatusMappingWriteRepository())->listRecent(50),
+            'defaultBusinessSourceId' => $sourceId,
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::statusMappingSync(),
+            'writeGateReady' => WriteGate::statusMappingSync()['ready'],
+            'canManage' => Permission::can('status_mapping.manage'),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'mappingTypes' => $this->mappingTypes(),
@@ -328,5 +342,40 @@ class StatusMappingController extends Controller
             'created_by',
             'created_at',
         ];
+    }
+
+    public function create()
+    {
+        $this->authorize('status_mapping.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/status-mapping');
+        }
+        $this->redirectWithWriteResult('/status-mapping', (new StatusMappingWriteService())->create($_POST));
+    }
+
+    public function toggle()
+    {
+        $this->authorize('status_mapping.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/status-mapping');
+        }
+        $id = (int) ($_POST['status_mapping_id'] ?? 0);
+        $this->redirectWithWriteResult('/status-mapping', (new StatusMappingWriteService())->toggleActive($id, $_POST));
+    }
+
+    public function seedDefaults()
+    {
+        $this->authorize('status_mapping.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/status-mapping');
+        }
+        $sourceId = (int) ($_POST['business_source_id'] ?? config('opencart.business_source_id', 1));
+        $this->redirectWithWriteResult('/status-mapping', (new StatusMappingWriteService())->seedDefaults($sourceId));
     }
 }

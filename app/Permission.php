@@ -156,6 +156,18 @@ class Permission
                 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>',
             ],
             [
+                'label' => 'Settlements',
+                'path' => '/settlements',
+                'permission' => 'settlements.view',
+                'icon' => '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="18" cy="18" r="3"/>',
+            ],
+            [
+                'label' => 'Reports',
+                'path' => '/reports',
+                'permission' => 'supplier_payables.view',
+                'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>',
+            ],
+            [
                 'label' => 'Supplier Opening Balances',
                 'path' => '/supplier-opening-balances',
                 'permission' => 'supplier_opening_balances.view',

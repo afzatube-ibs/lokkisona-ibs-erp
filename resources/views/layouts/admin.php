@@ -74,6 +74,16 @@ $navSectionMap = [
             <?php endif; ?>
 
             <div class="topbar-actions">
+                <?php if (!empty($canUseCalculator)): ?>
+                <button type="button" class="topbar-tool-btn" data-open-modal="supplierCalculatorModal" title="Calculator" aria-label="Open calculator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/><line x1="16" y1="18" x2="16" y2="18.01"/></svg>
+                </button>
+                <?php endif; ?>
+                <?php if (!empty($canUseQuickInvoice)): ?>
+                <button type="button" class="topbar-tool-btn" data-open-modal="supplierQuickInvoiceModal" title="Quick Invoice" aria-label="Open quick invoice generator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+                </button>
+                <?php endif; ?>
                 <span class="user-badge"><?= e($currentUser ?? 'User') ?> · <?= e($currentRole ?? 'owner') ?></span>
                 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
                     <!-- Moon icon (shown in light mode) -->
@@ -116,6 +126,19 @@ $navSectionMap = [
 
     </div>
 </div>
+
+<?php if (!empty($canUseCalculator)): ?>
+    <?php view('partials.supplier-calculator-modal'); ?>
+<?php endif; ?>
+<?php if (!empty($canUseQuickInvoice)): ?>
+    <?php view('partials.supplier-quick-invoice-modal', [
+        'csrfField' => $csrfField ?? '',
+        'quickInvoiceGateReady' => $quickInvoiceGateReady ?? false,
+        'writeGateMessage' => $writeGateMessage ?? '',
+    ]); ?>
+<?php endif; ?>
+
 <script src="<?= e(asset('js/app.js')) ?>"></script>
+<script src="<?= e(asset('js/supplier-tools.js')) ?>"></script>
 </body>
 </html>

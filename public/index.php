@@ -12,6 +12,8 @@ if ($tz) {
 
 Auth::startSession();
 
+\App\StagingGate::enforce();
+
 $router = new Router();
 require IBS_ROOT . '/routes/web.php';
 

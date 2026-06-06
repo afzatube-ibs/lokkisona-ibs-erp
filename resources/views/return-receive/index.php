@@ -142,6 +142,51 @@ $renderPendingSection = static function (
     </div>
 </div>
 
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Return Batches (v0.5.1)</h2></div>
+    <div class="card-body card-body-flush">
+        <p class="page-description" style="padding: 1rem 1.25rem 0;">Owner approves return batches before payable deduction drafts. Deduction still requires separate approval on Supplier Payables.</p>
+        <?php if (!empty($returnBatches)): ?>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Batch Ref</th>
+                        <th>Returns</th>
+                        <th>Adjustment</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($returnBatches as $batch): ?>
+                    <tr>
+                        <td><code><?= e((string) ($batch['return_batch_reference'] ?? '')) ?></code></td>
+                        <td><?= e((string) ($batch['total_returns'] ?? 0)) ?></td>
+                        <td><?= e(number_format((float) ($batch['total_adjustment_amount'] ?? 0), 2)) ?></td>
+                        <td><span class="badge badge-<?= ($batch['status'] ?? '') === 'owner_approved' ? 'success' : 'warn' ?>"><?= e((string) ($batch['status'] ?? '')) ?></span></td>
+                        <td><?= e((string) ($batch['created_at'] ?? '')) ?></td>
+                        <td>
+                            <?php if (!empty($canApproveBatch) && ($batch['status'] ?? '') !== 'owner_approved'): ?>
+                            <form method="post" action="<?= e(url('/return-receive/approve-batch')) ?>" class="inline-form">
+                                <?= $csrfField ?>
+                                <input type="hidden" name="return_batch_id" value="<?= e((string) ($batch['return_batch_id'] ?? '')) ?>">
+                                <button type="submit" class="btn btn-sm btn-primary">Owner Approve</button>
+                            </form>
+                            <?php else: ?>—<?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php else: ?>
+        <div class="empty-state"><p>No return batches yet. Batches are created when returns are confirmed.</p></div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Read-Only Return Receive Inventory (developer reference)</summary>
     <div class="planning-collapsible-body">

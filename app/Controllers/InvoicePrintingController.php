@@ -3,11 +3,19 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Database;
 use App\Database\TableName;
 use App\Models\Invoice;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
+use App\Repositories\Write\InvoiceItemWriteRepository;
+use App\Repositories\Write\InvoiceWriteRepository;
+use App\Repositories\Write\OrderWriteRepository;
+use App\Services\ReadOnly\InvoicePrintPreviewService;
 use App\Services\ReadOnly\InvoiceReadService;
+use App\Services\Write\InvoiceWriteService;
+use App\Services\Write\PrintLogWriteService;
 
 class InvoicePrintingController extends Controller
 {
@@ -36,7 +44,57 @@ class InvoicePrintingController extends Controller
             'plannedPackingPrintFields' => $this->plannedPackingPrintFields(),
             'plannedPrintLogFields' => $this->plannedPrintLogFields(),
             'plannedInvoiceTemplateFields' => $this->plannedInvoiceTemplateFields(),
+            'packingPreview' => (new InvoicePrintPreviewService())->packagingPreview(10),
+            'generatedInvoices' => $this->loadGeneratedInvoices(),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::invoicePrinting(),
+            'writeGateReady' => WriteGate::invoicePrinting()['ready'],
+            'canManage' => Permission::can('invoice_printing.manage'),
         ]);
+    }
+
+    public function generate()
+    {
+        $this->authorize('invoice_printing.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/invoice-printing');
+        }
+        $this->redirectWithWriteResult('/invoice-printing', (new InvoiceWriteService())->generateFromOrder($_POST));
+    }
+
+    public function logPrint()
+    {
+        $this->authorize('invoice_printing.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/invoice-printing');
+        }
+        $this->redirectWithWriteResult('/invoice-printing', (new PrintLogWriteService())->record($_POST));
+    }
+
+    private function loadGeneratedInvoices(): array
+    {
+        $repo = new InvoiceWriteRepository();
+        if (!$repo->tableExists()) {
+            return [];
+        }
+
+        $prefix = config('database.prefix', 'ibs_');
+        $table = $prefix . 'invoices';
+        try {
+            $pdo = \App\Database\Connection::pdo();
+            $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` ORDER BY invoice_id DESC LIMIT 20';
+            $statement = $pdo->query($sql);
+
+            return $statement ? ($statement->fetchAll(\PDO::FETCH_ASSOC) ?: []) : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     private function buildReadInventory()

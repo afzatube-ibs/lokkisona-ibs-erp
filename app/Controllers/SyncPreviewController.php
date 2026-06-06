@@ -3,7 +3,12 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
+use App\Services\ReadOnly\TestSyncPreviewService;
+use App\Services\Write\SyncImportWriteService;
+use App\Services\Write\SyncPreviewWriteService;
 
 class SyncPreviewController extends Controller
 {
@@ -19,6 +24,14 @@ class SyncPreviewController extends Controller
                 ['label' => 'Sync Preview', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'testSyncPreview' => (new TestSyncPreviewService())->preview(),
+            'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::syncPreviewImport(),
+            'writeGateReady' => WriteGate::syncPreviewImport()['ready'],
+            'canManage' => Permission::can('sync_preview.manage'),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
             'multiSourcePlan' => $this->multiSourcePlan(),
@@ -544,5 +557,27 @@ class SyncPreviewController extends Controller
             'created_at',
             'approved_at',
         ];
+    }
+
+    public function runTestSync()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+        $this->redirectWithWriteResult('/sync-preview', (new SyncPreviewWriteService())->runTestSync($_POST));
+    }
+
+    public function import()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+        $this->redirectWithWriteResult('/sync-preview', (new SyncImportWriteService())->importFromPreview($_POST));
     }
 }

@@ -29,7 +29,7 @@ class BuildQueueController extends Controller
             'buildRunFields' => $this->buildRunFields(),
             'redIssueFields' => $this->redIssueFields(),
             'postActivationBuilds' => SprintMergeQa::postActivationNextBuilds(),
-            'sprintMergeNote' => 'v0.4.2.3 table-gates write forms until required tables exist. Manual dev DB apply/test first using /dev-db-activation. v0.4.3 Return Receive Submit only after dev DB write testing passes.',
+            'sprintMergeNote' => 'v0.4.7–v0.5.6 core ERP foundations shipped (payable ledger, reports, dashboards, staging guide, return batch, supplier tools, sync/invoice previews). Next: live OpenCart sync and invoice persistence after staging QA.',
         ]);
     }
 

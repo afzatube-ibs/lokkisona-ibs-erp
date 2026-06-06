@@ -13,7 +13,7 @@ class SprintMergeQa
         return [
             [
                 'item' => 'All routes open',
-                'detail' => 'All 27 checkpoint smoke routes return HTTP 200, 301, 302, or 303 without fatal errors.',
+                'detail' => 'All checkpoint smoke routes return HTTP 200, 301, 302, or 303 without fatal errors.',
             ],
             [
                 'item' => 'Checkpoint green',
@@ -36,8 +36,8 @@ class SprintMergeQa
                 'detail' => 'Application, build queue, and checkpoint never apply migration SQL automatically.',
             ],
             [
-                'item' => 'No OpenCart/WooCommerce sync',
-                'detail' => 'No live OpenCart or WooCommerce connection, sync, or import in this release.',
+                'item' => 'OpenCart sync gated',
+                'detail' => 'Test Sync and controlled import require migration 0004 + mapping rows; live API disabled until opencart.enabled=true.',
             ],
             [
                 'item' => 'No live data mutation without manual dev DB activation',
@@ -74,8 +74,12 @@ class SprintMergeQa
             ['migration' => '0002', 'file' => '0002_core_users_roles_activity.sql', 'enables' => 'Users, roles, activity logs (admin read inventory)'],
             ['migration' => '0003', 'file' => '0003_business_sources_suppliers_products.sql', 'enables' => 'Suppliers, business sources, products, variants, cost/stock write'],
             ['migration' => '0005', 'file' => '0005_orders_manual_orders_workflow.sql', 'enables' => 'Manual orders, order workflow actions'],
+            ['migration' => '0004', 'file' => '0004_status_mapping_sync_preview.sql', 'enables' => 'Status mapping writes, Test Sync preview, controlled import'],
             ['migration' => '0006', 'file' => '0006_dispatch_returns_payables.sql', 'enables' => 'Dispatch report create, returns, payables read'],
+            ['migration' => '0007', 'file' => '0007_invoices_printing_supplier_tools.sql', 'enables' => 'Invoice generate, print logs'],
             ['migration' => '0008', 'file' => '0008_supplier_opening_balances_launch_cutovers.sql', 'enables' => 'Opening balance approve, launch cutover lock'],
+            ['migration' => '0009', 'file' => '0009_settlements_workflow.sql', 'enables' => 'Settlement workflow on /settlements'],
+            ['migration' => '0010', 'file' => '0010_supplier_quick_invoice_totals.sql', 'enables' => 'Professional supplier quick invoice totals and customer fields'],
         ];
     }
 
@@ -181,6 +185,69 @@ class SprintMergeQa
                 'migration_required' => '0006',
                 'testing_status' => 'Pending dev DB activation',
             ],
+            [
+                'module' => 'Payable ledger create/approve',
+                'page' => '/supplier-payables',
+                'required_tables' => 'payable_ledgers, suppliers',
+                'write_service' => 'PayableLedgerWriteService',
+                'safety_status' => 'CSRF + table gate + owner post/reject + dispatch snapshot source only',
+                'migration_required' => '0006',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Return batch owner approve',
+                'page' => '/return-receive',
+                'required_tables' => 'return_batches',
+                'write_service' => 'ReturnBatchWriteService::approveBatch',
+                'safety_status' => 'CSRF + owner approve only; deduction requires separate payable draft',
+                'migration_required' => '0006',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Status mapping create/seed',
+                'page' => '/status-mapping',
+                'required_tables' => 'status_mappings, business_sources',
+                'write_service' => 'StatusMappingWriteService',
+                'safety_status' => 'CSRF + table gate + mapping required before sync',
+                'migration_required' => '0004',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Test Sync + controlled import',
+                'page' => '/sync-preview',
+                'required_tables' => 'sync_previews, sync_preview_items, sync_imports, orders',
+                'write_service' => 'SyncPreviewWriteService, SyncImportWriteService',
+                'safety_status' => 'CSRF + owner confirmation + max 50 + no background loops',
+                'migration_required' => '0004 + 0005',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Invoice generate + print log',
+                'page' => '/invoice-printing',
+                'required_tables' => 'invoices, invoice_items, print_logs',
+                'write_service' => 'InvoiceWriteService, PrintLogWriteService',
+                'safety_status' => 'CSRF + table gate + order snapshot only',
+                'migration_required' => '0007',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Settlement workflow',
+                'page' => '/settlements',
+                'required_tables' => 'settlements, payable_ledgers',
+                'write_service' => 'SettlementWriteService',
+                'safety_status' => 'CSRF + owner approve before paid/closed',
+                'migration_required' => '0009',
+                'testing_status' => 'Pending dev DB activation',
+            ],
+            [
+                'module' => 'Supplier quick invoice generator',
+                'page' => 'Header modal + /supplier-tools',
+                'required_tables' => 'supplier_quick_invoices, supplier_quick_invoice_items, supplier_quick_invoice_audits',
+                'write_service' => 'SupplierQuickInvoiceWriteService',
+                'safety_status' => 'CSRF + one-time supplier access + no ERP payable impact',
+                'migration_required' => '0007 + 0010',
+                'testing_status' => 'Pending dev DB activation',
+            ],
         ];
     }
 
@@ -188,19 +255,9 @@ class SprintMergeQa
     {
         return [
             [
-                'version' => 'v0.4.3',
-                'title' => 'Return Receive Submit Foundation',
-                'note' => 'Start only after dev DB activation testing passes on staging.',
-            ],
-            [
-                'version' => 'v0.4.4',
-                'title' => 'Payable Settlement Foundation',
-                'note' => 'Requires 0006 applied and dispatch/return write paths tested first.',
-            ],
-            [
-                'version' => 'v0.4.5',
-                'title' => 'Invoice Print Persistence Foundation',
-                'note' => 'Requires 0007 applied; after dev DB activation testing.',
+                'version' => 'v0.6.0',
+                'title' => 'Production launch after staging sign-off',
+                'note' => 'Follow docs/PRODUCTION-LAUNCH.md — disable staging_gate, harden credentials, owner present for DB activation.',
             ],
         ];
     }

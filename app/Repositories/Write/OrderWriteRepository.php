@@ -13,15 +13,54 @@ class OrderWriteRepository extends BaseWriteRepository
 
     public function createFromManual(array $data): int
     {
+        return $this->createOrder($data);
+    }
+
+    public function createFromSync(array $data): int
+    {
+        return $this->createOrder($data);
+    }
+
+    private function createOrder(array $data): int
+    {
         $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` '
-            . '(business_source_id, supplier_id, source_order_reference, order_reference, customer_name, customer_phone, customer_address, '
+            . '(business_source_id, supplier_id, source_order_id, source_order_reference, source_invoice_reference, order_reference, customer_name, customer_phone, customer_address, '
             . 'order_total, ibs_status, cost_snapshot_total, status, ordered_at, created_at) '
-            . 'VALUES (:business_source_id, :supplier_id, :source_order_reference, :order_reference, :customer_name, :customer_phone, :customer_address, '
+            . 'VALUES (:business_source_id, :supplier_id, :source_order_id, :source_order_reference, :source_invoice_reference, :order_reference, :customer_name, :customer_phone, :customer_address, '
             . ':order_total, :ibs_status, :cost_snapshot_total, :status, NOW(), NOW())';
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($data);
+        $statement->execute([
+            'business_source_id' => $data['business_source_id'],
+            'supplier_id' => $data['supplier_id'] ?? null,
+            'source_order_id' => $data['source_order_id'] ?? null,
+            'source_order_reference' => $data['source_order_reference'],
+            'source_invoice_reference' => $data['source_invoice_reference'] ?? null,
+            'order_reference' => $data['order_reference'],
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'] ?? null,
+            'customer_address' => $data['customer_address'] ?? null,
+            'order_total' => $data['order_total'],
+            'ibs_status' => $data['ibs_status'],
+            'cost_snapshot_total' => $data['cost_snapshot_total'],
+            'status' => $data['status'] ?? 'active',
+        ]);
 
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function findBySourceReference(string $sourceReference, int $businessSourceId): ?array
+    {
+        if (!$this->tableExists() || $sourceReference === '') {
+            return null;
+        }
+
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE source_order_reference = :source_reference AND business_source_id = :source_id LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['source_reference' => $sourceReference, 'source_id' => $businessSourceId]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return $row === false ? null : $row;
     }
 
     public function updateStatus(int $id, string $status): bool

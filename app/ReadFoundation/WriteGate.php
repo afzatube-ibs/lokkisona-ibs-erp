@@ -184,4 +184,63 @@ class WriteGate
             'ibs_order_workflow_histories',
         ]);
     }
+
+    public static function supplierPayables(): array
+    {
+        return self::status([
+            'ibs_payable_ledgers',
+            'ibs_suppliers',
+        ]);
+    }
+
+    public static function statusMappingSync(): array
+    {
+        return self::status([
+            'ibs_status_mappings',
+            'ibs_business_sources',
+        ]);
+    }
+
+    public static function syncPreviewImport(): array
+    {
+        return self::status([
+            'ibs_status_mappings',
+            'ibs_sync_previews',
+            'ibs_sync_preview_items',
+            'ibs_sync_imports',
+            'ibs_sync_logs',
+            'ibs_orders',
+            'ibs_order_items',
+            'ibs_business_sources',
+        ]);
+    }
+
+    public static function invoicePrinting(): array
+    {
+        return self::status([
+            'ibs_invoices',
+            'ibs_invoice_items',
+            'ibs_print_logs',
+            'ibs_orders',
+            'ibs_order_items',
+        ]);
+    }
+
+    public static function settlements(): array
+    {
+        return self::status([
+            'ibs_settlements',
+            'ibs_payable_ledgers',
+            'ibs_suppliers',
+        ]);
+    }
+
+    public static function supplierQuickInvoice(): array
+    {
+        return self::status([
+            'ibs_supplier_quick_invoices',
+            'ibs_supplier_quick_invoice_items',
+            'ibs_supplier_quick_invoice_audits',
+        ]);
+    }
 }

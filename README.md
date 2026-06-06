@@ -1,6 +1,22 @@
 # IBS-LK Business Manager
 
-**v0.4.2.8 Cost Stock History UI and Audit Confirmation Repair**
+**v0.5.6 Post-Staging Module Foundations**
+
+## What's New in v0.5.6
+
+- Return batch owner approval on `/return-receive`
+- Test Sync preview UI on `/sync-preview` (no live connection)
+- Packing slip preview on `/invoice-printing`
+- Supplier Quick Invoice utility log + calculator on `/supplier-tools`
+- Staging deployment guide: `docs/STAGING-DEPLOYMENT.md`
+
+## What's New in v0.4.7–v0.4.9
+
+- v0.4.7 — Supplier Payable Ledger with dispatch snapshot drafts and owner approval
+- v0.4.8 — Owner reports at `/reports` with print/CSV export
+- v0.4.9 — Supplier vs owner dashboards; supplier login `supplier` / `supplier`
+
+**Previous: v0.4.2.8 Cost Stock History UI and Audit Confirmation Repair**
 
 A standalone Enterprise Resource Planning foundation built for PHP 8.2+. This is **not** an OpenCart extension ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no OCMOD, no ZIP installer. Deploy via Git.
 
