@@ -3,18 +3,34 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Database;
 use App\Database\TableName;
+use App\Domain\ReturnReceiveCondition;
+use App\Domain\ReturnReceiveNote;
+use App\Domain\ReturnReceivePhysicalConfirmation;
+use App\Domain\ReturnReceiveReason;
+use App\Domain\ReturnReceiveOrderContext;
+use App\Domain\ReturnReceiveReference;
+use App\Domain\ReturnReceiveType;
+use App\Domain\OrderWorkflowStatus;
+use App\Repositories\DispatchReportRepository;
 use App\Models\ReturnReceive;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
+use App\Repositories\OrderItemRepository;
+use App\Repositories\OrderWorkflowHistoryRepository;
+use App\Repositories\ReturnReceiveRepository;
+use App\Repositories\Write\OrderWriteRepository;
 use App\Services\ReadOnly\ReturnReceiveReadService;
+use App\Services\Write\ReturnReceiveWriteService;
 
 class ReturnReceiveController extends Controller
 {
     public function index()
     {
         $this->authorize('return_receive.view');
-        ActivityLog::record('return_receive_access', 'Return Receive read foundation page viewed');
+        ActivityLog::record('return_receive_access', 'Return Receive page viewed');
 
         $this->render('return-receive.index', [
             'pageTitle' => 'Return Receive',
@@ -23,6 +39,26 @@ class ReturnReceiveController extends Controller
                 ['label' => 'Return Receive', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
+            'pendingHubReturns' => $this->buildPendingReturns(ReturnReceiveType::HUB_COURIER_RETURN),
+            'pendingCustomerReturns' => $this->buildPendingReturns(ReturnReceiveType::CUSTOMER_RETURN_TO_SUPPLIER),
+            'pendingLokkisonaReturns' => $this->buildPendingReturns(ReturnReceiveType::LOKKISONA_WAREHOUSE_RETURN),
+            'latestReceived' => $this->buildLatestReceived(),
+            'conditionOptions' => ReturnReceiveCondition::options(),
+            'reasonOptions' => ReturnReceiveReason::options(),
+            'receivedConfirmationOptions' => ReturnReceivePhysicalConfirmation::options(),
+            'devNote' => ReturnReceiveReference::DEV_NOTE,
+            'accountingNote' => ReturnReceiveReference::ACCOUNTING_NOTE,
+            'stageNote' => ReturnReceiveReference::STAGE_NOTE,
+            'customerReturnEmptyNote' => 'Supplier customer returns appear when PIT mapping sets order_returning (Supplier House).',
+            'lokkisonaReturnEmptyNote' => 'Lokkisona / Owner Warehouse returns appear when PIT mapping sets order_returning (warehouse path). Owner receive only — no supplier accounting at this stage.',
+            'returnBatchFutureNote' => ReturnReceiveOrderContext::RETURN_BATCH_FUTURE_NOTE,
+            'lokkisonaStockFutureNote' => ReturnReceiveOrderContext::LOKKISONA_STOCK_FUTURE_NOTE,
+            'erpSourceNote' => 'Return Receive uses ibs_orders, ibs_order_items, and workflow history as the main ERP source. Manual orders and future PIT/OpenCart sync both land in the same ERP order tables.',
+            'flashSuccess' => $this->pullFlash('success'),
+            'flashError' => $this->pullFlash('error'),
+            'csrfField' => Csrf::field(),
+            'writeGate' => WriteGate::returnReceive(),
+            'writeGateReady' => WriteGate::returnReceive()['ready'],
             'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
@@ -46,6 +82,125 @@ class ReturnReceiveController extends Controller
             'plannedItemFields' => $this->plannedItemFields(),
             'plannedAdjustmentFields' => $this->plannedAdjustmentFields(),
         ]);
+    }
+
+    public function confirm()
+    {
+        $this->authorize('return_receive.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/return-receive');
+        }
+        $this->redirectWithWriteResult('/return-receive', (new ReturnReceiveWriteService())->confirmReceive($_POST));
+    }
+
+    private function buildPendingReturns(string $returnType): array
+    {
+        $ibsStatus = ReturnReceiveType::ibsStatusFor($returnType);
+        if ($ibsStatus === null) {
+            return [];
+        }
+
+        try {
+            $orders = (new OrderWriteRepository())->findReturnPending($returnType, $ibsStatus, 50);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        $orderItems = new OrderItemRepository();
+        $dispatchReferences = (new DispatchReportRepository())->findIncludedOrderReferences(50);
+        $pending = [];
+
+        foreach ($orders as $order) {
+            $orderId = (int) ($order['order_id'] ?? 0);
+            if ($orderId <= 0) {
+                continue;
+            }
+
+            $productLines = $orderItems->findByOrderId($orderId);
+            $enriched = ReturnReceiveOrderContext::enrich(
+                $order,
+                $productLines,
+                $dispatchReferences[$orderId] ?? null
+            );
+
+            $pending[] = array_merge($enriched, [
+                'return_type' => $returnType,
+                'return_type_label' => ReturnReceiveType::label($returnType),
+            ]);
+        }
+
+        return $pending;
+    }
+
+    private function buildLatestReceived(): array
+    {
+        try {
+            $rows = (new ReturnReceiveRepository())->findReceivedWithOrders(20);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        $historyRepo = new OrderWorkflowHistoryRepository();
+        $orderItems = new OrderItemRepository();
+        $historyReady = $historyRepo->tableExists();
+        $received = [];
+
+        foreach ($rows as $row) {
+            $orderId = (int) ($row['order_id'] ?? 0);
+            $parsed = ReturnReceiveNote::parse('');
+
+            if ($historyReady && $orderId > 0) {
+                foreach ($historyRepo->findByOrderId($orderId, 10) as $historyRow) {
+                    $note = trim((string) ($historyRow['action_note'] ?? ''));
+                    if (!str_starts_with($note, 'Return Received |')) {
+                        continue;
+                    }
+                    $parsed = ReturnReceiveNote::parse($note);
+                    break;
+                }
+            }
+
+            $conditionCode = $parsed['condition_code'] ?? null;
+            $supplierNote = trim((string) ($parsed['supplier_note'] ?? ''));
+            $ownerNote = trim((string) ($parsed['owner_note'] ?? ''));
+            $verificationNote = trim((string) ($parsed['verification_note'] ?? ''));
+            $supplierNoteDisplay = $supplierNote !== '' && $supplierNote !== '-' ? $supplierNote : '—';
+            $ownerNoteDisplay = $ownerNote !== '' && $ownerNote !== '-' ? $ownerNote : '—';
+            if ($verificationNote !== '' && $verificationNote !== '-' && $ownerNoteDisplay === '—') {
+                $ownerNoteDisplay = $verificationNote;
+            }
+
+            $productLines = $orderId > 0 ? $orderItems->findByOrderId($orderId) : [];
+            $productSummary = ReturnReceiveOrderContext::productSummary(
+                array_map(static fn (array $line): array => [
+                    'product_id' => (string) ($line['product_id'] ?? ''),
+                    'product_name' => (string) ($line['product_name'] ?? ''),
+                    'variant_label' => (string) ($line['variant_label'] ?? ''),
+                    'quantity' => (int) ($line['quantity'] ?? 0),
+                ], $productLines)
+            );
+
+            $received[] = array_merge($row, [
+                'return_type_label' => ReturnReceiveType::label((string) ($row['return_type'] ?? '')),
+                'destination_label' => $parsed['destination'] ?? ReturnReceiveType::destinationLabel((string) ($row['return_type'] ?? '')),
+                'reason_label' => $parsed['reason'] ?? '—',
+                'received_label' => $parsed['received'] ?? '—',
+                'condition_label' => $parsed['condition'] ?? '—',
+                'condition_code' => $conditionCode,
+                'condition_badge' => $conditionCode !== null
+                    ? ReturnReceiveCondition::badgeClass($conditionCode)
+                    : 'badge-ok',
+                'order_reference' => $parsed['order_reference'] ?? ($row['order_reference'] ?? '—'),
+                'product_summary' => $productSummary,
+                'fulfillment_status' => OrderWorkflowStatus::label((string) ($row['ibs_status'] ?? '')),
+                'supplier_note_display' => $supplierNoteDisplay,
+                'owner_note_display' => $ownerNoteDisplay,
+            ]);
+        }
+
+        return $received;
     }
 
     private function buildReadInventory()

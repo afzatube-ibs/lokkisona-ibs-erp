@@ -172,6 +172,15 @@ class SprintMergeQa
                 'migration_required' => '0006',
                 'testing_status' => 'Pending dev DB activation',
             ],
+            [
+                'module' => 'Return receive confirm',
+                'page' => '/return-receive',
+                'required_tables' => 'return_receives, return_batches, return_batch_items, orders, order_items, order_workflow_histories',
+                'write_service' => 'ReturnReceiveWriteService::confirmReceive',
+                'safety_status' => 'CSRF + table gate + hub_return/order_returning eligibility + duplicate block + reason/received/condition notes in workflow history + receive confirmation only',
+                'migration_required' => '0006',
+                'testing_status' => 'Pending dev DB activation',
+            ],
         ];
     }
 

@@ -85,6 +85,49 @@ class OrderWriteRepository extends BaseWriteRepository
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function findReturnPending(string $returnType, string $ibsStatus, int $limit = 50): array
+    {
+        if (!$this->tableExists() || $returnType === '' || $ibsStatus === '') {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 50));
+        $ordersTable = $this->escapeIdentifier($this->table());
+        $excludeSql = '';
+
+        $itemsTable = config('database.prefix', 'ibs_') . 'return_batch_items';
+        $receivesTable = config('database.prefix', 'ibs_') . 'return_receives';
+        $database = config('database.database', '');
+        $checkSql = 'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table';
+        $check = $this->pdo->prepare($checkSql);
+
+        foreach ([$itemsTable, $receivesTable] as $tableName) {
+            $check->execute(['schema' => $database, 'table' => $tableName]);
+            $checkRow = $check->fetch(\PDO::FETCH_ASSOC);
+            if (((int) ($checkRow['table_count'] ?? 0)) === 0) {
+                return $this->findByStatus($ibsStatus, $limit);
+            }
+        }
+
+        $excludeSql = ' AND o.order_id NOT IN ('
+            . 'SELECT i.order_id FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
+            . 'INNER JOIN `' . $this->escapeIdentifier($receivesTable) . '` r ON r.return_receive_id = i.return_receive_id '
+            . 'WHERE i.order_id IS NOT NULL AND r.return_type = :return_type AND r.status = :receive_status'
+            . ')';
+
+        $sql = 'SELECT o.* FROM `' . $ordersTable . '` o '
+            . 'WHERE o.ibs_status = :ibs_status' . $excludeSql
+            . ' ORDER BY o.order_id ASC LIMIT ' . $limit;
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'ibs_status' => $ibsStatus,
+            'return_type' => $returnType,
+            'receive_status' => 'received',
+        ]);
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function mirrorManualOrderStatusByReference(string $orderReference, string $status): bool
     {
         if ($orderReference === '') {

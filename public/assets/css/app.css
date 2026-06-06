@@ -1368,6 +1368,117 @@ select.form-input,
     flex-shrink: 0;
 }
 
+.choice-card-legend {
+    margin: 0.75rem 0 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.choice-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+.choice-card {
+    display: block;
+    cursor: pointer;
+}
+
+.choice-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.choice-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.65rem 0.75rem;
+    background: var(--color-bg);
+    min-height: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.choice-card input:checked + .choice-card-body {
+    border-color: var(--color-primary, #2563eb);
+    box-shadow: 0 0 0 1px var(--color-primary, #2563eb);
+}
+
+.choice-card-label {
+    font-size: 0.875rem;
+}
+
+.choice-card-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.workflow-stage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+
+.workflow-stage-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.65rem 0.75rem;
+    background: var(--color-bg-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.workflow-stage-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.workflow-stage-count {
+    align-self: flex-start;
+}
+
+.workflow-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.workflow-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.8125rem;
+    background: var(--color-bg);
+}
+
+.product-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.5rem;
+}
+
+.product-line-card .card-body {
+    padding: 0.65rem 0.75rem;
+}
+
+.compact-info-list .info-row {
+    margin-bottom: 0.15rem;
+}
+
+.return-receive-confirm-form .choice-card-grid {
+    margin-bottom: 0.25rem;
+}
+
 /* =========================================================================
    FEATURE LISTS
    ========================================================================= */

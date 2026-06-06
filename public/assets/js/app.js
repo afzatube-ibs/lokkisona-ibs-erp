@@ -51,6 +51,49 @@
         if (saved) { applyTheme(saved); }
     } catch (e) { /* storage blocked */ }
 
+    /* ── Dispatch batch selection summary ── */
+    document.querySelectorAll('.js-dispatch-batch-form').forEach(function (form) {
+        var summary = form.querySelector('.js-dispatch-batch-summary');
+        var selects = form.querySelectorAll('.js-dispatch-order-select');
+
+        function refreshDispatchSummary() {
+            if (!summary) {
+                return;
+            }
+            var orderCount = 0;
+            var totalQty = 0;
+            var totalCost = 0;
+            var couriers = {};
+            selects.forEach(function (checkbox) {
+                if (!checkbox.checked) {
+                    return;
+                }
+                var row = checkbox.closest('.js-dispatch-order-row');
+                if (!row) {
+                    return;
+                }
+                orderCount += 1;
+                totalQty += parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
+                totalCost += parseFloat(row.getAttribute('data-cost') || '0') || 0;
+                var courier = (row.getAttribute('data-courier') || '').trim();
+                if (courier !== '') {
+                    couriers[courier] = true;
+                }
+            });
+            var courierLabel = Object.keys(couriers).join(', ');
+            if (courierLabel === '') {
+                courierLabel = 'not selected';
+            }
+            summary.textContent = 'Batch summary: ' + orderCount + ' orders · ' + totalQty + ' qty · '
+                + totalCost.toFixed(2) + ' product cost · courier: ' + courierLabel;
+        }
+
+        selects.forEach(function (checkbox) {
+            checkbox.addEventListener('change', refreshDispatchSummary);
+        });
+        refreshDispatchSummary();
+    });
+
     /* ── Workflow action confirmation ── */
     document.querySelectorAll('.js-dispatch-batch-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
@@ -76,6 +119,21 @@
             }
             e.preventDefault();
             if (window.confirm('Confirm workflow action: ' + label + '?')) {
+                confirmedField.value = '1';
+                form.submit();
+            }
+        });
+    });
+
+    document.querySelectorAll('.js-return-receive-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            var label = form.getAttribute('data-confirm-label') || 'Return Received';
+            var confirmedField = form.querySelector('.js-receive-confirmed');
+            if (!confirmedField || confirmedField.value === '1') {
+                return;
+            }
+            e.preventDefault();
+            if (window.confirm('Confirm: ' + label + '?')) {
                 confirmedField.value = '1';
                 form.submit();
             }

@@ -50,6 +50,7 @@ $router->get('/dispatch-reports', 'DispatchReportsController@index');
 $router->post('/dispatch-reports/create', 'DispatchReportsController@create');
 $router->get('/supplier-payables', 'SupplierPayablesController@index');
 $router->get('/return-receive', 'ReturnReceiveController@index');
+$router->post('/return-receive/confirm', 'ReturnReceiveController@confirm');
 $router->get('/status-mapping', 'StatusMappingController@index');
 $router->get('/sync-preview', 'SyncPreviewController@index');
 $router->get('/invoice-printing', 'InvoicePrintingController@index');

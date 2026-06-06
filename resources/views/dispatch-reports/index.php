@@ -43,19 +43,20 @@
                     </thead>
                     <tbody>
                         <?php foreach ($eligibleOrders as $order): ?>
-                        <tr>
-                            <td><input type="checkbox" name="order_ids[]" value="<?= e((string) ($order['order_id'] ?? '')) ?>"></td>
+                        <tr class="js-dispatch-order-row" data-qty="<?= e((string) ($order['preview_item_count'] ?? '0')) ?>" data-cost="<?= e((string) ($order['preview_cost_snapshot'] ?? '0.00')) ?>" data-courier="<?= e((string) ($order['courier_status'] ?? '')) ?>">
+                            <td><input type="checkbox" name="order_ids[]" value="<?= e((string) ($order['order_id'] ?? '')) ?>" class="js-dispatch-order-select"></td>
                             <td><?= e((string) ($order['order_id'] ?? '')) ?></td>
                             <td><?= e((string) ($order['order_reference'] ?? '')) ?></td>
                             <td><?= e((string) ($order['customer_name'] ?? '')) ?></td>
                             <td><?= e((string) ($order['preview_item_count'] ?? '0')) ?></td>
                             <td><?= e((string) ($order['preview_cost_snapshot'] ?? '0.00')) ?></td>
-                            <td>Shipped</td>
+                            <td><?= e((string) ($order['courier_status'] ?? 'Shipped')) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
+            <div class="js-dispatch-batch-summary workflow-info-banner" style="margin-top: 1rem;">Batch summary: 0 orders · 0 qty · 0.00 product cost · courier pending selection</div>
             <label class="workflow-confirm-checkbox" style="margin-top: 1rem;">
                 <input type="checkbox" name="batch_confirm_checkbox" value="1" required>
                 <span>I confirm this dispatch report snapshots supplier cost now and does not create payable, stock, invoice, or sync actions.</span>

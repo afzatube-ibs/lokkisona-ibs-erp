@@ -1,14 +1,158 @@
+<?php use App\Domain\ReturnReceiveType; ?>
 <div class="page-header">
     <h1 class="page-title">Return Receive</h1>
-    <p class="page-description">Return Receive &amp; Review Batch with live read-only inventory in v0.2.7. Planning foundation content remains below. No return receive submit, no payable adjustment, and no database writes in this release.</p>
+    <p class="page-description">Vendor Return Receive (v0.4.6.0). Confirm returned parcel/product received using ERP order and product details. <?= e($stageNote ?? '') ?></p>
 </div>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Return Receive Inventory (v0.2.7)</h2>
-<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No return receive submit. No return batch action. No migration apply from this page.</p>
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Return Receives']); ?>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Safety Badges</h2></div>
+    <div class="card-body">
+        <span class="badge badge-ok">No payable</span>
+        <span class="badge badge-ok">No supplier ledger</span>
+        <span class="badge badge-ok">No stock movement</span>
+        <span class="badge badge-ok">No invoice</span>
+        <span class="badge badge-ok">No live sync</span>
+    </div>
+</div>
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<?php
+$renderPendingSection = static function (
+    string $title,
+    string $intro,
+    string $emptyMessage,
+    array $orders,
+    bool $isSupplierReturn,
+    bool $isLokkisonaReturn
+) use ($csrfField, $reasonOptions, $receivedConfirmationOptions, $conditionOptions): void {
+    ?>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title"><?= e($title) ?></h2></div>
+    <div class="card-body">
+        <p class="page-description" style="margin-bottom: 1rem;"><?= e($intro) ?></p>
+        <?php if ($orders !== []): ?>
+            <?php foreach ($orders as $order): ?>
+            <div class="card workflow-order-card" style="margin-bottom: 1rem;">
+                <div class="card-body">
+                    <?php view('partials.return-receive-order-details', ['order' => $order]); ?>
+                    <?php view('partials.return-receive-form', [
+                        'order' => $order,
+                        'csrfField' => $csrfField,
+                        'reasonOptions' => $reasonOptions,
+                        'receivedConfirmationOptions' => $receivedConfirmationOptions,
+                        'conditionOptions' => $conditionOptions,
+                        'isSupplierReturn' => $isSupplierReturn,
+                        'isLokkisonaReturn' => $isLokkisonaReturn,
+                    ]); ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+        <p class="page-description"><span class="badge badge-warn">No pending returns</span> <?= e($emptyMessage) ?></p>
+        <?php endif; ?>
+    </div>
+</div>
+    <?php
+};
+?>
+
+<?php if (!empty($writeGateReady)): ?>
+
+<?php $renderPendingSection(
+    'Pending Hub Returns / Courier Returns (Supplier Return)',
+    'Supplier Return / Vendor Return — Hub Return / Courier Return. Orders at Hub Return from workflow Shipped → Delivery Stop → Return Received.',
+    'Move an order to Hub Return via Order Workflow (Delivery Stop → Return Received).',
+    $pendingHubReturns ?? [],
+    true,
+    false
+); ?>
+
+<?php $renderPendingSection(
+    'Pending Customer Returns to Supplier (Supplier Return)',
+    $customerReturnEmptyNote ?? '',
+    'Orders appear when status is Customer Return / Order Returning (Supplier House mapping).',
+    $pendingCustomerReturns ?? [],
+    true,
+    false
+); ?>
+
+<?php $renderPendingSection(
+    'Pending Lokkisona / Owner Warehouse Returns',
+    $lokkisonaReturnEmptyNote ?? '',
+    'Orders appear when status is Customer Return / Order Returning (Lokkisona warehouse mapping).',
+    $pendingLokkisonaReturns ?? [],
+    false,
+    true
+); ?>
+
+<?php else: ?>
+<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
+<?php endif; ?>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Future Return Batch Plan</h2></div>
+    <div class="card-body">
+        <p class="page-description"><?= e($returnBatchFutureNote ?? '') ?></p>
+        <p class="page-description"><?= e($lokkisonaStockFutureNote ?? '') ?></p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Latest Received Returns</h2></div>
+    <div class="card-body">
+        <?php if (!empty($latestReceived)): ?>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order Ref</th>
+                        <th>Destination</th>
+                        <th>Return Type</th>
+                        <th>Reason / Source</th>
+                        <th>Received Status</th>
+                        <th>Supplier Condition</th>
+                        <th>Products</th>
+                        <th>Supplier Note</th>
+                        <th>Owner / Lokkisona Note</th>
+                        <th>Received At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($latestReceived as $row): ?>
+                    <tr>
+                        <td><strong><?= e((string) ($row['order_reference'] ?? '—')) ?></strong></td>
+                        <td><?= e((string) ($row['destination_label'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['return_type_label'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['reason_label'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['received_label'] ?? '—')) ?></td>
+                        <td><span class="badge <?= e((string) ($row['condition_badge'] ?? 'badge-ok')) ?>"><?= e((string) ($row['condition_label'] ?? '—')) ?></span></td>
+                        <td class="cell-detail"><?= e((string) ($row['product_summary'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['supplier_note_display'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['owner_note_display'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['received_at'] ?? '')) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php else: ?>
+        <p class="page-description">No received returns yet.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Return Receive Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. Return receive submit uses the forms above when tables are ready.</p>
+        <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Return Receives']); ?>
+    </div>
+</details>
+
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
 <div class="card-grid">
     <div class="card">
@@ -285,3 +429,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>

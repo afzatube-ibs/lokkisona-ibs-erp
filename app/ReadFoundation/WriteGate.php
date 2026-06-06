@@ -172,4 +172,16 @@ class WriteGate
             'ibs_order_workflow_histories',
         ]);
     }
+
+    public static function returnReceive(): array
+    {
+        return self::status([
+            'ibs_return_receives',
+            'ibs_return_batches',
+            'ibs_return_batch_items',
+            'ibs_orders',
+            'ibs_order_items',
+            'ibs_order_workflow_histories',
+        ]);
+    }
 }

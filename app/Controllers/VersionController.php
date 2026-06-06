@@ -38,6 +38,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v0.4.6.0 Vendor Return Receive Foundation: /return-receive confirms Supplier Return (Hub/Courier + Customer to Supplier) and Lokkisona Owner Warehouse returns with reason, received confirmation, supplier condition, and structured notes in workflow history — receive confirmation only, no payable/ledger/stock/invoice/sync',
                 'v0.4.5.0 Daily Dispatch Report + Cost Snapshot Foundation: /dispatch-reports selects shipped orders (max 50), creates DDMMYYYY or DDMMYYYY-Pn batch locked on create with immutable supplier cost snapshot, moves orders to dispatch_report_created with workflow history note, shows Created Report section on /order-workflow, blocks duplicate inclusion — no payable/stock/invoice/sync',
                 'v0.4.4.0 Fulfillment Workflow Action Foundation: /order-workflow implements full IBS supplier status sequence with grouped orders, allowed-action buttons only, required notes for exceptions and manual dispatch gate, workflow history per order, and manual-order status mirror via order_reference — no dispatch/return/payable tables',
                 'v0.4.4.0 Manual Order Create Gate Repair: /manual-orders write form uses manualOrderCreateForm gate (0005 order tables + Group B product/source tables) so DEV/TEST create form appears when all required tables are present',

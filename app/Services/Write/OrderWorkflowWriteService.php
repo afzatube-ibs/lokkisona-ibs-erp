@@ -182,6 +182,40 @@ class OrderWorkflowWriteService
         return WriteResult::ok('Order included in dispatch report ' . $dispatchReference . '.', $orderId);
     }
 
+    public function recordReturnReceived(int $orderId, string $actionNote): WriteResult
+    {
+        if (!$this->orders->tableExists()) {
+            return WriteResult::fail('Orders table not available.');
+        }
+
+        $order = $this->orders->find($orderId);
+        if ($order === null) {
+            return WriteResult::fail('Order not found.');
+        }
+
+        $currentStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
+        $actionNote = trim($actionNote);
+        if ($actionNote === '') {
+            return WriteResult::fail('Return receive history note is required.');
+        }
+
+        $changedBy = $this->resolveChangedById();
+
+        if ($this->history->tableExists()) {
+            $this->history->insert($orderId, null, $currentStatus, $currentStatus, $actionNote, $changedBy);
+        }
+
+        ActivityLog::record('order_workflow_action', 'Order workflow: Return Received confirmation', [
+            'order_id' => $orderId,
+            'status' => $currentStatus,
+            'action_note' => $actionNote,
+            'changed_by' => $changedBy,
+            'user' => Auth::user(),
+        ]);
+
+        return WriteResult::ok('Return receive recorded in workflow history.', $orderId);
+    }
+
     /**
      * @return array{status: string, adjustment_note: ?string}|null
      */

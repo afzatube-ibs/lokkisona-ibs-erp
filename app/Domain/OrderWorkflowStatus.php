@@ -126,7 +126,7 @@ class OrderWorkflowStatus
     public static function groupDisplayLabel(string $code): string
     {
         if (self::normalize($code) === 'dispatch_report_created') {
-            return 'Created Report / Dispatch Report Created';
+            return 'Created Report';
         }
 
         return self::label($code);
@@ -249,12 +249,12 @@ class OrderWorkflowStatus
             return self::OUT_FOR_DELIVERY_NOTE;
         }
 
-        if ($status === 'order_returning') {
-            return 'Customer Return / Order Returning is driven by PIT/OpenCart return status mapping — not a normal supplier manual action in v0.4.4.0.';
+        if ($status === 'hub_return') {
+            return 'Confirm physical return receive on the Return Receive page (v0.4.6.0). Courier flow: Shipped → Delivery Stop → Hub Return.';
         }
 
-        if ($status === 'hub_return') {
-            return 'Hub Return foundation only. Later appears in Vendor Returns as Hub/Courier Return.';
+        if ($status === 'order_returning') {
+            return 'Customer Return to Supplier: confirm receive on Return Receive page when return arrives at supplier (v0.4.6.0). PIT/OpenCart mapping sets this status — not a supplier manual workflow action.';
         }
 
         return null;

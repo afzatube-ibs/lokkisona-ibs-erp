@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.5.0',
-    'release_label' => 'Daily Dispatch Report + Cost Snapshot Foundation',
+    'version' => '0.4.6.0',
+    'release_label' => 'Vendor Return Receive Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',
