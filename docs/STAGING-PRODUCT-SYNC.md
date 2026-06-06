@@ -19,7 +19,21 @@ General staging setup: [STAGING-DEPLOYMENT.md](STAGING-DEPLOYMENT.md). Product C
 
 ## Phase 1 — Deploy ERP code
 
-### Git (preferred)
+### FTP (your method)
+
+**Full guide:** [STAGING-FTP-DEPLOY.md](STAGING-FTP-DEPLOY.md)
+
+On your PC:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/staging-ftp-package.ps1 -Zip
+```
+
+Upload `dist/staging-ftp-upload.zip` via FTP, extract on server, set document root to `.../public/`.
+
+**After first setup, do not overwrite** server-only files: `config/database.php`, `config/opencart.php`, `config/app.php`.
+
+### Git (alternative)
 
 On ERP staging server:
 
@@ -30,14 +44,6 @@ git pull --ff-only origin main
 ```
 
 Point document root to `public/`. PHP 8.2+, MySQL 5.7+.
-
-### FTP (fallback)
-
-Upload the **entire repo** preserving folders. Web root = `public/`.
-
-Required top-level paths: `app/`, `config/`, `database/`, `public/`, `resources/`, `routes/`, `tools/`.
-
-**After first setup, do not overwrite** server-only files: `config/database.php`, `config/opencart.php`, `config/app.php` (credentials and `env`).
 
 ## Phase 2 — Server configuration
 

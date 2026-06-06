@@ -71,7 +71,8 @@ try {
 
 Write-Host ""
 Write-Host "Next steps on ERP staging server:"
-Write-Host "  1. git pull --ff-only origin main   (or FTP full repo, docroot = public/)"
+Write-Host "  1. FTP: tools/staging-ftp-package.ps1 -Zip  (see docs/STAGING-FTP-DEPLOY.md)"
+Write-Host "     Git: git pull --ff-only origin main"
 Write-Host "  2. Copy config staging examples to config/*.php and fill credentials"
 Write-Host "  3. Apply migrations 0003, 0004, 0011 (or full chain if fresh DB)"
 Write-Host "  4. OpenCart staging: API key + product_api_route + From Warehouse = Yes"

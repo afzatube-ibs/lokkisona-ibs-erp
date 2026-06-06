@@ -12,7 +12,13 @@ Before ERP staging deploy (product sync from `staging.lokkisona.com`):
 powershell -ExecutionPolicy Bypass -File tools/staging-product-sync-readiness.ps1
 ```
 
-See [docs/STAGING-PRODUCT-SYNC.md](../docs/STAGING-PRODUCT-SYNC.md).
+**FTP deploy package:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/staging-ftp-package.ps1 -Zip
+```
+
+See [docs/STAGING-PRODUCT-SYNC.md](../docs/STAGING-PRODUCT-SYNC.md) and [docs/STAGING-FTP-DEPLOY.md](../docs/STAGING-FTP-DEPLOY.md).
 
 The checkpoint:
 

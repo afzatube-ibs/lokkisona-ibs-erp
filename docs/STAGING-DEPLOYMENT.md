@@ -1,6 +1,7 @@
 # IBS-LK Staging Domain Deployment Guide (v0.5.0)
 
-**Product sync from OpenCart staging:** see [STAGING-PRODUCT-SYNC.md](STAGING-PRODUCT-SYNC.md) (`staging.lokkisona.com` → ERP staging host).
+**Product sync from OpenCart staging:** see [STAGING-PRODUCT-SYNC.md](STAGING-PRODUCT-SYNC.md) (`staging.lokkisona.com` → ERP staging host).  
+**FTP deploy:** see [STAGING-FTP-DEPLOY.md](STAGING-FTP-DEPLOY.md).
 
 ## Requirements
 

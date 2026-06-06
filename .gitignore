@@ -21,3 +21,6 @@ Thumbs.db
 *.cache
 
 storage/backups/
+
+# Local FTP deploy artifacts
+/dist/
