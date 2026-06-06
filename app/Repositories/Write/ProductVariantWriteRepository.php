@@ -39,6 +39,18 @@ class ProductVariantWriteRepository extends BaseWriteRepository
         return $this->findById($id);
     }
 
+    public function updateSupplierControlFields(int $id, array $data): bool
+    {
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
+            . 'supplier_model = :supplier_model, product_cost = :product_cost, vendor_stock = :vendor_stock, '
+            . 'status = :status, updated_at = NOW() '
+            . 'WHERE product_variant_id = :id';
+        $data['id'] = $id;
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute($data);
+    }
+
     public function updateCostStock(int $id, ?float $cost, ?int $stock): bool
     {
         $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '

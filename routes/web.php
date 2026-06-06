@@ -42,6 +42,7 @@ $router->post('/business-sources/edit', 'BusinessSourcesController@edit');
 $router->get('/product-control', 'ProductControlController@index');
 $router->post('/product-control/product/create', 'ProductControlController@createProduct');
 $router->post('/product-control/product/edit', 'ProductControlController@editProduct');
+$router->post('/product-control/workspace/save', 'ProductControlController@saveWorkspace');
 $router->post('/product-control/variant/create', 'ProductControlController@createVariant');
 $router->post('/product-control/cost-stock', 'ProductControlController@updateCostStock');
 $router->get('/order-workflow', 'OrderWorkflowController@index');

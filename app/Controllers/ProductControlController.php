@@ -12,6 +12,8 @@ use App\Models\ProductStockHistory;
 use App\Permission;
 use App\SupplierContext;
 use App\Csrf;
+use App\Services\Read\OpenCartReadClient;
+use App\Services\ReadOnly\ProductControlCatalogReadService;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\ReadOnly\ProductCostHistoryReadService;
@@ -19,6 +21,7 @@ use App\Services\ReadOnly\ProductStockHistoryReadService;
 use App\ReadFoundation\WriteGate;
 use App\Services\Write\ProductCostStockWriteService;
 use App\Services\Write\ProductVariantWriteService;
+use App\Services\Write\ProductWorkspaceWriteService;
 use App\Services\Write\ProductWriteService;
 
 class ProductControlController extends Controller
@@ -56,6 +59,14 @@ class ProductControlController extends Controller
             );
         }
 
+        $isSupplierView = SupplierContext::isSupplier();
+        $productCatalog = (new ProductControlCatalogReadService())->build(
+            $productReadInventory['rows'] ?? [],
+            $productVariantReadInventory['rows'] ?? [],
+            $isSupplierView
+        );
+        $productHistoryByProduct = $this->historyRowsByProduct($costStockHistoryDisplay['rows'] ?? []);
+
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
             'breadcrumbs' => [
@@ -70,8 +81,12 @@ class ProductControlController extends Controller
             'costStockHistoryDisplay' => $costStockHistoryDisplay,
             'productSelectOptions' => $this->productSelectOptionsFromInventory($productReadInventory),
             'productDisplay' => $this->buildProductDisplayFromInventory($productReadInventory),
+            'productCatalog' => $productCatalog,
+            'productHistoryByProduct' => $productHistoryByProduct,
             'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
+            'canManage' => Permission::can('product_control.manage'),
+            'warehouseProductPullAvailable' => (new OpenCartReadClient())->warehouseProductPullAvailable(),
             'currentSupplier' => $this->currentSupplier(),
             'purpose' => $this->purpose(),
             'futureSyncedStructure' => $this->futureSyncedStructure(),
@@ -95,12 +110,12 @@ class ProductControlController extends Controller
             'writeGateVariantFormReady' => WriteGate::productVariantForm()['ready'],
             'writeGateCostStock' => WriteGate::productCostStockForm(),
             'writeGateCostStockReady' => WriteGate::productCostStockForm()['ready'],
-            'isSupplierView' => SupplierContext::isSupplier(),
-            'boundSupplierId' => SupplierContext::isSupplier() ? SupplierContext::supplierId() : 0,
+            'isSupplierView' => $isSupplierView,
+            'boundSupplierId' => $isSupplierView ? SupplierContext::supplierId() : 0,
         ]);
     }
 
-    public function createProduct()
+    public function saveWorkspace()
     {
         $this->authorize('product_control.manage');
         $this->requirePost();
@@ -108,8 +123,28 @@ class ProductControlController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/product-control');
         }
+
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        if (!$this->assertProductOwnedBySupplier($productId)) {
+            $this->flash('error', 'Product not found for your supplier account.');
+            redirect('/product-control');
+        }
+
         $input = $this->applySupplierProductScope($_POST);
-        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->create($input));
+        if (isset($_POST['variants']) && is_string($_POST['variants'])) {
+            $decoded = json_decode($_POST['variants'], true);
+            $input['variants'] = is_array($decoded) ? $decoded : [];
+        }
+
+        $this->redirectWithWriteResult('/product-control', (new ProductWorkspaceWriteService())->save($productId, $input));
+    }
+
+    public function createProduct()
+    {
+        $this->authorize('product_control.manage');
+        $this->requirePost();
+        $this->flash('error', 'Manual product create is disabled. Catalog rows are synced from the live site (Pull warehouse products on Sync Preview).');
+        redirect('/product-control');
     }
 
     public function editProduct()
@@ -133,16 +168,8 @@ class ProductControlController extends Controller
     {
         $this->authorize('product_control.manage');
         $this->requirePost();
-        if (!$this->validateCsrf()) {
-            $this->flash('error', 'Invalid security token.');
-            redirect('/product-control');
-        }
-        $productId = (int) ($_POST['product_id'] ?? 0);
-        if (!$this->assertProductOwnedBySupplier($productId)) {
-            $this->flash('error', 'Product not found for your supplier account.');
-            redirect('/product-control');
-        }
-        $this->redirectWithWriteResult('/product-control', (new ProductVariantWriteService())->create($_POST));
+        $this->flash('error', 'Manual variant create is disabled. Option lines are synced from the live site with the parent product.');
+        redirect('/product-control');
     }
 
     public function updateCostStock()
@@ -169,6 +196,26 @@ class ProductControlController extends Controller
             $result = $service->updateProductCostStock($productId, $_POST);
         }
         $this->redirectWithWriteResult('/product-control', $result);
+    }
+
+    private function historyRowsByProduct(array $rows): array
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            if ($productId <= 0) {
+                continue;
+            }
+            if (!isset($grouped[$productId])) {
+                $grouped[$productId] = [];
+            }
+            if (count($grouped[$productId]) >= 15) {
+                continue;
+            }
+            $grouped[$productId][] = $row;
+        }
+
+        return $grouped;
     }
 
     private function productSelectOptionsFromInventory(array $productReadInventory): array
@@ -491,7 +538,8 @@ class ProductControlController extends Controller
 
             $rowCount = $service->count();
             $defaults['row_count'] = $rowCount;
-            $defaults['rows'] = $useLatestRows ? $service->latest(50) : $service->all(50, 0);
+            $rowLimit = $recordLabel === 'product' ? 200 : ($recordLabel === 'product variant' ? 500 : 50);
+            $defaults['rows'] = $useLatestRows ? $service->latest($rowLimit) : $service->all($rowLimit, 0);
 
             if ($rowCount === 0) {
                 $defaults['status'] = 'empty';
@@ -601,9 +649,10 @@ class ProductControlController extends Controller
     private function purpose()
     {
         return [
-            'Supplier catalog is manual in ERP today; set OpenCart source product ID to map order line items.',
-            'OpenCart sync is order-only (Test Sync + status mapping). Product pull is optional when product_api_route is configured.',
-            'Only OpenCart products marked From Warehouse = Yes belong in the ERP supplier catalog (Dispatch Location rule).',
+            'Catalog rows are synced from the live site only — no manual product or variant create on this page.',
+            'Owner runs Pull warehouse products on Sync Preview (From Warehouse = Yes / Dispatch Location rule).',
+            'Order import uses synced source_product_id to resolve cost on imported line items.',
+            'Only OpenCart products marked From Warehouse = Yes belong in the ERP supplier catalog.',
             'Separate platform read-only fields (source model/stock) from supplier-editable model, sale/cost, and vendor stock.',
             'Cost and stock history support dispatch and payable cost snapshots instead of live changing values.',
         ];
@@ -638,25 +687,26 @@ class ProductControlController extends Controller
     private function editableFields()
     {
         return [
-            'Product name',
-            'Supplier Model',
-            'Supplier category (ERP reporting)',
-            'OpenCart source product ID (manual map before live pull)',
-            'Product Cost / Sale amount (with history)',
-            'Vendor Stock (with history)',
+            'Supplier Model (vendor model)',
+            'Supplier category (ERP reporting only)',
+            'Product Cost / Sale amount (supplier ERP field)',
+            'Vendor Stock (supplier ERP field)',
             'Low Warning Threshold (warning only)',
-            'Status (active / inactive)',
+            'ERP status (active / inactive)',
+            'Variant vendor model, cost/sale, and vendor stock per option line',
         ];
     }
 
     private function readOnlyFields()
     {
         return [
-            'OpenCart / Source Model (read-only after sync or warehouse pull)',
-            'OpenCart / Source Stock (read-only after sync or warehouse pull)',
-            'Last synced at (read-only platform timestamp)',
-            'Improved Option Model (read-only when synced later)',
-            'Improved Option Stock (read-only when synced later)',
+            'OpenCart product name (synced from live site)',
+            'OpenCart / Source Model',
+            'OpenCart / Source Stock (owner/platform stock)',
+            'OpenCart source product ID',
+            'Option name / option value (platform structure)',
+            'Last synced at',
+            'Product and option images from live site',
         ];
     }
 

@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.5.0',
-    'release_label' => 'Product Control + Sync Identity Wiring',
+    'version' => '1.5.1',
+    'release_label' => 'Product Control - Supplier Fields Only',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

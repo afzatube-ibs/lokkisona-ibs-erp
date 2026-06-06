@@ -59,7 +59,21 @@ class ProductWriteRepository extends BaseWriteRepository
     public function updatePlatformSyncFields(int $id, array $data): bool
     {
         $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
-            . 'source_model = :source_model, source_stock = :source_stock, last_synced_at = :last_synced_at, updated_at = NOW() '
+            . 'product_name = :product_name, source_model = :source_model, source_stock = :source_stock, '
+            . 'last_synced_at = :last_synced_at, updated_at = NOW() '
+            . 'WHERE product_id = :id';
+        $data['id'] = $id;
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute($data);
+    }
+
+    public function updateSupplierControlFields(int $id, array $data): bool
+    {
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
+            . 'supplier_model = :supplier_model, supplier_product_category = :supplier_product_category, '
+            . 'product_cost = :product_cost, vendor_stock = :vendor_stock, '
+            . 'low_warning_threshold = :low_warning_threshold, status = :status, updated_at = NOW() '
             . 'WHERE product_id = :id';
         $data['id'] = $id;
         $statement = $this->pdo->prepare($sql);

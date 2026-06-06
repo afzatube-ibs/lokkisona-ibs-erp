@@ -1,0 +1,138 @@
+<?php
+$costLabel = !empty($isSupplierView) ? 'Sale' : 'Cost';
+$avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
+?>
+<div class="modal-overlay" id="productControlCenterModal" hidden aria-hidden="true">
+    <div class="modal-panel modal-panel-product-control" role="dialog" aria-labelledby="pccModalTitle" aria-modal="true">
+        <div class="pcc-modal-header">
+            <div>
+                <h2 class="pcc-modal-title" id="pccModalTitle">Product Control Center</h2>
+                <p class="pcc-modal-subtitle" id="pccModalSubtitle">Controlled product workspace</p>
+            </div>
+            <button type="button" class="modal-close" data-modal-close="productControlCenterModal" aria-label="Close product workspace">&times;</button>
+        </div>
+
+        <div class="pcc-tabs" role="tablist">
+            <button type="button" class="pcc-tab is-active" data-pcc-tab="details" role="tab" aria-selected="true">Product Details</button>
+            <button type="button" class="pcc-tab" data-pcc-tab="history" role="tab" aria-selected="false"><?= e($costLabel) ?> / Stock History</button>
+        </div>
+
+        <form method="post" action="<?= e(url('/product-control/workspace/save')) ?>" id="productControlCenterForm">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="product_id" id="pccProductId" value="">
+            <?php if (!empty($isSupplierView) && !empty($boundSupplierId)): ?>
+            <input type="hidden" name="supplier_id" value="<?= e((string) $boundSupplierId) ?>">
+            <?php endif; ?>
+            <input type="hidden" name="business_source_id" id="pccBusinessSourceId" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+            <input type="hidden" name="variants" id="pccVariantsJson" value="">
+
+            <div class="pcc-tab-panel is-active" data-pcc-panel="details">
+                <div class="pcc-main-card">
+                    <div class="pcc-main-visual" id="pccMainImageWrap">
+                        <div class="pcc-image-placeholder" id="pccImagePlaceholder">No image</div>
+                        <img src="" alt="" class="pcc-product-image" id="pccProductImage" hidden>
+                    </div>
+                    <div class="pcc-main-body">
+                        <span class="pcc-eyebrow">Main product</span>
+                        <h3 class="pcc-product-title" id="pccProductTitle">—</h3>
+                        <p class="pcc-product-meta" id="pccProductMeta">—</p>
+                    </div>
+                    <div class="pcc-main-fields">
+                        <p class="pcc-section-label">OpenCart / platform (read-only)</p>
+                        <label class="pcc-field">OpenCart product name
+                            <input type="text" id="pccProductNameDisplay" class="form-input" readonly>
+                        </label>
+                        <label class="pcc-field">OpenCart model
+                            <input type="text" id="pccSourceModelDisplay" class="form-input" readonly>
+                        </label>
+                        <label class="pcc-field">OpenCart source product ID
+                            <input type="text" id="pccSourceProductIdDisplay" class="form-input" readonly>
+                        </label>
+                        <p class="pcc-section-label">Supplier / ERP fields (editable)</p>
+                        <label class="pcc-field">Main vendor model
+                            <input type="text" name="supplier_model" id="pccSupplierModel" class="form-input">
+                        </label>
+                        <label class="pcc-field">Supplier category
+                            <input type="text" name="supplier_product_category" id="pccCategory" class="form-input">
+                        </label>
+                        <label class="pcc-field">Low warning
+                            <input type="number" name="low_warning_threshold" id="pccLowWarning" min="0" class="form-input">
+                        </label>
+                        <p class="page-description pcc-field-hint">Only supplier/ERP fields are saved. OpenCart defaults are never overwritten from this page.</p>
+                    </div>
+                </div>
+
+                <div class="pcc-simple-product" id="pccSimpleProductFields" hidden>
+                    <div class="form-grid">
+                        <label><?= e($avgLabel) ?>
+                            <input type="number" name="product_cost" id="pccProductCost" step="0.01" min="0" class="form-input">
+                        </label>
+                        <label>Vendor stock
+                            <input type="number" name="vendor_stock" id="pccProductVendorStock" min="0" class="form-input">
+                        </label>
+                        <label class="pcc-readonly-field">Owner stock (read-only)
+                            <input type="text" id="pccOwnerStockReadonly" class="form-input" readonly>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pcc-variant-section" id="pccVariantSection" hidden>
+                    <div class="table-scroll">
+                        <table class="data-table pcc-variant-table">
+                            <thead>
+                                <tr>
+                                    <th>Line</th>
+                                    <th>Image</th>
+                                    <th>Model</th>
+                                    <th>Vendor model</th>
+                                    <th>OC stock</th>
+                                    <th><?= e($avgLabel) ?></th>
+                                    <th>Vendor stock</th>
+                                    <th>Warning</th>
+                                    <th>Health</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pccVariantRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pcc-platform-readonly" id="pccPlatformReadonly" hidden>
+                    <p class="page-description"><strong>Platform read-only</strong> — updated by warehouse pull or future sync</p>
+                    <span id="pccPlatformModel"></span>
+                    <span id="pccPlatformSynced"></span>
+                </div>
+
+                <?php if (!empty($canManage) && !empty($writeGateProductEditReady)): ?>
+                <div class="pcc-save-bar">
+                    <p class="page-description">Save supplier vendor model, <?= strtolower($costLabel) ?>, stock, and warnings only.</p>
+                    <button type="submit" class="btn btn-primary">Save All Changes</button>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="pcc-tab-panel" data-pcc-panel="history" hidden>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Variant / Level</th>
+                                <th><?= e($costLabel) ?> Old → New</th>
+                                <th>Stock Old → New</th>
+                                <th>Note</th>
+                                <th>Changed At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pccHistoryRows">
+                            <tr><td colspan="5" class="page-description">Select a product to view history.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+
+        <div class="pcc-modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="productControlCenterModal">Close</button>
+        </div>
+    </div>
+</div>
