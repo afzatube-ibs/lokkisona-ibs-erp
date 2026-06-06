@@ -37,4 +37,9 @@ class OrderWorkflowHistoryReadService
     {
         return $this->repository->findByOrderId($orderId, $limit);
     }
+
+    public function latest(int $limit = 30): array
+    {
+        return $this->repository->latest($limit);
+    }
 }

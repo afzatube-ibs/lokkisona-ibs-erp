@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v0.6.3 Order Workflow Create Modal: /order-workflow status filter pills, Recent Workflow History table, in-page Create New Order modal (POST /order-workflow/create) reusing manual order multi-line form',
                 'v0.6.2 Manual Order UX: /manual-orders dropdowns for source/supplier/product, multi-line entry with live totals and cost snapshot display, Recent Manual Orders card, developer content collapsed',
                 'v0.6.1 Supplier Engagement Tools: header calculator + quick invoice modals, multi-line invoice with discount/advance, professional print layout, DB persistence (0007+0010)',
                 'v0.6.0 Production Launch Readiness: staging QA checklist, production cutover doc, credential hardening guidance — owner sign-off required before live',

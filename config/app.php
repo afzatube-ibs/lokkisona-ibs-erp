@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.6.2',
-    'release_label' => 'Manual Order UX',
+    'version' => '0.6.3',
+    'release_label' => 'Order Workflow Create Modal',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

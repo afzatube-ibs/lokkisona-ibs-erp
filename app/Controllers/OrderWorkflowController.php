@@ -18,14 +18,20 @@ use App\Services\ReadOnly\OrderReadService;
 use App\Csrf;
 use App\Services\ReadOnly\OrderWorkflowHistoryReadService;
 use App\ReadFoundation\WriteGate;
+use App\Services\Write\ManualOrderWriteService;
 use App\Services\Write\OrderWorkflowWriteService;
+use App\Support\ManualOrderFormOptions;
 
 class OrderWorkflowController extends Controller
 {
     public function index()
     {
         $this->authorize('order_workflow.view');
-        ActivityLog::record('order_workflow_access', 'Order Workflow read foundation page viewed');
+        ActivityLog::record('order_workflow_access', 'Order Workflow page viewed');
+
+        $statusFilter = $this->resolveStatusFilter($_GET['status'] ?? null);
+        $manualOrderForm = ManualOrderFormOptions::forCreateForm();
+        $manualOrderWriteGate = WriteGate::manualOrderCreateForm();
 
         $this->render('order-workflow.index', [
             'pageTitle' => 'Order Workflow',
@@ -55,8 +61,19 @@ class OrderWorkflowController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::orderWorkflow(),
             'writeGateReady' => WriteGate::orderWorkflow()['ready'],
-            'workflowBoard' => $this->buildWorkflowBoard(),
-            'workflowStageNav' => $this->buildWorkflowStageNav(),
+            'manualOrderWriteGate' => $manualOrderWriteGate,
+            'manualOrderGateReady' => $manualOrderWriteGate['ready'],
+            'manualOrderGateMessage' => $manualOrderWriteGate['message'] ?? WriteGate::WARNING_MESSAGE,
+            'businessSourceOptions' => $manualOrderForm['businessSourceOptions'],
+            'supplierOptions' => $manualOrderForm['supplierOptions'],
+            'productOptions' => $manualOrderForm['productOptions'],
+            'variantOptionsByProduct' => $manualOrderForm['variantOptionsByProduct'],
+            'productCostById' => $manualOrderForm['productCostById'],
+            'canManageWorkflow' => Permission::can('order_workflow.manage'),
+            'statusFilter' => $statusFilter,
+            'workflowBoard' => $this->buildWorkflowBoard($statusFilter),
+            'workflowStageNav' => $this->buildWorkflowStageNav($statusFilter),
+            'recentWorkflowHistory' => $this->buildRecentWorkflowHistory(),
             'deliveryStopReasonOptions' => DeliveryStopReason::options(),
             'dispatchDevNote' => OrderWorkflowStatus::DISPATCH_DEV_NOTE,
             'syncImportRuleNote' => OrderWorkflowStatus::SYNC_IMPORT_RULE_NOTE,
@@ -65,13 +82,32 @@ class OrderWorkflowController extends Controller
         ]);
     }
 
-    public function action()
+    public function create()
     {
         $this->authorize('order_workflow.manage');
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
             redirect('/order-workflow');
+        }
+        if (!WriteGate::manualOrderCreateForm()['ready']) {
+            $this->flash('error', WriteGate::WARNING_MESSAGE);
+            redirect('/order-workflow');
+        }
+
+        $this->redirectWithWriteResult(
+            '/order-workflow?status=new_order',
+            (new ManualOrderWriteService())->create($_POST)
+        );
+    }
+
+    public function action()
+    {
+        $this->authorize('order_workflow.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect($this->workflowRedirectPath());
         }
         $orderId = (int) ($_POST['order_id'] ?? 0);
         $toStatus = trim((string) ($_POST['to_status'] ?? ''));
@@ -80,19 +116,52 @@ class OrderWorkflowController extends Controller
         if (OrderWorkflowStatus::normalize($toStatus) === 'delivery_stop') {
             if (!DeliveryStopReason::isKnown($deliveryStopReason)) {
                 $this->flash('error', 'Delivery Stop reason is required.');
-                redirect('/order-workflow');
+                redirect($this->workflowRedirectPath());
             }
             $note = DeliveryStopReason::formatActionNote($deliveryStopReason, $note);
         }
         $staffConfirmed = !empty($_POST['staff_confirmation']);
         $actionConfirmed = !empty($_POST['action_confirmed']);
         $this->redirectWithWriteResult(
-            '/order-workflow',
+            $this->workflowRedirectPath(),
             (new OrderWorkflowWriteService())->transition($orderId, $toStatus, $note, $staffConfirmed, $actionConfirmed)
         );
     }
 
-    private function buildWorkflowBoard(): array
+    private function workflowRedirectPath(): string
+    {
+        $status = trim((string) ($_POST['return_status'] ?? $_GET['status'] ?? ''));
+        if ($status !== '') {
+            $normalized = OrderWorkflowStatus::normalize($status);
+            if ($normalized !== '') {
+                return '/order-workflow?status=' . rawurlencode($normalized);
+            }
+        }
+
+        return '/order-workflow';
+    }
+
+    private function resolveStatusFilter(?string $raw): ?string
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $normalized = OrderWorkflowStatus::normalize($raw);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $known = array_merge(
+            OrderWorkflowStatus::groupOrder(),
+            array_column(OrderWorkflowStatus::exceptionStages(), 'code')
+        );
+
+        return in_array($normalized, $known, true) ? $normalized : null;
+    }
+
+    private function buildWorkflowBoard(?string $statusFilter = null): array
     {
         $dispatchModuleReady = WriteGate::dispatchReports()['ready'] ?? false;
         $board = [];
@@ -169,10 +238,17 @@ class OrderWorkflowController extends Controller
             }
         }
 
+        if ($statusFilter !== null) {
+            $ordered = array_values(array_filter(
+                $ordered,
+                static fn (array $group): bool => ($group['code'] ?? '') === $statusFilter
+            ));
+        }
+
         return $ordered;
     }
 
-    private function buildWorkflowStageNav(): array
+    private function buildWorkflowStageNav(?string $activeStatus = null): array
     {
         $orders = $this->loadWorkflowOrders();
         $dispatchReferences = $this->loadDispatchOrderReferences();
@@ -195,6 +271,8 @@ class OrderWorkflowController extends Controller
                 'code' => $code,
                 'label' => $code === 'dispatch_report_created' ? 'Created Report' : $stage['label'],
                 'count' => $counts[$code] ?? 0,
+                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'active' => $activeStatus === $code,
             ];
         }
 
@@ -205,13 +283,65 @@ class OrderWorkflowController extends Controller
                 'code' => $code,
                 'label' => $stage['label'],
                 'count' => $counts[$code] ?? 0,
+                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'active' => $activeStatus === $code,
             ];
         }
 
         return [
+            'all_url' => '/order-workflow',
+            'all_active' => $activeStatus === null,
             'main' => $mainStages,
             'exceptions' => $exceptionStages,
         ];
+    }
+
+    private function buildRecentWorkflowHistory(): array
+    {
+        try {
+            $historyService = new OrderWorkflowHistoryReadService();
+            if (!$historyService->tableExists()) {
+                return [];
+            }
+
+            $rows = $historyService->latest(30);
+            if ($rows === []) {
+                return [];
+            }
+
+            $orderRefs = [];
+            $orderService = new OrderReadService();
+            if ($orderService->tableExists()) {
+                foreach ($rows as $row) {
+                    $orderId = (int) ($row['order_id'] ?? 0);
+                    if ($orderId <= 0 || isset($orderRefs[$orderId])) {
+                        continue;
+                    }
+                    $order = $orderService->findById($orderId);
+                    if ($order !== null) {
+                        $orderRefs[$orderId] = (string) ($order['order_reference'] ?? '');
+                    }
+                }
+            }
+
+            $history = [];
+            foreach ($rows as $row) {
+                $orderId = (int) ($row['order_id'] ?? 0);
+                $history[] = [
+                    'order_id' => $orderId,
+                    'order_reference' => $orderRefs[$orderId] ?? ('#' . $orderId),
+                    'from_label' => OrderWorkflowStatus::label((string) ($row['from_status'] ?? '')),
+                    'to_label' => OrderWorkflowStatus::label((string) ($row['to_status'] ?? '')),
+                    'action_note' => (string) ($row['action_note'] ?? ''),
+                    'changed_by' => (string) ($row['changed_by'] ?? ''),
+                    'changed_at' => (string) ($row['changed_at'] ?? ''),
+                ];
+            }
+
+            return $history;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**

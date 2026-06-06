@@ -4,10 +4,12 @@ $displayActionNote = static function (?string $note): string {
 
     return $note !== '' ? $note : '-';
 };
+$statusFilter = $statusFilter ?? null;
+$recentWorkflowHistory = $recentWorkflowHistory ?? [];
 ?>
 <div class="page-header">
     <h1 class="page-title">Vendor Fulfillment / Order Workflow</h1>
-    <p class="page-description">Supplier fulfillment workflow (v0.4.6.0). Iqbal &amp; Brothers. Created Report batch is created on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>. Out For Delivery and Delivered change by courier/status mapping.</p>
+    <p class="page-description">v0.6.3 — Supplier fulfillment workflow. Filter by stage, create manual orders in-page, and advance orders through allowed actions. Created Report batches are on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -17,28 +19,45 @@ $displayActionNote = static function (?string $note): string {
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Workflow Stages</h2></div>
     <div class="card-body">
+        <div class="workflow-filter-row" style="margin-bottom:0.75rem;">
+            <a href="<?= e(url($workflowStageNav['all_url'] ?? '/order-workflow')) ?>" class="workflow-filter-pill<?= !empty($workflowStageNav['all_active']) ? ' is-active' : '' ?>">All stages</a>
+        </div>
         <div class="workflow-stage-grid">
             <?php foreach ($workflowStageNav['main'] ?? [] as $stage): ?>
-            <div class="workflow-stage-card">
+            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-stage-card workflow-stage-link<?= !empty($stage['active']) ? ' is-active' : '' ?>">
                 <span class="workflow-stage-label"><?= e($stage['label']) ?></span>
                 <span class="workflow-stage-count badge"><?= (int) ($stage['count'] ?? 0) ?></span>
-            </div>
+            </a>
             <?php endforeach; ?>
         </div>
         <div class="workflow-chip-row" style="margin-top: 0.75rem;">
             <?php foreach ($workflowStageNav['exceptions'] ?? [] as $stage): ?>
-            <span class="workflow-chip"><?= e($stage['label']) ?> <strong><?= (int) ($stage['count'] ?? 0) ?></strong></span>
+            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-chip workflow-chip-link<?= !empty($stage['active']) ? ' is-active' : '' ?>"><?= e($stage['label']) ?> <strong><?= (int) ($stage['count'] ?? 0) ?></strong></a>
             <?php endforeach; ?>
         </div>
+        <?php if ($statusFilter !== null): ?>
+        <p class="page-description" style="margin:0.75rem 0 0;">Showing <strong><?= e(\App\Domain\OrderWorkflowStatus::groupDisplayLabel($statusFilter)) ?></strong> only. <a href="<?= e(url('/order-workflow')) ?>">Clear filter</a></p>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>
 
 <div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Vendor Fulfillment Orders</h2></div>
+    <div class="card-header workflow-orders-header">
+        <h2 class="card-title">Vendor Fulfillment Orders</h2>
+        <?php if (!empty($canManageWorkflow)): ?>
+        <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
+        <?php endif; ?>
+    </div>
     <div class="card-body">
         <?php if (empty($workflowBoard)): ?>
-            <p class="page-description">No orders in workflow yet. Create a manual order on <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a> or wait for mapped channel import.</p>
+            <p class="page-description">
+                <?php if ($statusFilter !== null): ?>
+                    No orders in this stage yet.
+                <?php else: ?>
+                    No orders in workflow yet. Use <strong>Create New Order</strong> above or enter orders on <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>.
+                <?php endif; ?>
+            </p>
         <?php else: ?>
             <?php foreach ($workflowBoard as $group): ?>
             <div class="workflow-group<?= ($group['code'] ?? '') === 'dispatch_report_created' ? ' workflow-group-created-report' : '' ?>">
@@ -46,15 +65,13 @@ $displayActionNote = static function (?string $note): string {
                 <?php if (!empty($group['info_note'])): ?>
                 <p class="workflow-info-banner" style="margin-bottom: 0.75rem;"><?= e($group['info_note']) ?></p>
                 <?php endif; ?>
-                <?php if (($group['code'] ?? '') === 'dispatch_report_created' && empty($group['orders'])): ?>
-                <p class="page-description">No orders in Created Report yet. Shipped orders move here after Daily Dispatch Report is created.</p>
-                <?php endif; ?>
                 <?php foreach ($group['orders'] as $order): ?>
                 <?php view('partials.workflow-order-card', [
                     'order' => $order,
                     'csrfField' => $csrfField ?? '',
                     'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
                     'displayActionNote' => $displayActionNote,
+                    'statusFilter' => $statusFilter,
                 ]); ?>
                 <?php endforeach; ?>
             </div>
@@ -62,6 +79,54 @@ $displayActionNote = static function (?string $note): string {
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (!empty($recentWorkflowHistory)): ?>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header"><h2 class="card-title">Recent Workflow History</h2></div>
+    <div class="card-body">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Note</th>
+                        <th>Changed By</th>
+                        <th>Changed At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recentWorkflowHistory as $row): ?>
+                    <tr>
+                        <td><?= e($row['order_reference']) ?></td>
+                        <td><?= e($row['from_label']) ?></td>
+                        <td><?= e($row['to_label']) ?></td>
+                        <td><?= e($displayActionNote($row['action_note'] ?? null)) ?></td>
+                        <td><?= e($row['changed_by'] !== '' ? $row['changed_by'] : '-') ?></td>
+                        <td><?= e($row['changed_at']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($canManageWorkflow)): ?>
+<?php view('partials.order-workflow-create-order-modal', [
+    'manualOrderGateReady' => $manualOrderGateReady ?? false,
+    'writeGateMessage' => $manualOrderGateMessage ?? '',
+    'csrfField' => $csrfField ?? '',
+    'businessSourceOptions' => $businessSourceOptions ?? [],
+    'supplierOptions' => $supplierOptions ?? [],
+    'productOptions' => $productOptions ?? [],
+    'variantOptionsByProduct' => $variantOptionsByProduct ?? [],
+    'productCostById' => $productCostById ?? [],
+]); ?>
+<?php endif; ?>
+
 <?php else: ?>
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
@@ -69,7 +134,7 @@ $displayActionNote = static function (?string $note): string {
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Read-Only Order Workflow Inventory (developer reference)</summary>
     <div class="planning-collapsible-body">
-        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No order status action. No workflow mutation. No sync/import. No migration apply from this page.</p>
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes from these inventory cards.</p>
         <?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'Orders']); ?>
         <?php view('partials.read-inventory-card', ['readInventory' => $orderItemReadInventory, 'cardTitle' => 'Order Items']); ?>
         <?php view('partials.read-inventory-card', ['readInventory' => $orderWorkflowHistoryReadInventory, 'cardTitle' => 'Order Workflow Histories']); ?>
@@ -262,7 +327,7 @@ $displayActionNote = static function (?string $note): string {
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. Sync Preview/import cannot overwrite existing IBS workflow. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders planning foundation</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview planning foundation</a>.</p>
+            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a>.</p>
         </div>
     </div>
 </div>
@@ -361,7 +426,7 @@ $displayActionNote = static function (?string $note): string {
                     <dd><?= e($accessMode['role']) ?></dd>
                 </div>
             </dl>
-            <p class="page-description">Owner, admin, and staff can view the Order Workflow planning foundation now. No order, dispatch, or workflow tables are created automatically and no database records are written in this release.</p>
+            <p class="page-description">Owner, admin, and supplier can manage workflow actions when permitted. Staff can view the board.</p>
         </div>
     </div>
 </div>

@@ -48,6 +48,9 @@ $displayActionNote = $displayActionNote ?? static function (?string $note): stri
             <form method="post" action="<?= e(url('/order-workflow/action')) ?>" class="workflow-action-form js-workflow-action-form" data-confirm-label="<?= e($action['label']) ?>">
                 <?= $csrfField ?? '' ?>
                 <input type="hidden" name="order_id" value="<?= e((string) $order['order_id']) ?>">
+                <?php if (!empty($statusFilter)): ?>
+                <input type="hidden" name="return_status" value="<?= e($statusFilter) ?>">
+                <?php endif; ?>
                 <input type="hidden" name="to_status" value="<?= e($action['code']) ?>">
                 <input type="hidden" name="action_confirmed" value="0" class="js-action-confirmed">
                 <strong><?= e($action['label']) ?></strong>

@@ -11,6 +11,26 @@ class OrderWorkflowHistoryRepository extends BaseReadOnlyRepository
         return OrderWorkflowHistory::class;
     }
 
+    public function latest(int $limit = 30): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        try {
+            $limit = max(1, min($limit, 50));
+            $table = \App\Database\TableName::forModel(OrderWorkflowHistory::class);
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` '
+                . 'ORDER BY changed_at DESC, order_workflow_history_id DESC LIMIT ' . $limit;
+            \App\Database\QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->query($sql);
+
+            return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function findByOrderId(int $orderId, int $limit = 20): array
     {
         if (!$this->tableExists() || $orderId <= 0) {

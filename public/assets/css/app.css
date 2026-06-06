@@ -1434,6 +1434,40 @@ select.form-input,
     flex-direction: column;
     gap: 0.25rem;
 }
+.workflow-stage-link,
+.workflow-chip-link,
+.workflow-filter-pill {
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, background 0.15s;
+}
+.workflow-stage-link:hover,
+.workflow-chip-link:hover,
+.workflow-filter-pill:hover {
+    border-color: var(--color-primary);
+}
+.workflow-stage-link.is-active,
+.workflow-chip-link.is-active,
+.workflow-filter-pill.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft, rgba(59, 130, 246, 0.08));
+}
+.workflow-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+.workflow-orders-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
 
 .workflow-stage-label {
     font-size: 0.8125rem;
