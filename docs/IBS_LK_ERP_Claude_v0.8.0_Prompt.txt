@@ -1,0 +1,231 @@
+================================================================================
+IBS-LK BUSINESS MANAGER — v0.8.0 RELEASE HARDENING PROMPT (CLAUDE AI)
+================================================================================
+
+Paste this entire file into Claude AI. Attach the owner's latest local project ZIP.
+
+STATUS: NOT A RELEASE VERSION YET. v0.7.3 is a dev milestone only.
+Your job: make the repo RELEASE-READY for staging QA — stable, consistent,
+checkpoint-green, no recurring merge bugs.
+
+================================================================================
+=== SECTION 1: BASELINE ===
+================================================================================
+
+Project:     IBS-LK Business Manager
+Business:    Lokkisona.com / Sonamoni.com.bd — Iqbal & Brothers supplier ERP
+Repo:        https://github.com/afzatube-ibs/lokkisona-ibs-erp (branch main)
+Local path:  D:\IBS-ERP\lokkisona-ibs-erp
+
+Current local version (uncommitted ZIP merge):
+  config/app.php => 0.7.3 — "Operations UI Completion"
+  Last pushed Git commit: 30ebd08 (v0.6.3) — everything after is local only
+
+Read in repo before coding:
+  - docs/IBS_LK_ERP_Production_Continuation_Prompt.txt (master business rules)
+  - docs/V0.7.3-COMPLETION-HANDOFF.md (what v0.7.3 claimed)
+  - docs/STAGING-QA-CHECKLIST.md (v0.8.0 success criteria)
+  - docs/PRODUCTION-LAUNCH.md (v1.0.0 — do NOT start yet)
+
+PHP: Office D:\xampp\php\php.exe | Home E:\xampp\php\php.exe
+Dev server: php -S 127.0.0.1:8010 -t public public/router.php
+Checkpoint: powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+Logins: admin/admin (owner) | supplier/supplier (supplier role)
+
+================================================================================
+=== SECTION 2: WHAT v0.7.x ALREADY DID — DO NOT REBUILD ===
+================================================================================
+
+DONE — extend only, do not rewrite from scratch:
+
+v0.6.1–v0.6.3  Calculator, quick invoice, manual-orders UX, order-workflow modal
+v0.7.1         Workflow card totals + return batch create (R+DDMMYYYY)
+v0.7.2         Return batch → payable deduction draft (owner-gated)
+v0.7.3         Ops UI sweep: ops-safety-strip, collapsed planning, batch detail,
+               OC Order Status on cards, dynamic version on main ops pages
+
+Key backend files (working when DB tables exist):
+  app/Domain/ReturnBatchReference.php
+  app/Services/Write/ReturnBatchWriteService.php
+  app/Services/Write/PayableLedgerWriteService.php
+  POST /return-receive/create-batch
+  POST /supplier-payables/post-return-batch
+
+Gold-standard UI pages (match these — do not regress):
+  resources/views/manual-orders/index.php
+  resources/views/order-workflow/index.php
+
+================================================================================
+=== SECTION 3: KNOWN RECURRING BUG — FIX PERMANENTLY FIRST ===
+================================================================================
+
+CRITICAL: Every ZIP you returned (v0.7.2, v0.7.3) broke this file:
+
+  app/Controllers/SupplierPayablesController.php — line ~257
+
+The private method netPayableFormula(): array LOSES its signature and becomes
+an orphaned { return [...] } block → PHP fatal error → /supplier-payables
+and related routes DO NOT OPEN.
+
+REQUIRED before returning ZIP:
+  1. Open SupplierPayablesController.php
+  2. Confirm this exact method exists ONCE at end of class:
+
+     private function netPayableFormula(): array
+     {
+         return [
+             'summary' => '...',
+             'points' => [...],
+         ];
+     }
+
+  3. Confirm ReturnReceiveWriteRepository has exactly ONE find() method
+  4. Run mental lint on EVERY changed PHP file — no duplicate methods, no
+     orphaned braces
+
+Owner has fixed this bug THREE times after your ZIPs. Do not ship it broken again.
+
+================================================================================
+=== SECTION 4: WHY IT STILL DOES NOT FEEL LIKE A RELEASE ===
+================================================================================
+
+Owner feedback (confirmed):
+  - Overall pages still do not look like one cohesive product version
+  - Some links/pages failed to open (SupplierPayablesController fatal)
+  - v0.7.3 improved layout but is NOT production-polished end-to-end
+  - Git is still uncommitted — nothing is officially released
+
+Your v0.8.0 mission: RELEASE CANDIDATE HARDENING — not new features for features'
+sake. Make the existing flows trustworthy and visually consistent.
+
+================================================================================
+=== SECTION 5: v0.8.0 TARGET — "Release Candidate Hardening" ===
+================================================================================
+
+Bump: config/app.php => version 0.8.0
+      release_label => "Release Candidate Hardening"
+Add VersionController feature bullet.
+
+PRIORITY 1 — Stability & consistency (must pass checkpoint)
+  A) Zero PHP syntax errors in entire app/ directory
+  B) Every operations + supplier-facing page subtitle uses:
+       v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>
+     Pages still missing release_label in subtitle (fix all):
+       dispatch-reports, return-receive, supplier-payables, settlements,
+       sync-preview, status-mapping, invoice-printing, reports, product-control
+  C) Verify ALL sidebar links and dashboard Quick Control links return HTTP 200
+     when logged in as admin (not blank, not fatal):
+       /supplier-payables, /settlements, /reports, /return-receive,
+       /dispatch-reports, /sync-preview, /status-mapping, /invoice-printing
+  D) settlements/index.php — fix form action if still hardcoded "/settlements/prepare"
+     (must use url() helper like other forms)
+
+PRIORITY 2 — End-to-end workflow polish (UI + copy, no new schema)
+  Document and verify the full owner chain works in UI (when tables Ready):
+    1. /product-control — product + variant + cost
+    2. /manual-orders OR /order-workflow create modal — create order
+    3. /order-workflow — advance to Shipped
+    4. /dispatch-reports — create dispatch batch (locked snapshot)
+    5. /supplier-payables — post dispatch payable draft → approve/post
+    6. /return-receive — confirm return → create batch → owner approve
+    7. /supplier-payables — create return deduction draft → approve/post
+    8. /settlements — prepare → approve → close
+    9. /reports — ledger + settlement reports render
+   10. /activity-log — actions logged
+
+  For each step: clear success flash, empty states, no dev banners on main view.
+  If a step is blocked by WriteGate, show the standard write-gate warning — never crash.
+
+PRIORITY 3 — Supplier role sanity
+  Supplier login (supplier/supplier) must NEVER see broken links or 403 loops.
+  - Supplier role does NOT have supplier_payables.view — correct, hide from menu
+  - Supplier dashboard Quick Control / task cards must only link to allowed routes
+  - No payable, settlement, or migration text visible on supplier dashboard load
+
+PRIORITY 4 — Reports & settlements visual pass
+  - /reports — professional layout, print/CSV buttons obvious
+  - /settlements — keep summary stat cards; ensure empty state links to payables
+  - /supplier-payables — stat cards + ledger primary; formula stays collapsed
+
+PRIORITY 5 — Release documentation (in repo, no Git push)
+  Create docs/V0.8.0-RELEASE-CANDIDATE-HANDOFF.md with:
+    - files changed
+    - recurring bug fix confirmation (SupplierPayablesController verbatim check)
+    - full browser test checklist results (you validate statically; owner runs live)
+    - known limitations still blocked for v1.0.0 (stock deduction, live full sync)
+
+================================================================================
+=== SECTION 6: NEVER DO ===
+================================================================================
+
+- Do NOT create a new app or replace this ERP
+- Do NOT add page-load CREATE TABLE / ALTER TABLE
+- Do NOT auto-apply migrations
+- Do NOT enable stock deduction, live full sync, or WooCommerce auto-sync
+- Do NOT copy OpenCart OCMOD code
+- Do NOT commit or push Git
+- Do NOT break manual-orders multi-line form or order-workflow create modal
+- Do NOT auto-deduct payables on return receive
+
+================================================================================
+=== SECTION 7: QUALITY GATES (MANDATORY) ===
+================================================================================
+
+Before returning ZIP:
+
+  1. Lint every changed .php file — especially SupplierPayablesController.php
+  2. Grep app/ for duplicate "public function find(" in same class
+  3. Grep resources/views for hardcoded "v0.6." or "v0.7." in page-description
+     (dev-only pages like database-safety may keep historical notes INSIDE collapsed
+      planning sections only)
+  4. All <details class="planning-collapsible"> tags balanced
+  5. No mojibake (Ã, â€", â†') in views or controllers
+  6. Include handoff doc listing every changed file
+
+Owner will run:
+  powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+Expect: [OK] ALL GREEN — Red Issues: none
+
+If RED, owner pastes summary back — you fix and return new ZIP.
+
+================================================================================
+=== SECTION 8: BROWSER TEST CHECKLIST (owner runs after ZIP) ===
+================================================================================
+
+php -S 127.0.0.1:8010 -t public public/router.php
+
+As admin/admin:
+  [ ] Header badge shows v0.8.0
+  [ ] /dashboard — Quick Control links all open
+  [ ] /supplier-payables — loads (NOT blank/fatal), stat cards + ledger visible
+  [ ] /order-workflow — cards show Total Qty, Cost, Source/OC Ref, OC Order Status
+  [ ] /return-receive — batch create + detail expand + owner approve
+  [ ] /dispatch-reports — create batch form works
+  [ ] /settlements — summary cards + prepare form
+  [ ] /reports — select report + print/CSV
+  [ ] All ops page subtitles show v0.8.0 — Release Candidate Hardening
+
+As supplier/supplier:
+  [ ] /dashboard — task cards only, no dev/migration text
+  [ ] No sidebar links to payables/settlements/sync/migrations
+  [ ] /order-workflow and /return-receive work
+
+================================================================================
+=== SECTION 9: DELIVERABLE ===
+================================================================================
+
+Return: ZIP mirroring repo layout (full project or changed files only)
+Version: 0.8.0 — Release Candidate Hardening
+Focus: STABILITY + CONSISTENCY + E2E TRUST — not flashy new modules
+
+After owner approves v0.8.0 checkpoint green + browser tests:
+  → v0.8.1 / staging deploy (owner runs STAGING-QA-CHECKLIST on staging DB)
+  → v1.0.0 production launch (owner only — PRODUCTION-LAUNCH.md)
+
+START HERE:
+  1. Read SupplierPayablesController.php — fix netPayableFormula if broken
+  2. Run static lint across app/
+  3. Uniform version subtitles on all ops pages
+  4. Verify every finance/ops route loads
+  5. Write V0.8.0-RELEASE-CANDIDATE-HANDOFF.md
+================================================================================

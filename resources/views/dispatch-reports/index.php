@@ -1,29 +1,19 @@
 <div class="page-header">
     <h1 class="page-title">Dispatch Reports</h1>
-    <p class="page-description">Daily Dispatch Report + Cost Snapshot Foundation (v0.4.5.0). Iqbal &amp; Brothers. Eligible orders must be Shipped. Max 50 orders per batch. No payable, stock, invoice, or live sync.</p>
+    <p class="page-description">Daily Dispatch Report &amp; locked cost snapshots — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Iqbal &amp; Brothers. Eligible orders must be Shipped. Max 50 orders per batch. No payable, stock, invoice, or live sync.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Safety Badges</h2></div>
-    <div class="card-body">
-        <span class="badge badge-ok">No payable created</span>
-        <span class="badge badge-ok">No stock deducted</span>
-        <span class="badge badge-ok">No invoice generated</span>
-        <span class="badge badge-ok">No live sync</span>
-        <span class="badge badge-warn">Immutable cost snapshot only</span>
-    </div>
+<div class="ops-safety-strip" style="margin-bottom:1.5rem;padding:0.65rem 1rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:0.8125rem;">
+    <strong>Safety:</strong> No payable · No stock deducted · No invoice · No live sync · Cost snapshot is immutable once locked
 </div>
-
-<p class="workflow-info-banner"><?= e($payableCheckpointNote ?? '') ?></p>
-<p class="workflow-info-banner"><?= e($productLineDevNote ?? '') ?></p>
 
 <?php if (!empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Create Daily Dispatch Report</h2></div>
     <div class="card-body">
-        <p class="page-description" style="margin-bottom: 1rem;">Select shipped orders not yet in a dispatch report. Reference format: DDMMYYYY or DDMMYYYY-P1/P2. Order count stored in total_orders.</p>
+        <p class="page-description" style="margin-bottom: 1rem;">Select shipped orders not yet in a dispatch report. Reference format: DDMMYYYY or DDMMYYYY-P1/P2. Dispatch Report is the official supplier payable checkpoint — payable starts here, not at Delivered.</p>
         <?php if (!empty($eligibleOrders)): ?>
         <form method="post" action="<?= e(url('/dispatch-reports/create')) ?>" class="js-dispatch-batch-form" data-confirm-label="Create daily dispatch report">
             <?= $csrfField ?? '' ?>
@@ -105,7 +95,7 @@
             </table>
         </div>
         <?php else: ?>
-        <p class="page-description">No dispatch reports yet.</p>
+        <div class="empty-state"><p>No dispatch reports yet. Create one above from shipped orders.</p></div>
         <?php endif; ?>
     </div>
 </div>

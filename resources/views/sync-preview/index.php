@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Sync Preview</h1>
-    <p class="page-description">Test Sync + controlled import (v0.5.7). Demo mode or live OpenCart reads. Max 50 orders per request, supplier-handled only, owner-approved import only.</p>
+    <p class="page-description">Test Sync &amp; controlled import — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Demo mode or live OpenCart reads. Max 50 orders per request, supplier-handled only, owner-approved import only.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -81,6 +81,9 @@ view('partials.write-gate-warning', [
 </div>
 <?php endif; ?>
 
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Sync Planning Foundation (developer reference)</summary>
+    <div class="planning-collapsible-body">
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
@@ -413,3 +416,6 @@ view('partials.write-gate-warning', [
         </div>
     </div>
 </div>
+
+    </div>
+</details>

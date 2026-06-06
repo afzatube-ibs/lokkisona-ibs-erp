@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Activity Log</h1>
-    <p class="page-description">File-based runtime activity log with live read-only database inventory in v0.2.8. No activity log DB write from this page.</p>
+    <p class="page-description">File-based runtime activity log with live read-only database inventory. No activity log DB write from this page.</p>
 </div>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Activity Log Inventory (v0.2.8)</h2>

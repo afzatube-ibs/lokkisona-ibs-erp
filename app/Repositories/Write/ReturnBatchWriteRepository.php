@@ -49,5 +49,29 @@ class ReturnBatchWriteRepository extends BaseWriteRepository
 
         return $statement ? ($statement->fetchAll(\PDO::FETCH_ASSOC) ?: []) : [];
     }
+
+    /**
+     * References already used today (for DDMMYYYY / -P# suffix generation).
+     *
+     * @return array<int, string>
+     */
+    public function findReferencesLike(string $prefix): array
+    {
+        if (!$this->tableExists() || $prefix === '') {
+            return [];
+        }
+
+        $sql = 'SELECT return_batch_reference FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE return_batch_reference LIKE :prefix';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['prefix' => $prefix . '%']);
+
+        $refs = [];
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) ?: [] as $row) {
+            $refs[] = (string) ($row['return_batch_reference'] ?? '');
+        }
+
+        return $refs;
+    }
 }
 

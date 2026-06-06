@@ -1,9 +1,13 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Payables</h1>
-    <p class="page-description">Supplier Account / Payable Ledger — v0.4.7.0. Dispatch locked cost snapshots become Product Cost Payable drafts. Owner approval required before entries post to running balance.</p>
+    <p class="page-description">Supplier Account / Payable Ledger — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Dispatch locked cost snapshots become Product Cost Payable drafts. Owner approval required before entries post to running balance.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<div class="ops-safety-strip" style="margin-bottom:1.5rem;padding:0.65rem 1rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:0.8125rem;">
+    <strong>Safety:</strong> All entries are draft until owner posts them · Payable uses locked dispatch snapshots only · No live sync
+</div>
 
 <div class="stats-grid">
     <div class="stat-card">
@@ -32,20 +36,6 @@
             <span class="stat-label">Posted Entries</span>
             <span class="stat-value"><?= e((string) ($ledgerSummary['posted_count'] ?? 0)) ?></span>
         </div>
-    </div>
-</div>
-
-<div class="card mb-15">
-    <div class="card-header">
-        <h2 class="card-title">Net Payable Formula</h2>
-    </div>
-    <div class="card-body">
-        <p><?= e($netPayableFormula['summary']) ?></p>
-        <ul class="feature-list">
-            <?php foreach ($netPayableFormula['points'] as $point): ?>
-                <li><?= e($point) ?></li>
-            <?php endforeach; ?>
-        </ul>
     </div>
 </div>
 
@@ -112,6 +102,47 @@ view('partials.write-gate-warning', [
                 <button type="submit" class="btn btn-primary">Create Draft Entry</button>
             </div>
         </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($writeGateReady) && !empty($canManage) && !empty($eligibleReturnBatches)): ?>
+<div class="card mb-15">
+    <div class="card-header">
+        <h2 class="card-title">Return Batch Deductions</h2>
+    </div>
+    <div class="card-body card-body-flush">
+        <p class="page-description" style="padding: 1rem 1.25rem 0;">Owner-approved return batches eligible for a Return / Damage Deduction draft. Creating the draft does not post it — it still requires approval in the ledger below.</p>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Batch Ref</th>
+                        <th>Returns</th>
+                        <th>Deduction Amount</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($eligibleReturnBatches as $batch): ?>
+                    <tr>
+                        <td><code><?= e((string) ($batch['return_batch_reference'] ?? '')) ?></code></td>
+                        <td><?= e((string) ($batch['total_returns'] ?? 0)) ?></td>
+                        <td><?= e(number_format((float) ($batch['total_adjustment_amount'] ?? 0), 2)) ?> BDT</td>
+                        <td><?= e((string) ($batch['created_at'] ?? '')) ?></td>
+                        <td>
+                            <form method="post" action="<?= e(url('/supplier-payables/post-return-batch')) ?>" class="inline-form">
+                                <?= $csrfField ?>
+                                <input type="hidden" name="return_batch_id" value="<?= e((string) ($batch['return_batch_id'] ?? '')) ?>">
+                                <button type="submit" class="btn btn-sm btn-primary">Create Deduction Draft</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 <?php endif; ?>
@@ -189,16 +220,22 @@ view('partials.write-gate-warning', [
     </div>
 </div>
 
-<details class="dev-collapse mb-15">
-    <summary>Developer / Read Inventory</summary>
-    <div class="dev-collapse-body">
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Payable Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
         <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Payable Ledgers (Dev)']); ?>
     </div>
 </details>
 
-<details class="dev-collapse">
-    <summary>Planning Foundation (collapsed)</summary>
-    <div class="dev-collapse-body">
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Net Payable Formula &amp; Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
+        <p><?= e($netPayableFormula['summary']) ?></p>
+        <ul class="feature-list">
+            <?php foreach ($netPayableFormula['points'] as $point): ?>
+                <li><?= e($point) ?></li>
+            <?php endforeach; ?>
+        </ul>
         <p class="page-description">Supplier payable is based on product cost from dispatch snapshots only — never selling price or live changing cost. Return deductions require receive confirmation plus owner approval. Supplier Tools remain independent unless owner posts a ledger entry.</p>
     </div>
 </details>

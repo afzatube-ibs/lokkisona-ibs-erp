@@ -1,9 +1,68 @@
 <div class="page-header">
     <h1 class="page-title">Settlements</h1>
-    <p class="page-description">Supplier settlement workflow (v0.5.9). Draft → Prepared → Owner Approved → Paid → Closed. Apply migration 0009 manually before write forms appear.</p>
+    <p class="page-description">Supplier settlement workflow — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Draft → Prepared → Owner Approved → Paid → Closed. Apply migration 0009 manually before write forms appear.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<?php
+$settlementRows = $settlements ?? [];
+$openCount = 0;
+$awaitingPayment = 0;
+$closedCount = 0;
+$openValue = 0.0;
+foreach ($settlementRows as $sRow) {
+    $st = (string) ($sRow['workflow_status'] ?? '');
+    if (in_array($st, ['draft', 'prepared', 'approved'], true)) {
+        $openCount++;
+        $openValue += (float) ($sRow['closing_balance'] ?? 0);
+    }
+    if ($st === 'approved') {
+        $awaitingPayment++;
+    }
+    if ($st === 'closed') {
+        $closedCount++;
+    }
+}
+?>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Open Periods</span>
+            <span class="stat-value"><?= e((string) $openCount) ?></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Awaiting Payment</span>
+            <span class="stat-value"><?= e((string) $awaitingPayment) ?></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Open Closing Value</span>
+            <span class="stat-value"><?= e(number_format($openValue, 2)) ?> BDT</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">Closed Periods</span>
+            <span class="stat-value"><?= e((string) $closedCount) ?></span>
+        </div>
+    </div>
+</div>
 
 <?php
 view('partials.write-gate-warning', [
@@ -17,7 +76,7 @@ view('partials.write-gate-warning', [
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Prepare Settlement</h2></div>
     <div class="card-body">
-        <form method="post" action="/settlements/prepare" class="form-grid">
+        <form method="post" action="<?= e(url('/settlements/prepare')) ?>" class="form-grid">
             <?= $csrfField ?? '' ?>
             <label>Supplier
                 <select name="supplier_id" required>
@@ -49,7 +108,9 @@ view('partials.write-gate-warning', [
     <div class="card-header"><h2 class="card-title">Settlement Periods</h2></div>
     <div class="card-body card-body-flush">
         <?php if (empty($settlements)): ?>
-            <p class="page-description" style="padding:1rem;">No settlements yet. Prepare a period after payable ledger entries are posted.</p>
+            <div class="empty-state">
+                <p>No settlement periods yet. Prepare a period above once payable ledger entries are posted on <a href="<?= e(url('/supplier-payables')) ?>">Supplier Payables</a>.</p>
+            </div>
         <?php else: ?>
         <div class="table-scroll">
             <table class="data-table">
@@ -69,19 +130,19 @@ view('partials.write-gate-warning', [
                         <td>
                             <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
                                 <?php if (($row['workflow_status'] ?? '') === 'prepared'): ?>
-                                <form method="post" action="/settlements/approve" style="display:inline;">
+                                <form method="post" action="<?= e(url('/settlements/approve')) ?>" style="display:inline;">
                                     <?= $csrfField ?? '' ?>
                                     <input type="hidden" name="settlement_id" value="<?= e((string) ($row['settlement_id'] ?? '')) ?>">
                                     <button type="submit" class="btn btn-sm">Approve</button>
                                 </form>
                                 <?php elseif (($row['workflow_status'] ?? '') === 'approved'): ?>
-                                <form method="post" action="/settlements/mark-paid" style="display:inline;">
+                                <form method="post" action="<?= e(url('/settlements/mark-paid')) ?>" style="display:inline;">
                                     <?= $csrfField ?? '' ?>
                                     <input type="hidden" name="settlement_id" value="<?= e((string) ($row['settlement_id'] ?? '')) ?>">
                                     <button type="submit" class="btn btn-sm">Mark Paid</button>
                                 </form>
                                 <?php elseif (($row['workflow_status'] ?? '') === 'paid'): ?>
-                                <form method="post" action="/settlements/close" style="display:inline;">
+                                <form method="post" action="<?= e(url('/settlements/close')) ?>" style="display:inline;">
                                     <?= $csrfField ?? '' ?>
                                     <input type="hidden" name="settlement_id" value="<?= e((string) ($row['settlement_id'] ?? '')) ?>">
                                     <button type="submit" class="btn btn-sm">Close</button>

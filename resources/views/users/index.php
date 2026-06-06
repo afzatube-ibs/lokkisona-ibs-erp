@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Users</h1>
-    <p class="page-description">User Management with live read-only inventory in v0.2.8. Planning foundation content remains below. No user creation, no password change, and no database writes in this release.</p>
+    <p class="page-description">User Management with live read-only inventory. Planning foundation content remains below. No user creation, no password change, and no database writes in this release.</p>
 </div>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only User Inventory (v0.2.8)</h2>

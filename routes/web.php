@@ -54,9 +54,11 @@ $router->post('/supplier-payables/create', 'SupplierPayablesController@createMan
 $router->post('/supplier-payables/approve', 'SupplierPayablesController@approve');
 $router->post('/supplier-payables/reject', 'SupplierPayablesController@reject');
 $router->post('/supplier-payables/post-dispatch', 'SupplierPayablesController@postFromDispatch');
+$router->post('/supplier-payables/post-return-batch', 'SupplierPayablesController@postFromReturnBatch');
 $router->get('/reports', 'ReportsController@index');
 $router->get('/return-receive', 'ReturnReceiveController@index');
 $router->post('/return-receive/confirm', 'ReturnReceiveController@confirm');
+$router->post('/return-receive/create-batch', 'ReturnReceiveController@createBatch');
 $router->post('/return-receive/approve-batch', 'ReturnReceiveController@approveBatch');
 $router->post('/supplier-tools/quick-invoice', 'SupplierToolsController@quickInvoice');
 $router->get('/supplier-tools/quick-invoice/print/{id}', 'SupplierToolsController@printQuickInvoice');

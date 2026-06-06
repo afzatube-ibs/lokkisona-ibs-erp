@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.6.3',
-    'release_label' => 'Order Workflow Create Modal',
+    'version' => '0.8.0',
+    'release_label' => 'Release Candidate Hardening',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Opening Balance &amp; Launch Cutover</h1>
-    <p class="page-description">Opening balance create/approve (v0.3.5) and launch cutover lock (v0.3.6) when migration 0008 is applied.</p>
+    <p class="page-description">Opening balance create/approve and launch cutover lock — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Available when migration 0008 is applied.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

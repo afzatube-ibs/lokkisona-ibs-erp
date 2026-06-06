@@ -11,9 +11,11 @@ use App\Models\PayableLedger;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\SupplierRepository;
+use App\Repositories\Write\PayableLedgerWriteRepository;
 use App\Repositories\Write\ReturnReceiveWriteRepository;
 use App\Services\ReadOnly\PayableLedgerReadService;
 use App\Services\Write\PayableLedgerWriteService;
+use App\Services\Write\ReturnBatchWriteService;
 
 class SupplierPayablesController extends Controller
 {
@@ -40,6 +42,7 @@ class SupplierPayablesController extends Controller
             'ledgerSummary' => $ledgerService->summary(),
             'suppliers' => $this->loadSuppliers(),
             'supplierReturns' => $this->loadSupplierReturnsForDeduction(),
+            'eligibleReturnBatches' => $this->loadEligibleReturnBatchesForDeduction(),
             'selectedSupplierId' => $supplierId,
             'ledgerTypes' => PayableLedgerType::labels(),
             'manualEntryTypes' => PayableLedgerType::manualEntryTypes(),
@@ -98,6 +101,18 @@ class SupplierPayablesController extends Controller
         }
         $dispatchReportId = (int) ($_POST['dispatch_report_id'] ?? 0);
         $this->redirectWithWriteResult('/supplier-payables', (new PayableLedgerWriteService())->createDraftFromDispatch($dispatchReportId));
+    }
+
+    public function postFromReturnBatch()
+    {
+        $this->authorize('supplier_payables.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/supplier-payables');
+        }
+        $returnBatchId = (int) ($_POST['return_batch_id'] ?? 0);
+        $this->redirectWithWriteResult('/supplier-payables', (new PayableLedgerWriteService())->createDraftFromReturnBatch($returnBatchId));
     }
 
     private function buildReadInventory()
@@ -191,6 +206,50 @@ class SupplierPayablesController extends Controller
             ]);
 
             return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Owner-approved return batches that don't yet have a Return / Damage Deduction draft.
+     * Surfaced so the owner can create the deduction draft with one click (still owner-gated).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadEligibleReturnBatchesForDeduction(): array
+    {
+        try {
+            $batches = (new ReturnBatchWriteService())->listLatest(50);
+            if ($batches === []) {
+                return [];
+            }
+
+            $ledgers = new PayableLedgerWriteRepository();
+            $ledgerReady = $ledgers->tableExists();
+            $eligible = [];
+
+            foreach ($batches as $batch) {
+                if (($batch['status'] ?? '') !== 'owner_approved') {
+                    continue;
+                }
+
+                if ((float) ($batch['total_adjustment_amount'] ?? 0) <= 0) {
+                    continue;
+                }
+
+                $reference = (string) ($batch['return_batch_reference'] ?? '');
+                if ($ledgerReady && $reference !== '') {
+                    $existing = $ledgers->findBySourceAndType($reference, PayableLedgerType::RETURN_DEDUCTION);
+                    if ($existing !== null) {
+                        continue;
+                    }
+                }
+
+                $eligible[] = $batch;
+            }
+
+            return $eligible;
         } catch (\Throwable $e) {
             return [];
         }

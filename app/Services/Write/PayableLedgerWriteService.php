@@ -9,6 +9,7 @@ use App\Domain\PayableLedgerType;
 use App\Repositories\UserRepository;
 use App\Repositories\Write\DispatchReportWriteRepository;
 use App\Repositories\Write\PayableLedgerWriteRepository;
+use App\Repositories\Write\ReturnBatchWriteRepository;
 use App\Repositories\Write\ReturnReceiveWriteRepository;
 
 class PayableLedgerWriteService
@@ -16,17 +17,20 @@ class PayableLedgerWriteService
     private PayableLedgerWriteRepository $ledgers;
     private DispatchReportWriteRepository $dispatchReports;
     private ReturnReceiveWriteRepository $returnReceives;
+    private ReturnBatchWriteRepository $returnBatches;
     private UserRepository $users;
 
     public function __construct(
         ?PayableLedgerWriteRepository $ledgers = null,
         ?DispatchReportWriteRepository $dispatchReports = null,
         ?ReturnReceiveWriteRepository $returnReceives = null,
+        ?ReturnBatchWriteRepository $returnBatches = null,
         ?UserRepository $users = null
     ) {
         $this->ledgers = $ledgers ?? new PayableLedgerWriteRepository();
         $this->dispatchReports = $dispatchReports ?? new DispatchReportWriteRepository();
         $this->returnReceives = $returnReceives ?? new ReturnReceiveWriteRepository();
+        $this->returnBatches = $returnBatches ?? new ReturnBatchWriteRepository();
         $this->users = $users ?? new UserRepository();
     }
 
@@ -81,6 +85,69 @@ class PayableLedgerWriteService
         ]);
 
         return WriteResult::ok('Product Cost Payable draft created from dispatch ' . $dispatchReference . '. Awaiting owner approval.', $id);
+    }
+
+    /**
+     * Create a single Return / Damage Deduction draft from an owner-approved return batch.
+     * Gated: batch must be owner_approved. Never auto-runs — owner triggers this explicitly,
+     * and the resulting draft still requires separate owner approval before it posts to balance.
+     */
+    public function createDraftFromReturnBatch(int $returnBatchId): WriteResult
+    {
+        if (!$this->ledgers->tableExists()) {
+            return WriteResult::fail('Payable ledger table not available. Apply migration 0006 first.');
+        }
+
+        if (!$this->returnBatches->tableExists()) {
+            return WriteResult::fail('Return batch table not available.');
+        }
+
+        $batch = $this->returnBatches->find($returnBatchId);
+        if ($batch === null) {
+            return WriteResult::fail('Return batch not found.');
+        }
+
+        if (($batch['status'] ?? '') !== 'owner_approved') {
+            return WriteResult::fail('Return batch must be owner-approved before a deduction draft can be created.');
+        }
+
+        $supplierId = (int) ($batch['supplier_id'] ?? 0);
+        if ($supplierId <= 0) {
+            return WriteResult::fail('Return batch has no supplier. Cannot create deduction entry.');
+        }
+
+        $amount = round((float) ($batch['total_adjustment_amount'] ?? 0), 2);
+        if ($amount <= 0) {
+            return WriteResult::fail('Return batch has zero adjustment amount. Cannot create deduction entry.');
+        }
+
+        $batchReference = (string) ($batch['return_batch_reference'] ?? '');
+        $existing = $this->ledgers->findBySourceAndType($batchReference, PayableLedgerType::RETURN_DEDUCTION);
+        if ($existing !== null) {
+            return WriteResult::ok('Return deduction draft already exists for batch ' . $batchReference, (int) $existing['payable_ledger_id']);
+        }
+
+        $ledgerReference = 'RDB-' . $batchReference;
+        $id = $this->ledgers->createEntry([
+            'supplier_id' => $supplierId,
+            'ledger_reference' => $ledgerReference,
+            'ledger_type' => PayableLedgerType::RETURN_DEDUCTION,
+            'source_reference' => $batchReference,
+            'debit_amount' => 0.0,
+            'credit_amount' => $amount,
+            'balance_after' => null,
+            'status' => 'draft',
+            'created_by' => $this->resolveCreatedById(),
+        ]);
+
+        ActivityLog::record('payable_return_batch_deduction_draft', 'Return / Damage Deduction draft created from owner-approved return batch', [
+            'payable_ledger_id' => $id,
+            'return_batch_id' => $returnBatchId,
+            'return_batch_reference' => $batchReference,
+            'amount' => $amount,
+        ]);
+
+        return WriteResult::ok('Return / Damage Deduction draft created from batch ' . $batchReference . '. Awaiting owner approval on Supplier Payables.', $id);
     }
 
     public function createManualEntry(array $input): WriteResult

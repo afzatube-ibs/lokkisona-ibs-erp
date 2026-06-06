@@ -1,0 +1,919 @@
+================================================================================
+IBS-LK BUSINESS MANAGER — PRODUCTION CONTINUATION PROMPT (CLAUDE AI)
+================================================================================
+
+Replaces: IBS_LK_ERP_Full_Continuation_Prompt.txt (v0.4.6.0 / commit b41552a)
+Purpose: Continue this urgent real-business ERP to PRODUCTION READY.
+Paste this entire file into Claude AI (or Cursor) as the master continuation brief.
+
+================================================================================
+=== SECTION 1: PROJECT IDENTITY AND BASELINE ===
+================================================================================
+
+Project name:     IBS-LK Business Manager
+Business:         Lokkisona.com / Sonamoni.com.bd supplier fulfillment ERP
+Primary supplier: Iqbal & Brothers (current phase — single supplier only)
+GitHub repo:      https://github.com/afzatube-ibs/lokkisona-ibs-erp
+Branch:           main
+Latest commit:    30ebd08 — v0.6.3 Order Workflow Create Modal
+Latest version:   0.6.3 — release label "Order Workflow Create Modal"
+
+Local project paths:
+  Office PC:  D:\IBS-ERP\lokkisona-ibs-erp
+  Home PC:    same repo clone (sync via Git only — MySQL data does NOT sync)
+
+PHP requirement:  PHP 8.2+
+Office PHP:       D:\xampp\php\php.exe
+Home PHP:         E:\xampp\php\php.exe
+Dev server:       php -S 127.0.0.1:8010 -t public public/router.php
+
+Safety checkpoint (run after every build):
+  powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+Expected: [OK] ALL GREEN — Red Issues: none
+
+Default logins (local dev only — change on production):
+  Owner/admin: admin / admin
+  Supplier:    supplier / supplier
+
+================================================================================
+=== SECTION 2: MISSION — WHAT YOU MUST DO ===
+================================================================================
+
+This is an URGENT real business ERP project, NOT a demo UI project.
+CommerceOS and other side projects are PAUSED until this ERP is production usable.
+
+YOUR MISSION:
+  Complete the ERP to production-ready state by continuing from the EXISTING
+  repository at commit 30ebd08. Finish remaining UI/UX, wire missing business
+  flows, pass staging QA, and prepare for live domain launch.
+
+YOU ARE AUTHORIZED TO DESIGN AND IMPLEMENT UI/UX:
+  Where operations pages still read as "dev/foundation/v0.4.x planning",
+  you must professionalize them yourself — without redesigning the app from
+  scratch. Match the proven patterns from recent releases:
+
+  GOLD STANDARD PAGES (copy this pattern):
+  - resources/views/manual-orders/index.php (v0.6.2)
+      * Operations header, compact safety strip, dropdowns, multi-line forms
+      * Recent orders card on main view
+      * Developer read inventory + planning in collapsed <details>
+  - resources/views/order-workflow/index.php (v0.6.3)
+      * Status filter pills (?status=), Create New Order in-page modal
+      * Recent Workflow History table, workflow action cards
+      * POST /order-workflow/create for manual entry without leaving page
+  - resources/views/partials/supplier-quick-invoice-modal.php (v0.6.1)
+      * modal-overlay + modal-panel-wide, live totals, print layout
+  - public/assets/css/app.css — existing SaaS light/dark theme (keep it)
+
+Supplier screens: simple, action-first, NO developer/migration/database text.
+Owner/admin screens: powerful but organized; accounting/sync controls visible.
+Collapse all planning foundation and raw read inventory by default.
+
+================================================================================
+=== SECTION 3: VERY IMPORTANT — NEVER DO ===
+================================================================================
+
+- Do NOT create a new app from scratch.
+- Do NOT replace this app with Claude/NexaERP, CommerceOS backend, or any other ERP.
+- Do NOT use nexa_erp database or nex_ table prefix.
+- Do NOT copy OpenCart OCMOD extension code directly into this repo.
+- Do NOT connect to OpenCart/WooCommerce automatically without owner approval.
+- Do NOT import all product orders just because the product is mapped.
+- Do NOT sync OpenCart Missing status / order_status_id=0.
+- Do NOT use latest product cost for old dispatch report snapshots.
+- Do NOT use selling price / order total for supplier payable snapshot.
+- Do NOT create payable, stock deduction, invoice, or live sync unless the
+  specific module is explicitly approved in the current build task.
+- Do NOT CREATE TABLE or ALTER TABLE on page load.
+- Do NOT auto-apply migrations.
+- Do NOT run background sync loops, repeated AJAX fallback, or retry storms.
+- Do NOT commit or push to Git automatically — show diff summary first;
+  commit only when owner explicitly asks.
+- Do NOT force-push main.
+- Do NOT change Git remote unless owner requests.
+
+OLD IBS-LK SUPPLIER ERP OPENCART EXTENSION:
+  Reference ONLY for business workflow, field meanings, and UX ideas.
+  Owner may attach the old extension files separately for your reading.
+  ZERO code paste. ZERO OCMOD copy. ZERO old routes/dependencies.
+
+================================================================================
+=== SECTION 4: BUSINESS MODEL SUMMARY ===
+================================================================================
+
+Lokkisona / Sonamoni sells products online.
+Some orders are handled by supplier Iqbal & Brothers (supplier-handled orders).
+Supplier sends products directly to customer/courier for those orders.
+Lokkisona manages: order source, customer communication, courier, final approval,
+accounts, reporting, and settlement.
+
+ERP handles SUPPLIER-RELATED ORDERS ONLY — not all ecommerce orders.
+
+Core business flow:
+  1. Order comes from Lokkisona/OpenCart/PIT status mapping OR manual/offline entry.
+  2. ONLY supplier-handled orders enter IBS-LK ERP (status mapping gate).
+  3. Supplier receives order (Order Received).
+  4. Supplier packs and ships the parcel.
+  5. Owner/admin creates daily dispatch report.
+  6. Dispatch report LOCKS supplier product cost snapshot (immutable).
+  7. Supplier payable is based on dispatch snapshot — NOT selling price, NOT live cost.
+  8. Courier/status mapping later updates Out For Delivery and Delivered.
+  9. Returns are received and routed: supplier return OR owner warehouse return.
+ 10. Supplier ledger/settlement: payable, deductions, payments, balance.
+
+Channel-neutral architecture: manual, offline, ecommerce, marketplace orders share
+the same workflow when they are supplier-handled.
+
+================================================================================
+=== SECTION 5: ORDER SYNC RULES ===
+================================================================================
+
+ERP must sync ONLY supplier-handled orders based on PIT/OpenCart status mapping.
+Do not import all product orders just because product is mapped.
+Do not sync OpenCart Missing / order_status_id=0.
+
+Performance and safety:
+  - Max 50 orders per load/request.
+  - No background auto loops.
+  - No repeated fallback AJAX.
+  - One order-list request at a time.
+  - No auto retry storm.
+  - Test Sync: visible in UI for controlled checks.
+  - Full Sync: hidden from normal UI.
+
+Sync flow (v0.5.7+ built):
+  1. Owner configures mappings on /status-mapping.
+  2. Owner runs Test Sync preview on /sync-preview (demo or live OpenCart).
+  3. Owner imports eligible rows only (max 50, duplicate blocked).
+  4. Imported orders enter IBS workflow at mapped status (usually new_order).
+  5. IBS workflow is INDEPENDENT after import — source status changes do NOT
+     overwrite IBS workflow status.
+
+Config: config/opencart.php — enabled only on staging/production with owner keys.
+Live sync requires staging QA pass first (docs/STAGING-QA-CHECKLIST.md).
+
+================================================================================
+=== SECTION 6: MAIN FULFILLMENT WORKFLOW ===
+================================================================================
+
+Canonical path:
+  New Order
+  → Order Received
+  → Packaging
+  → Shipped
+  → Dispatch Report Created / Created Report
+  → Out For Delivery
+  → Delivered
+
+Stage meanings:
+  New Order        = synced/mapped or manually entered for supplier fulfillment
+  Order Received   = supplier accepted / product available
+  Packaging        = supplier checked product, packing; print/packing around here
+  Shipped          = parcel packed and handed to courier
+  Dispatch Report  = owner created daily batch; cost snapshot LOCKED
+  Out For Delivery = courier/PIT/status mapping — NOT supplier manual action
+  Delivered        = terminal success; payable still from dispatch snapshot only
+
+--- STAGE ACTIONS (enforced in OrderWorkflowWriteService + UI) ---
+
+New Order:
+  - Button: Receive Order
+  - Also: Hold, Cancelled (with required note)
+  - Supplier must NEVER move order back to New Order
+
+Order Received:
+  - Button: Start Packaging
+  - Checkbox confirmation required (staff confirms products checked)
+  - Do NOT show Ship button here
+
+Packaging:
+  - Button: Mark as Shipped
+  - Checkbox confirmation required
+  - After Shipped, order eligible for daily dispatch report
+
+Shipped:
+  - Delivery Stop (manual, note required) — from Shipped only
+  - Create Dispatch Report: done on /dispatch-reports page (NOT workflow button
+    when dispatch module ready — redirect note shown on workflow card)
+  - Without dispatch report, order must not advance to payable
+
+Dispatch Report Created / Created Report:
+  - No supplier manual courier buttons
+  - Courier/PIT mapping moves to Out For Delivery / Delivered later
+  - Must remain visible in Order Workflow as Created Report stage
+
+Out For Delivery / Delivered:
+  - Source/courier mapping only — no supplier manual buttons
+
+--- EXCEPTION WORKFLOW ---
+
+Hold:
+  - From New Order, Order Received, Packaging only
+  - Requires reason/note
+  - Resume Order → Order Received or Packaging (NEVER back to New Order)
+  - Cancelled also allowed from Hold
+
+Cancelled:
+  - Before completion from New Order, Order Received, Packaging, Hold
+  - Requires confirmation + reason. Terminal.
+
+Delivery Stop:
+  - Manual ERP action from Shipped only
+  - Requires note/reason + confirmation
+  - Flow: Shipped → Delivery Stop → Hub Return
+
+Hub Return / Courier Return:
+  - Shipped → Delivery Stop → Hub Return → Return Received confirmation
+  - Supplier confirms return received at /return-receive
+
+Customer Return / Order Returning:
+  - From PIT/OpenCart return status mapping (Returning / Returning Warehouse)
+  - Owner decides: Supplier House OR Lokkisona/Owner Warehouse destination
+  - Supplier confirms received only for supplier-side returns
+
+================================================================================
+=== SECTION 7: RETURN RECEIVE LOGIC ===
+================================================================================
+
+Return Receive = receiving confirmation NOW, not automatic accounting.
+
+Return types/destinations:
+  1. Hub Return / Courier Return — Supplier Return
+  2. Customer Return to Supplier — Supplier Return
+  3. Lokkisona / Owner Warehouse Return — Owner Return
+
+Return reason options:
+  - Faulty Product
+  - Customer Cancelled
+  - Double Order
+  - Other
+
+Received confirmation:
+  - Product received
+  - Product not received / mismatch
+
+Supplier condition:
+  - Reusable (can be used/sold again)
+  - Broken (received broken)
+
+Do NOT use "Need Owner Review" in receiving UI unless owner asks later.
+Do NOT use deduction wording in receiving UI — accounting is owner decision later.
+
+Return Receive must show REAL ERP order data from ibs_orders + ibs_order_items:
+  Order ID, Order Reference, Customer, Courier Status, Tracking/Consignment ID,
+  Fulfillment Status, Total Qty, Cost Snapshot Preview, product lines with
+  product name, variant label, qty, supplier cost snapshot per line.
+
+Return Batch (partial — backend exists, UI incomplete):
+  - Groups returned orders like Dispatch Batch groups shipped orders
+  - Owner approves batch before payable deduction
+  - Tables: ibs_return_batches, ibs_return_batch_items (migration 0006)
+  - ReturnBatchWriteService exists — needs owner-facing page + payable wire-up
+
+Future: Lokkisona warehouse return increases returned stock by product/option.
+Stock module is BLOCKED until owner explicitly approves.
+
+================================================================================
+=== SECTION 8: DISPATCH REPORT WORKFLOW ===
+================================================================================
+
+Dispatch Report = official supplier payable checkpoint.
+Supplier payable starts from Dispatch Report, NOT from Delivered.
+
+Dispatch report must:
+  - Include SHIPPED orders only
+  - Create daily batch/report
+  - Lock cost snapshot at creation time (IMMUTABLE — never recalculate old reports)
+  - Move orders Shipped → dispatch_report_created
+  - Write workflow history: "Dispatch Report {reference}"
+  - Prevent duplicate inclusion of same order
+  - Show report detail: orders, customers, qty, cost snapshot, status, date
+  - NOT auto-create payable ledger (owner posts from /supplier-payables)
+
+Reference format:
+  DDMMYYYY base
+  Same-day multiples: DDMMYYYY-P1, DDMMYYYY-P2, DDMMYYYY-P3
+
+Cost snapshot rule (CRITICAL):
+  If product cost was 500 yesterday and 600 today:
+    Yesterday's dispatch report stays 500 forever.
+    Today's report uses 600.
+  Never use selling price or order total for supplier payable.
+
+Route: /dispatch-reports — POST /dispatch-reports/create
+Service: DispatchReportWriteService
+
+================================================================================
+=== SECTION 9: SUPPLIER PAYABLE / LEDGER MODEL ===
+================================================================================
+
+Supplier Account / Payable Ledger = financial heart of ERP.
+
+Formula:
+  Opening Balance
+  + Product Cost Payable (from dispatch snapshot)
+  + Supplier Invoice
+  + Additional Payable / Extra Cost
+  + Debit Adjustment
+  - Return / Damage Deduction (after receive + owner approval)
+  - Payment Made to Supplier
+  - Advance Received from Supplier
+  - Credit Adjustment
+  = Net Payable / Balance
+
+Ledger entry types:
+  1. Product Cost Payable
+  2. Supplier Invoice
+  3. Additional Payable
+  4. Return / Damage Deduction
+  5. Payment Made to Supplier
+  6. Advance Received from Supplier
+  7. Debit Adjustment
+  8. Credit Adjustment
+
+Settlement workflow (v0.5.9 built):
+  Draft → Prepared → Owner Approved → Paid → Closed
+
+Settlement period options:
+  Daily, Weekly, 1–15, 16–30/31, Monthly, Custom Date Range
+
+Routes:
+  /supplier-payables — ledger entries, dispatch post, approve/reject
+  /settlements — period prepare, approve, mark paid, close
+  /reports — 15 owner reports with print/CSV
+
+Return deduction: ONLY after return receive confirmed AND return batch owner
+approved AND explicit payable draft approval — NOT automatic on receive.
+
+================================================================================
+=== SECTION 10: MANUAL ORDERS ===
+================================================================================
+
+Manual orders needed for:
+  Phone, Facebook/WhatsApp, offline, WooCommerce reference, supplier-side entry.
+
+Flow: Manual Order → Fulfillment Workflow → Dispatch Report → Payable later.
+
+Routes:
+  /manual-orders — full page (v0.6.2 professional UX)
+  /order-workflow — Create New Order modal (v0.6.3, same form)
+  POST /manual-orders/create OR POST /order-workflow/create
+  Service: ManualOrderWriteService
+
+Manual order create must NOT auto-create:
+  payable, stock deduction, invoice, or live channel sync.
+
+Creates:
+  ibs_manual_orders + ibs_manual_order_items
+  Bridge to ibs_orders + ibs_order_items at ibs_status = new_order
+
+Shared form infrastructure:
+  app/Support/ManualOrderFormOptions.php
+  resources/views/partials/manual-order-create-form.php
+  resources/views/partials/manual-order-line-items.php
+  public/assets/js/manual-orders.js
+
+Return/dispatch/workflow logic uses ERP orders (ibs_orders), not manual-only tables.
+
+================================================================================
+=== SECTION 11: SUPPLIER TOOLS (UTILITY — NOT OFFICIAL ACCOUNTING) ===
+================================================================================
+
+Calculator (v0.6.1):
+  Header modal on all pages for supplier role.
+  Client-side only — no DB writes, no accounting effect.
+  File: public/assets/js/supplier-tools.js, partials/supplier-calculator-modal.php
+
+Quick Invoice Generator (v0.6.1):
+  Header modal — multi-line products, discount, advance, balance due.
+  DB persistence: supplier_quick_invoices + items (migrations 0007 + 0010).
+  Print view: /supplier-tools/print
+  Does NOT affect official ERP payable unless owner posts ledger entry separately.
+  Supplier cannot repeatedly edit old utility invoices without owner policy.
+
+Route: /supplier-tools — owner history view
+
+================================================================================
+=== SECTION 12: REPORTS REQUIRED (v0.4.8 — BUILT) ===
+================================================================================
+
+Owner/admin reports on /reports (15 reports, print + CSV):
+  - Dispatch Payable Report
+  - Product-wise Dispatch Report
+  - Hub Return / Courier Return Report
+  - Customer Return Report
+  - Vendor Return Report
+  - Owner/Lokkisona Return Report
+  - Return Deduction Report
+  - Supplier Ledger Report
+  - Supplier Statement
+  - Monthly Payable Report
+  - Settlement Report
+  - Payment History
+  - Manual Account Entry Report
+  - Supplier Invoice Report
+  - Activity Log
+
+Verify reports render correctly after UI hardening passes.
+
+================================================================================
+=== SECTION 13: DASHBOARDS ===
+================================================================================
+
+Supplier dashboard (/dashboard — supplier role):
+  Task cards: New Orders, Order Received, Packaging, Shipped, Created Report,
+  Delivery Stop, Hub Return, Customer Return, Pending Return Receive, Recent Notes.
+  Calculator + Quick Invoice engagement cards.
+  NO developer text, NO migration text, NO payable internals.
+
+Owner/admin dashboard:
+  Net Supplier Payable, Dispatch Cost Snapshots, Pending Returns,
+  Payable Drafts Pending, Quick Control links.
+  UPDATE: subtitle still says v0.4.9.0 — must show current version in v0.7.0.
+
+Service: app/Services/ReadOnly/DashboardReadService.php
+
+================================================================================
+=== SECTION 14: VENDOR FULFILLMENT TABLE COLUMNS ===
+================================================================================
+
+Do NOT show SL No.
+Target columns on workflow order cards:
+  - Order No (order_reference)
+  - Customer
+  - Product Card (lines with name, variant, qty)
+  - Total Qty          <-- GAP: not yet on workflow-order-card.php
+  - Total Cost         <-- GAP: sum of cost snapshots on card
+  - Fulfillment Status
+  - Courier Status
+  - Consignment ID / Tracking
+  - OC Order Status    <-- GAP: source status if available
+  - Actions
+
+Max 50 orders per workflow load. One order-list request at a time.
+
+File to update: resources/views/partials/workflow-order-card.php
+Data from: OrderWorkflowController buildWorkflowOrderCard()
+
+================================================================================
+=== SECTION 15: UI/UX REQUIREMENTS ===
+================================================================================
+
+Use clean modern SaaS UI (already in public/assets/css/app.css).
+Light default; dark mode toggle in header — keep both.
+Usable at 100% zoom on laptop screens.
+Wide tables scroll inside cards, not whole page.
+
+Use buttons/cards instead of dropdowns for critical decisions:
+  - Delivery stop reason (choice-cards partial)
+  - Return reason/source
+  - Return type/destination
+  - Receive confirmation
+  - Supplier condition (Reusable / Broken)
+
+Keep supplier screens simple and action-first.
+Keep owner/admin pages powerful but organized.
+Collapse developer/planning text by default (<details class="planning-collapsible">).
+Created Report must stay visible in Order Workflow.
+Dispatch Reports page creates batch; workflow shows Created Report stage.
+
+PAGES STILL NEEDING UI HARDENING (v0.7.0 priority):
+  resources/views/dispatch-reports/index.php      — v0.4.5.0 dev subtitle
+  resources/views/return-receive/index.php       — foundation-heavy
+  resources/views/supplier-payables/index.php    — v0.4.7.0 dev subtitle
+  resources/views/sync-preview/index.php
+  resources/views/status-mapping/index.php
+  resources/views/invoice-printing/index.php
+  resources/views/settlements/index.php
+  resources/views/dashboard/index.php            — outdated version label
+  resources/views/reports/index.php              — verify professional layout
+  resources/views/product-control/index.php      — partial polish if needed
+
+PAGES ALREADY PROFESSIONAL (do not regress):
+  resources/views/manual-orders/index.php        — v0.6.2
+  resources/views/order-workflow/index.php         — v0.6.3
+  Header calculator + quick invoice modals       — v0.6.1
+
+================================================================================
+=== SECTION 16: COMPLETED VERSIONS — DO NOT REBUILD ===
+================================================================================
+
+The following are DONE. Extend and polish only — do not rewrite from scratch.
+
+v0.4.3.0  Light/Dark Modern SaaS UI Foundation
+v0.4.4.0  Fulfillment Workflow Action Foundation
+            /order-workflow — full status sequence, action buttons, history
+            app/Domain/OrderWorkflowStatus.php — state machine
+            app/Services/Write/OrderWorkflowWriteService.php
+v0.4.5.0  Daily Dispatch Report + Cost Snapshot
+            /dispatch-reports — DDMMYYYY batch, locked snapshot, duplicate block
+v0.4.6.0  Vendor Return Receive Foundation
+            /return-receive — supplier + owner warehouse returns, choice cards
+v0.4.7.0  Supplier Payable Ledger Foundation
+            /supplier-payables — dispatch snapshot → payable draft, manual entries
+v0.4.8.0  Supplier Statement / Reports Foundation
+            /reports — 15 reports, print, CSV
+v0.4.9.0  Supplier + Owner Dashboard Cleanup
+            Role-based /dashboard, supplier login, collapsed planning
+v0.5.0    Staging Domain Launch Readiness
+            app/StagingGate.php, docs/STAGING-DEPLOYMENT.md
+v0.5.6    Post-Staging Foundations
+            Return batch owner approve (backend), Test Sync preview UI,
+            packing slip preview, calculator + quick invoice utility
+            NOTE: stock deduction and live sync still BLOCKED
+v0.5.7    OpenCart Test Sync + Import
+            /status-mapping, /sync-preview, config/opencart.php, migration 0004
+v0.5.8    Invoice Print Persistence
+            /invoice-printing, InvoiceWriteService, PrintLogWriteService, 0007
+v0.5.9    Full Settlement Workflow
+            /settlements, SettlementWriteService, migration 0009
+v0.6.0    Production Launch Readiness
+            docs/PRODUCTION-LAUNCH.md, docs/STAGING-QA-CHECKLIST.md
+v0.6.1    Supplier Engagement Tools
+            Calculator + quick invoice modals, DB persistence, migration 0010
+v0.6.2    Manual Order UX
+            Dropdowns, multi-line, live totals, recent orders card
+v0.6.3    Order Workflow Create Modal
+            Status filters, in-page create modal, POST /order-workflow/create
+            Recent Workflow History table
+
+Key technical files (reference, do not duplicate):
+  app/ReadFoundation/WriteGate.php
+  app/Services/Write/*WriteService.php
+  app/Repositories/Write/*WriteRepository.php
+  app/Domain/OrderWorkflowStatus.php
+  app/Domain/DeliveryStopReason.php
+  app/Domain/PayableLedgerType.php
+  app/Domain/SettlementWorkflowStatus.php
+  config/permissions.php
+  tools/check-local.ps1
+
+================================================================================
+=== SECTION 17: PRODUCTION GAPS — YOUR REMAINING WORK ===
+================================================================================
+
+PRIORITY A — Operations UI/UX hardening (target v0.7.0)
+  Professionalize all pages listed in Section 15.
+  Pattern: operations header + safety strip + primary UI + collapsed dev reference.
+  Update dashboard version labels to match config/app.php.
+
+PRIORITY B — Workflow card completeness (target v0.7.1)
+  Add Total Qty, Total Cost, OC Order Status to workflow-order-card.php.
+  Enrich OrderWorkflowController buildWorkflowOrderCard() with computed fields.
+
+PRIORITY C — Return Batch owner page (target v0.7.1)
+  Build /return-batches (or section on /return-receive) analogous to dispatch:
+  - List confirmed returns eligible for batch
+  - Create return batch with reference format (mirror dispatch DDMMYYYY pattern)
+  - Owner approve batch
+  - Show batch detail with order lines and cost snapshot
+
+PRIORITY D — Return batch → payable deduction (target v0.7.2)
+  Wire ReturnBatchWriteService approve → PayableLedgerWriteService draft entry
+  Type: Return / Damage Deduction
+  Requires explicit owner approve on /supplier-payables (same gate as dispatch post)
+  Do NOT auto-deduct on return receive alone.
+
+PRIORITY E — Staging E2E validation (target v0.8.0)
+  Execute docs/STAGING-QA-CHECKLIST.md on staging database:
+  1. /product-control — create product + variant + cost
+  2. /manual-orders OR /order-workflow modal — create manual order
+  3. /order-workflow — advance through fulfillment stages
+  4. /dispatch-reports — create dispatch batch
+  5. /supplier-payables — approve/post dispatch payable draft
+  6. /return-receive — confirm return (if test scenario)
+  7. /reports — supplier ledger + settlement summary
+  8. /activity-log — events recorded
+  9. /status-mapping + /sync-preview — test sync import (staging)
+ 10. /invoice-printing — generate + print
+ 11. /settlements — prepare → approve → close period
+  Fix any broken step. Owner sign-off required.
+
+PRIORITY F — Controlled live OpenCart sync (target v1.0.0)
+  After staging pass, follow docs/PRODUCTION-LAUNCH.md:
+  - Harden config/app.php credentials on production server
+  - Enable config/opencart.php with owner API key
+  - Test Sync → import 1–3 orders → full workflow chain on production
+  - NOT background full sync
+
+EXPLICITLY BLOCKED until owner approves separate build tasks:
+  - Stock deduction on order fulfill/pack/ship
+  - Returned-stock restore for owner warehouse returns
+  - WooCommerce / Sonamoni auto-sync
+  - Full Sync button in normal UI
+  - Auto migration apply
+  - Page-load CREATE TABLE / ALTER TABLE / schema repair
+  - Opening balance finalization without owner present
+  - Payable from supplier quick invoice utility without owner ledger post
+
+================================================================================
+=== SECTION 18: DATABASE / MIGRATION RULES ===
+================================================================================
+
+Migrations are MANUAL ONLY. Never auto-apply. Never run from page load.
+
+Apply order (staging/production — owner backup first):
+  0002_core_users_roles_activity.sql           Group A
+  0003_business_sources_suppliers_products.sql Group B
+  0005_orders_manual_orders_workflow.sql       Group C
+  0006_dispatch_returns_payables.sql           Group D
+  0008_supplier_opening_balances_launch.sql    Group F
+  0004_status_mapping_sync_preview.sql         Before sync tests
+  0007_invoices_printing_supplier_tools.sql    Before invoice tests
+  0009_settlements_workflow.sql                Before settlement tests
+  0010_supplier_quick_invoice_totals.sql       Quick invoice totals
+
+Verify: /dev-db-activation — Groups A–F Ready before write testing.
+
+Table prefix: ibs_ (from config/database.php)
+If required tables missing: show WriteGate warning, do not crash.
+
+New migrations: only with owner approval. Add to database/migrations/ with
+DRAFT header comments matching existing files. Never page-load DDL.
+
+Git syncs CODE only. MySQL data does NOT sync between Office/Home PCs.
+Staging domain uses its own staging database.
+
+================================================================================
+=== SECTION 19: SECURITY / SAFETY RULES ===
+================================================================================
+
+- No payable creation unless module specifically approved for that build.
+- No stock deduction unless module specifically approved.
+- No invoice generation unless module specifically approved.
+- No live sync unless module specifically approved and staging QA passed.
+- No opening balance finalization without owner approval.
+- Every important action: workflow history row + ActivityLog entry.
+- Financial actions: owner-approved and audited.
+- Return deductions: receive confirmed + return batch approved + payable draft approved.
+- Dispatch cost snapshots: IMMUTABLE after batch create.
+- CSRF on all POST forms.
+- Permission checks via config/permissions.php — respect supplier vs owner roles.
+- Staging gate: config/app.php staging_gate for HTTP basic auth on staging domain.
+- Production: change default admin/supplier passwords — never commit secrets.
+
+Supplier role permissions (supplier):
+  dashboard, order_workflow (view+manage), return_receive (view+manage),
+  supplier_tools, calculator, quick invoice.
+  NO: payables, settlements, sync import, status mapping, migrations, reports.
+
+================================================================================
+=== SECTION 20: PERMISSIONS AND ROLES ===
+================================================================================
+
+Roles: owner, admin, staff, supplier
+Config: config/permissions.php
+
+Owner/admin: full access including payables, settlements, sync, reports, migrations.
+Staff: view workflow, dispatch, returns, sync preview — limited manage.
+Supplier: fulfillment tasks + utility tools only.
+
+When hardening UI: hide sidebar links supplier cannot access (already partially done
+in resources/views/layouts/admin.php — verify and complete).
+
+================================================================================
+=== SECTION 21: DEVELOPMENT WORKFLOW ===
+================================================================================
+
+Always start a session with:
+  git pull --ff-only origin main
+  git log --oneline -5
+  git status --short
+  Confirm config/app.php version matches expected release.
+
+For big builds: PLAN FIRST — propose version slice, get owner approval, then implement.
+
+After implementation:
+  1. powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+     MUST be [OK] ALL GREEN — stop on [FAIL] RED ISSUES SUMMARY
+  2. Browser test (local dev server on 127.0.0.1:8010):
+     /dashboard
+     /product-control
+     /manual-orders
+     /order-workflow
+     /dispatch-reports
+     /return-receive
+     /supplier-payables
+     /settlements
+     /reports
+     /sync-preview
+     /status-mapping
+     /invoice-printing
+     /supplier-tools
+     /version
+     /dev-db-activation
+  3. Show changed files + summary to owner
+  4. Commit ONLY when owner asks:
+     git add <files>
+     git commit -m "vX.X.X Release Name — why"
+     git push origin main
+
+Version bump each release:
+  config/app.php — version + release_label
+  app/Controllers/VersionController.php — feature bullet
+
+================================================================================
+=== SECTION 22: VERSION ROADMAP TO PRODUCTION ===
+================================================================================
+
+v0.7.0  Operations UI sweep
+        All pages in Section 15 → professional operations layout
+        Dashboard version labels updated
+        Checkpoint ALL GREEN
+
+v0.7.1  Workflow card columns + Return Batch owner page
+        Total Qty, Total Cost, OC Order Status on order cards
+        /return-batches or integrated return batch UI
+
+v0.7.2  Return batch → payable deduction draft
+        Owner-approved Return/Damage Deduction ledger entries
+        No auto-deduct on receive alone
+
+v0.8.0  Staging E2E hardening
+        Full STAGING-QA-CHECKLIST pass on staging DB
+        Fix all broken chain steps
+        Owner sign-off documented
+
+v1.0.0  Production launch
+        PRODUCTION-LAUNCH.md executed
+        Credentials hardened
+        Controlled OpenCart sync (1–3 test orders → full chain)
+        Owner sign-off for CommerceOS pause lift
+
+Post-v1.0 (owner-approved only):
+  - Stock deduction module
+  - Returned stock restore
+  - WooCommerce Sonamoni sync
+  - Multi-supplier expansion beyond Iqbal & Brothers
+
+================================================================================
+=== SECTION 23: PRODUCTION READY SUCCESS CRITERIA ===
+================================================================================
+
+The app is production-ready when ALL of the following are true:
+
+SUPPLIER (supplier/supplier login):
+  [ ] Dashboard shows task counts without any developer/migration text
+  [ ] Can create order via /order-workflow modal OR receive synced order
+  [ ] Can advance order: Receive → Packaging → Shipped with confirmations
+  [ ] Can confirm return receive with choice cards (reason, condition)
+  [ ] Can use calculator and quick invoice without affecting official ledger
+  [ ] Cannot see payables, settlements, sync, or migration pages
+
+OWNER/ADMIN (admin/admin login):
+  [ ] Can create dispatch batch from shipped orders with locked cost snapshot
+  [ ] Can post/approve dispatch payable drafts on /supplier-payables
+  [ ] Can prepare and close settlement period on /settlements
+  [ ] Can run all 15 reports with print/CSV
+  [ ] Can configure status mapping and run Test Sync import (staging)
+  [ ] Can generate invoice/packing slip on /invoice-printing
+  [ ] Activity log shows audit trail for financial and workflow actions
+
+TECHNICAL:
+  [ ] tools/check-local.ps1 — ALL GREEN at release tag
+  [ ] docs/STAGING-QA-CHECKLIST.md — all steps checked on staging
+  [ ] docs/PRODUCTION-LAUNCH.md — steps executable
+  [ ] No page-load DDL anywhere in codebase
+  [ ] WriteGate warnings on missing tables — no fatal crashes
+
+================================================================================
+=== SECTION 24: KEY FILE MAP ===
+================================================================================
+
+Controllers (operations):
+  app/Controllers/OrderWorkflowController.php
+  app/Controllers/ManualOrdersController.php
+  app/Controllers/DispatchReportsController.php
+  app/Controllers/ReturnReceiveController.php
+  app/Controllers/SupplierPayablesController.php
+  app/Controllers/SettlementsController.php
+  app/Controllers/ReportsController.php
+  app/Controllers/SyncPreviewController.php
+  app/Controllers/StatusMappingController.php
+  app/Controllers/InvoicePrintingController.php
+  app/Controllers/SupplierToolsController.php
+  app/Controllers/DashboardController.php
+  app/Controllers/ProductControlController.php
+
+Write services:
+  app/Services/Write/ManualOrderWriteService.php
+  app/Services/Write/OrderWorkflowWriteService.php
+  app/Services/Write/DispatchReportWriteService.php
+  app/Services/Write/ReturnReceiveWriteService.php
+  app/Services/Write/ReturnBatchWriteService.php
+  app/Services/Write/PayableLedgerWriteService.php
+  app/Services/Write/SettlementWriteService.php
+  app/Services/Write/SyncImportWriteService.php
+  app/Services/Write/InvoiceWriteService.php
+  app/Services/Write/SupplierQuickInvoiceWriteService.php
+
+Views (operations):
+  resources/views/order-workflow/index.php
+  resources/views/manual-orders/index.php
+  resources/views/dispatch-reports/index.php
+  resources/views/return-receive/index.php
+  resources/views/supplier-payables/index.php
+  resources/views/settlements/index.php
+  resources/views/reports/index.php
+  resources/views/sync-preview/index.php
+  resources/views/status-mapping/index.php
+  resources/views/invoice-printing/index.php
+  resources/views/dashboard/index.php
+  resources/views/layouts/admin.php
+
+Shared partials:
+  resources/views/partials/manual-order-create-form.php
+  resources/views/partials/manual-order-line-items.php
+  resources/views/partials/order-workflow-create-order-modal.php
+  resources/views/partials/workflow-order-card.php
+  resources/views/partials/write-gate-warning.php
+  resources/views/partials/choice-cards.php
+
+Config:
+  config/app.php
+  config/database.php
+  config/permissions.php
+  config/opencart.php
+
+Docs:
+  docs/STAGING-QA-CHECKLIST.md
+  docs/STAGING-DEPLOYMENT.md
+  docs/PRODUCTION-LAUNCH.md
+  README.md
+
+Tools:
+  tools/check-local.ps1
+
+================================================================================
+=== SECTION 25: CORE MONEY FLOW (REFERENCE DIAGRAM) ===
+================================================================================
+
+OrderEntry (Sync or Manual)
+    |
+    v
+OrderWorkflow (supplier actions: receive, pack, ship)
+    |
+    v
+Shipped
+    |
+    v
+DispatchReport (owner creates batch — cost snapshot LOCKED)
+    |
+    v
+PayableLedger (Product Cost Payable draft → owner approve → running balance)
+    |
+    +-- ReturnReceive (supplier/owner confirms received)
+    |       |
+    |       v
+    |   ReturnBatch (owner approves batch)
+    |       |
+    |       v
+    |   OwnerApprovedDeduction (payable draft — NOT automatic)
+    |
+    v
+SettlementPeriod (prepare → approve → paid → closed)
+
+================================================================================
+=== SECTION 26: START HERE — FIRST ACTIONS FOR CLAUDE ===
+================================================================================
+
+When you receive this prompt, execute in this order:
+
+STEP 1 — Sync and confirm baseline
+  git pull --ff-only origin main
+  git log --oneline -5
+  Confirm: commit 30ebd08 or later, version 0.6.3 in config/app.php
+  Run: powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+  Must be ALL GREEN before any code changes.
+
+STEP 2 — Browser audit (local dev server)
+  Login as admin and supplier separately.
+  Visit every operations page listed in Section 15 and Section 21.
+  Produce a short gap list: which pages still look like dev/foundation UI.
+  Note any broken workflow chain steps.
+
+STEP 3 — Propose v0.7.0 plan
+  Present a focused plan for Operations UI sweep only.
+  Wait for owner approval before implementing.
+  Do NOT start v0.7.1+ until v0.7.0 is complete and checkpoint green.
+
+STEP 4 — Implement one version slice at a time
+  Follow Section 21 development workflow.
+  Bump config/app.php version each release.
+  Never break business rules in Sections 4–11.
+
+STEP 5 — Staging and production (only after v0.7.x complete)
+  Guide owner through STAGING-QA-CHECKLIST.md on staging server.
+  Fix failures. Obtain sign-off.
+  Then execute PRODUCTION-LAUNCH.md for v1.0.0.
+
+REMEMBER:
+  - Think deeply and improve where useful.
+  - Keep workflow SIMPLE for supplier, POWERFUL for owner/admin.
+  - Old OpenCart extension = reference only. This standalone PHP ERP is the product.
+  - You own UI/UX on operations pages — make them production-grade.
+  - The business model in Sections 4–11 is immutable. Polish around it, never break it.
+
+================================================================================
+END OF PROMPT — IBS-LK Business Manager Production Continuation v0.6.3 baseline
+================================================================================

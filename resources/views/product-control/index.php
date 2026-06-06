@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Product Control</h1>
-    <p class="page-description">ERP internal supplier product and variant/option setup (v0.4.2.8). Product create, variant/option entry, and cost/stock history when Group B tables are ready.</p>
+    <p class="page-description">ERP internal supplier product and variant/option setup — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Product create, variant/option entry, and cost/stock history when Group B tables are ready.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -9,11 +9,11 @@
     <div class="card-header"><h2 class="card-title">Product / Variant Setup Notes</h2></div>
     <div class="card-body">
         <ul class="feature-list">
-            <li>Product and variant/option entry is ERP internal supplier product setup ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â not OpenCart or WooCommerce sync.</li>
+            <li>Product and variant/option entry is ERP internal supplier product setup — not OpenCart or WooCommerce sync.</li>
             <li>Vendor stock is dev ERP stock only for now. It does not sync to any sales channel yet.</li>
             <li>Product cost changes do not rewrite cost snapshots on existing orders or dispatch batches.</li>
-            <li>Opening balance remains draft/test only until launch cut-off ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â do not approve or finalize real opening balance yet.</li>
-            <li>Example: Product <strong>Baby Stroller</strong> ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Option <strong>Color</strong> / <strong>Black</strong> ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Supplier Model <strong>IBS-STROLLER-BLACK</strong> ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Cost <strong>6500</strong> ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Stock <strong>100</strong> ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Low Warning <strong>5</strong>.</li>
+            <li>Opening balance remains draft/test only until launch cut-off — do not approve or finalize real opening balance yet.</li>
+            <li>Example: Product <strong>Baby Stroller</strong> → Option <strong>Color</strong> / <strong>Black</strong> → Supplier Model <strong>IBS-STROLLER-BLACK</strong> → Cost <strong>6500</strong> → Stock <strong>100</strong> → Low Warning <strong>5</strong>.</li>
         </ul>
     </div>
 </div>
@@ -50,19 +50,19 @@
                     <label>Product *
                         <?php if (!empty($productSelectOptions)): ?>
                         <select name="product_id" required class="form-input">
-                            <option value="">ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Select product ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</option>
+                            <option value="">— Select product —</option>
                             <?php foreach ($productSelectOptions as $option): ?>
                             <option value="<?= e((string) $option['id']) ?>"><?= e($option['label']) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <?php else: ?>
                         <input type="number" name="product_id" required min="1" class="form-input" placeholder="Product ID (create a product first)">
-                        <span class="page-description">No products loaded ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â enter Product ID manually or create a product first.</span>
+                        <span class="page-description">No products loaded — enter Product ID manually or create a product first.</span>
                         <?php endif; ?>
                     </label>
                     <label>Option Name *<input type="text" name="option_name" required class="form-input" placeholder="e.g. Color"></label>
                     <label>Option Value *<input type="text" name="option_value" required class="form-input" placeholder="e.g. Black"></label>
-                    <label>Supplier Model<input type="text" name="supplier_model" class="form-input" placeholder="Recommended ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â e.g. IBS-STROLLER-BLACK"></label>
+                    <label>Supplier Model<input type="text" name="supplier_model" class="form-input" placeholder="Recommended — e.g. IBS-STROLLER-BLACK"></label>
                     <label>Product Cost *<input type="number" name="product_cost" step="0.01" min="0" required class="form-input"></label>
                     <label>Vendor Stock *<input type="number" name="vendor_stock" min="0" value="0" required class="form-input"></label>
                     <label>Low Warning<input type="number" name="low_warning_threshold" min="0" class="form-input" placeholder="Saved on parent product"></label>

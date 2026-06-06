@@ -463,13 +463,32 @@ class OrderWorkflowController extends Controller
         }
 
         $formattedProducts = [];
+        $totalQty = 0;
+        $totalCost = 0.0;
         foreach ($productLines as $line) {
+            $lineQty = (int) ($line['quantity'] ?? 0);
+            $lineCostSnapshot = (float) ($line['supplier_cost_snapshot'] ?? 0);
+            $lineCostTotal = $lineCostSnapshot * $lineQty;
+            $totalQty += $lineQty;
+            $totalCost += $lineCostTotal;
             $formattedProducts[] = [
                 'product_id' => (string) ($line['product_id'] ?? ''),
                 'product_name' => (string) ($line['product_name'] ?? ''),
                 'variant_label' => (string) ($line['variant_label'] ?? ''),
-                'quantity' => (int) ($line['quantity'] ?? 0),
+                'quantity' => $lineQty,
+                'cost_snapshot' => $lineCostSnapshot,
+                'line_cost_total' => $lineCostTotal,
             ];
+        }
+
+        $sourceOrderReference = trim((string) ($order['source_order_reference'] ?? ''));
+
+        // "OC Order Status" = source/courier status surfaced from the order row.
+        // No dedicated source_status column exists in schema; courier_status is what
+        // OpenCart / PIT status mapping updates, so it is the meaningful source status.
+        $ocOrderStatus = trim((string) ($order['courier_status'] ?? ''));
+        if ($ocOrderStatus === '' && $rawStatus !== $normalized) {
+            $ocOrderStatus = $rawStatus;
         }
 
         return [
@@ -478,11 +497,15 @@ class OrderWorkflowController extends Controller
             'customer_name' => (string) ($order['customer_name'] ?? ''),
             'courier_status' => trim((string) ($order['courier_status'] ?? '')) !== '' ? (string) $order['courier_status'] : null,
             'tracking_number' => trim((string) ($order['tracking_number'] ?? '')) !== '' ? (string) $order['tracking_number'] : null,
+            'source_order_reference' => $sourceOrderReference !== '' ? $sourceOrderReference : null,
+            'oc_order_status' => $ocOrderStatus !== '' ? $ocOrderStatus : null,
             'ibs_status' => $normalized,
             'ibs_status_label' => OrderWorkflowStatus::label($normalized),
             'legacy_status' => $rawStatus !== $normalized ? $rawStatus : null,
             'dispatch_report_reference' => $dispatchReference,
             'product_lines' => $formattedProducts,
+            'total_quantity' => $totalQty,
+            'total_cost_snapshot' => $totalCost,
             'actions' => $actions,
             'status_info_note' => $createdReportSection
                 ? OrderWorkflowStatus::COURIER_FLOW_NOTE

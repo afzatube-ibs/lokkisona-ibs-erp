@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Lokkisona OpenCart status mapping (v0.5.7). Map supplier-handled source statuses into IBS workflow before Test Sync or controlled import. Apply migration 0004 manually first.</p>
+    <p class="page-description">Lokkisona OpenCart status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map supplier-handled source statuses into IBS workflow before Test Sync or controlled import. Apply migration 0004 manually first.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -68,6 +68,9 @@ view('partials.write-gate-warning', [
 </div>
 <?php endif; ?>
 
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Mapping Planning Foundation (developer reference)</summary>
+    <div class="planning-collapsible-body">
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
@@ -323,3 +326,6 @@ view('partials.write-gate-warning', [
         </div>
     </div>
 </div>
+
+    </div>
+</details>

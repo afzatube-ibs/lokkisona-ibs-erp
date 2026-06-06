@@ -20,7 +20,7 @@ $recentOrders = $recentOrders ?? [];
 ?>
 <div class="page-header">
     <h1 class="page-title">Manual Orders</h1>
-    <p class="page-description">v0.6.2 — Offline, Sonamoni reference, and manual channel entry. No payable, stock deduction, invoice, or channel sync on create.</p>
+    <p class="page-description">v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?> · Offline, Sonamoni reference, and manual channel entry. No payable, stock deduction, invoice, or channel sync on create.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

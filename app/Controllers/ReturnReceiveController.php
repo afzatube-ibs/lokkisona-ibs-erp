@@ -60,8 +60,11 @@ class ReturnReceiveController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::returnReceive(),
             'writeGateReady' => WriteGate::returnReceive()['ready'],
-            'returnBatches' => (new ReturnBatchWriteService())->listLatest(20),
+            'returnBatches' => $this->buildReturnBatchesWithItems(),
+            'eligibleReturns' => (new ReturnBatchWriteService())->listEligibleForBatch(50),
             'canApproveBatch' => Permission::can('return_receive.manage'),
+            'canCreateBatch' => Permission::can('return_receive.manage'),
+            'returnBatchDeductionNote' => \App\Domain\ReturnBatchReference::DEDUCTION_GATE_NOTE,
             'readInventory' => $this->buildReadInventory(),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
@@ -108,6 +111,29 @@ class ReturnReceiveController extends Controller
         }
         $id = (int) ($_POST['return_batch_id'] ?? 0);
         $this->redirectWithWriteResult('/return-receive', (new ReturnBatchWriteService())->approveBatch($id));
+    }
+
+    public function createBatch()
+    {
+        $this->authorize('return_receive.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/return-receive');
+        }
+        $this->redirectWithWriteResult('/return-receive', (new ReturnBatchWriteService())->createBatch($_POST));
+    }
+
+    private function buildReturnBatchesWithItems(): array
+    {
+        $service = new ReturnBatchWriteService();
+        $batches = $service->listLatest(20);
+        foreach ($batches as $index => $batch) {
+            $batchId = (int) ($batch['return_batch_id'] ?? 0);
+            $batches[$index]['items'] = $batchId > 0 ? $service->listBatchItems($batchId) : [];
+        }
+
+        return $batches;
     }
 
     private function buildPendingReturns(string $returnType): array

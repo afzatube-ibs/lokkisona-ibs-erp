@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Business Sources</h1>
-    <p class="page-description">Business source read inventory plus controlled create/edit (v0.3.1–v0.3.2) when migration 0003 is applied.</p>
+    <p class="page-description">Business source read inventory plus controlled create/edit — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Available when migration 0003 is applied.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

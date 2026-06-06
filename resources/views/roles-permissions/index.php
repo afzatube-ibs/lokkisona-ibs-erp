@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Role & Permission Foundation</h1>
-    <p class="page-description">Config-backed access planning with live read-only role inventory in v0.2.8. No role/permission mutation and no database writes in this release.</p>
+    <p class="page-description">Config-backed access planning with live read-only role inventory. No role/permission mutation and no database writes in this release.</p>
 </div>
 
 <h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Role Inventory (v0.2.8)</h2>

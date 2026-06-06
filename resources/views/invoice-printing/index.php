@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Invoice Printing</h1>
-    <p class="page-description">ERP invoice persistence + print logs (v0.5.8). Customer invoice hides supplier cost. Packing slip may show internal cost snapshot. Apply migration 0007 manually first.</p>
+    <p class="page-description">ERP invoice persistence &amp; print logs — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Customer invoice hides supplier cost. Packing slip may show internal cost snapshot. Apply migration 0007 manually first.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -101,7 +101,10 @@ view('partials.write-gate-warning', [
 </div>
 <?php endif; ?>
 
-<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Invoice Inventory (v0.2.8)</h2>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read Inventory &amp; Planning Foundation (developer reference)</summary>
+    <div class="planning-collapsible-body">
+<h2 class="section-heading" style="margin: 0 0 0.75rem;">Read-Only Invoice Inventory (developer reference)</h2>
 <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes. No invoice creation. No print log creation. No migration apply from this page.</p>
 
 <?php view('partials.read-inventory-card', ['readInventory' => $readInventory, 'cardTitle' => 'Invoices']); ?>
@@ -349,3 +352,6 @@ view('partials.write-gate-warning', [
         </div>
     </div>
 </div>
+
+    </div>
+</details>

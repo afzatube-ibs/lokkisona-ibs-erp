@@ -56,5 +56,23 @@ class ReturnReceiveWriteRepository extends BaseWriteRepository
 
         return ((int) ($row['row_count'] ?? 0)) > 0;
     }
+
+    public function markBatched(int $returnReceiveId): bool
+    {
+        if (!$this->tableExists() || $returnReceiveId <= 0) {
+            return false;
+        }
+
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'SET status = :status, updated_at = NOW() '
+            . 'WHERE return_receive_id = :id AND status = :current_status';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute([
+            'status' => 'batched',
+            'id' => $returnReceiveId,
+            'current_status' => 'received',
+        ]);
+    }
 }
 

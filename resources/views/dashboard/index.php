@@ -4,7 +4,7 @@
         <?php if (!empty($isSupplierView)): ?>
             Supplier fulfillment tasks — Iqbal &amp; Brothers. Action-focused view only.
         <?php else: ?>
-            Owner / Admin control center — v0.4.9.0. IBS-LK Business Manager for Lokkisona / Sonamoni supplier operations.
+            Owner / Admin control center — v<?= e($appVersion) ?>. IBS-LK Business Manager for Lokkisona / Sonamoni supplier operations.
         <?php endif; ?>
     </p>
 </div>
@@ -154,9 +154,9 @@
 </div>
 <?php endif; ?>
 
-<details class="dev-collapse mt-15">
-    <summary>Planning Foundation (collapsed)</summary>
-    <div class="dev-collapse-body">
+<details class="planning-collapsible mt-15">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
         <p class="page-description">Legacy planning cards and migration documentation remain available from the sidebar. Core operational modules are live when dev DB tables are applied.</p>
         <div class="action-links">
             <a href="<?= e(url('/database-safety')) ?>" class="action-link"><span class="action-link-title">Database Safety</span></a>

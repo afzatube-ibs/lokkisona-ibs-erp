@@ -75,5 +75,36 @@ class ReturnReceiveRepository extends BaseReadOnlyRepository
             return [];
         }
     }
+
+    /**
+     * Received returns not yet attached to any return batch (eligible for batching).
+     * SELECT only. Mirrors dispatch 'shipped, not yet in a report' eligibility.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findEligibleForBatch(int $limit = 50): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        try {
+            $limit = max(1, min($limit, 50));
+            $receivesTable = \App\Database\TableName::forModel(ReturnReceive::class);
+            $batchItemsTable = config('database.prefix', 'ibs_') . 'return_batch_items';
+
+            $sql = 'SELECT r.* FROM `' . $this->escapeIdentifier($receivesTable) . '` r '
+                . 'LEFT JOIN `' . $this->escapeIdentifier($batchItemsTable) . '` bi ON bi.return_receive_id = r.return_receive_id '
+                . 'WHERE r.status = :status AND bi.return_batch_item_id IS NULL '
+                . 'ORDER BY r.received_at DESC, r.return_receive_id DESC LIMIT ' . $limit;
+            \App\Database\QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['status' => 'received']);
+
+            return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }
 

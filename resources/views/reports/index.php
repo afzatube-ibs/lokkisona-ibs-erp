@@ -1,7 +1,7 @@
 <div class="page-header page-header-flex">
     <div>
         <h1 class="page-title">Reports</h1>
-        <p class="page-description">Supplier Statement &amp; Reports Foundation — v0.4.8.0. Read-only reports with print and CSV export. Uses locked dispatch snapshots and posted ledger entries only.</p>
+        <p class="page-description">Supplier Statement &amp; Reports — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Read-only reports with print and CSV export. Uses locked dispatch snapshots and posted ledger entries only.</p>
     </div>
     <?php if (!empty($reportData) && !empty($reportData['rows'])): ?>
     <div class="report-actions no-print">

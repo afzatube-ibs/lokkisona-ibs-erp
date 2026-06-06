@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Supplier Tools</h1>
-    <p class="page-description">Supplier engagement hub (v0.6.1). Use the <strong>calculator</strong> and <strong>quick invoice</strong> icons in the top header bar, or open them from the supplier dashboard. Independent tools — no ERP payable, stock, or order impact.</p>
+    <p class="page-description">Supplier engagement hub — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Use the <strong>calculator</strong> and <strong>quick invoice</strong> icons in the top header bar, or open them from the supplier dashboard. Independent tools — no ERP payable, stock, or order impact.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

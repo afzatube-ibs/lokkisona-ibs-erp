@@ -401,7 +401,7 @@ class ProductControlController extends Controller
 
             if (!$tableExists) {
                 $defaults['status'] = 'table_missing';
-                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available Ã¢â‚¬â€ migration `0003_business_sources_suppliers_products.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
+                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0003_business_sources_suppliers_products.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
 
                 return $defaults;
             }
@@ -518,7 +518,7 @@ class ProductControlController extends Controller
             ],
             [
                 'field' => 'Low Warning',
-                'rule' => 'Warning only Ã¢â‚¬â€ does not auto-block orders, dispatch, or payable workflows.',
+                'rule' => 'Warning only — does not auto-block orders, dispatch, or payable workflows.',
             ],
         ];
     }
@@ -572,7 +572,7 @@ class ProductControlController extends Controller
                 'Vendor Stock belongs to internal ERP product/variant, not to each website/source.',
                 'Lokkisona.com (OpenCart) and Sonamoni.com.bd (WooCommerce) source products may map to the same ERP product/variant.',
                 'Same supplier cost can be shared across mapped source products.',
-                'Stock deduction later combines demand from all business sources Ã¢â‚¬â€ see Sync Preview planning foundation.',
+                'Stock deduction later combines demand from all business sources — see Sync Preview planning foundation.',
             ],
         ];
     }
