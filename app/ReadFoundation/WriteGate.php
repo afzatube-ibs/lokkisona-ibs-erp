@@ -127,9 +127,21 @@ class WriteGate
 
     public static function manualOrders(): array
     {
+        return self::manualOrderCreateForm();
+    }
+
+    public static function manualOrderCreateForm(): array
+    {
         return self::status([
             'ibs_manual_orders',
             'ibs_manual_order_items',
+            'ibs_orders',
+            'ibs_order_items',
+            'ibs_order_workflow_histories',
+            'ibs_products',
+            'ibs_product_variants',
+            'ibs_business_sources',
+            'ibs_suppliers',
         ]);
     }
 

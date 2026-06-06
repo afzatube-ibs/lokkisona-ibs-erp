@@ -6,6 +6,13 @@ $bridgeReady = !empty($orderReadInventory['table_exists']) && !empty($orderItemR
 $cell = static function (array $row, string $key): string {
     return (string) ($row[$key] ?? '');
 };
+$displayNote = static function (?string $note): string {
+    $note = trim((string) $note);
+
+    return $note !== '' ? $note : '-';
+};
+$manualOrderNotes = $manualOrderConfirmationNotes ?? [];
+$orderBridgeNotes = $orderBridgeConfirmationNotes ?? [];
 ?>
 <div class="page-header">
     <h1 class="page-title">Manual Orders</h1>
@@ -32,21 +39,21 @@ $cell = static function (array $row, string $key): string {
     <div class="card-body">
         <form method="post" action="<?= e(url('/manual-orders/create')) ?>">
             <?= $csrfField ?? '' ?>
-            <div class="form-grid" style="display: grid; gap: 0.75rem; max-width: 760px;">
-                <label>Business Source ID *<input type="number" name="business_source_id" required min="1" class="form-input" style="width:100%"></label>
-                <label>Supplier ID optional<input type="number" name="supplier_id" min="1" class="form-input" style="width:100%"></label>
-                <label>Manual order reference optional<input type="text" name="manual_order_reference" class="form-input" style="width:100%"></label>
-                <label>External order reference optional<input type="text" name="external_order_reference" class="form-input" style="width:100%"></label>
-                <label>External invoice reference optional<input type="text" name="external_invoice_reference" class="form-input" style="width:100%"></label>
-                <label>Customer name *<input type="text" name="customer_name" required class="form-input" style="width:100%"></label>
-                <label>Customer phone<input type="text" name="customer_phone" class="form-input" style="width:100%"></label>
-                <label>Customer address<textarea name="customer_address" class="form-input" style="width:100%; min-height: 72px;"></textarea></label>
-                <label>Product ID *<input type="number" name="product_id" required min="1" class="form-input" style="width:100%"></label>
-                <label>Product Variant ID optional<input type="number" name="product_variant_id" min="1" class="form-input" style="width:100%"></label>
-                <label>Variant label optional<input type="text" name="variant_label" class="form-input" style="width:100%"></label>
-                <label>Quantity *<input type="number" name="quantity" required value="1" min="1" class="form-input" style="width:100%"></label>
-                <label>Selling price *<input type="number" name="selling_price" required step="0.01" min="0" class="form-input" style="width:100%"></label>
-                <label>Confirmation note *<textarea name="confirmation_note" required class="form-input" style="width:100%; min-height: 72px;"></textarea></label>
+            <div class="form-grid form-grid-wide">
+                <label>Business Source ID *<input type="number" name="business_source_id" required min="1" class="form-input"></label>
+                <label>Supplier ID optional<input type="number" name="supplier_id" min="1" class="form-input"></label>
+                <label>Manual order reference optional<input type="text" name="manual_order_reference" class="form-input"></label>
+                <label>External order reference optional<input type="text" name="external_order_reference" class="form-input"></label>
+                <label>External invoice reference optional<input type="text" name="external_invoice_reference" class="form-input"></label>
+                <label>Customer name *<input type="text" name="customer_name" required class="form-input"></label>
+                <label>Customer phone<input type="text" name="customer_phone" class="form-input"></label>
+                <label>Customer address<textarea name="customer_address" class="form-input" style="min-height: 72px;"></textarea></label>
+                <label>Product ID *<input type="number" name="product_id" required min="1" class="form-input"></label>
+                <label>Product Variant ID optional<input type="number" name="product_variant_id" min="1" class="form-input"></label>
+                <label>Variant label optional<input type="text" name="variant_label" class="form-input"></label>
+                <label>Quantity *<input type="number" name="quantity" required value="1" min="1" class="form-input"></label>
+                <label>Selling price *<input type="number" name="selling_price" required step="0.01" min="0" class="form-input"></label>
+                <label>Confirmation note *<textarea name="confirmation_note" required class="form-input" style="min-height: 72px;"></textarea></label>
                 <label style="display:flex; gap:0.5rem; align-items:flex-start;">
                     <input type="checkbox" name="dev_test_confirmation" value="1" required>
                     <span>I confirm this is a dev/test manual order only and it must not create payable, stock deduction, invoice, or live sync.</span>
@@ -57,14 +64,20 @@ $cell = static function (array $row, string $key): string {
     </div>
 </div>
 <?php else: ?>
-<?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
+<?php view('partials.write-gate-warning', [
+    'writeGateReady' => $writeGateReady ?? false,
+    'writeGate' => $writeGate ?? [],
+    'writeGateMessage' => ($writeGate['message'] ?? \App\ReadFoundation\WriteGate::WARNING_MESSAGE)
+        . (isset($writeGateMigrationHint) ? ' Apply ' . $writeGateMigrationHint : ''),
+]); ?>
 <?php endif; ?>
 
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Manual Order Audit Confirmation latest 20</h2></div>
     <div class="card-body">
         <?php if (!empty($manualOrderRows)): ?>
-        <table class="data-table" style="width:100%;">
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Manual Order ID</th>
@@ -77,11 +90,13 @@ $cell = static function (array $row, string $key): string {
                     <th>IBS Status</th>
                     <th>Entry Status</th>
                     <th>Order Total</th>
+                    <th>Confirmation Note</th>
                     <th>Created At</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($manualOrderRows as $row): ?>
+                <?php $confirmationNote = $manualOrderNotes[(int) ($row['manual_order_id'] ?? 0)] ?? ''; ?>
                 <tr>
                     <td><?= e($cell($row, 'manual_order_id')) ?></td>
                     <td><?= e($cell($row, 'manual_order_reference')) ?></td>
@@ -93,11 +108,13 @@ $cell = static function (array $row, string $key): string {
                     <td><?= e($cell($row, 'ibs_status')) ?></td>
                     <td><?= e($cell($row, 'entry_status')) ?></td>
                     <td><?= e($cell($row, 'order_total')) ?></td>
+                    <td><strong class="audit-note"><?= e($displayNote($confirmationNote)) ?></strong></td>
                     <td><?= e($cell($row, 'created_at')) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php else: ?>
         <p class="page-description"><span class="badge badge-warn">Empty state</span> <?= e($manualOrderReadInventory['status_message'] ?? 'Manual order audit confirmation is not ready yet.') ?></p>
         <?php endif; ?>
@@ -108,7 +125,8 @@ $cell = static function (array $row, string $key): string {
     <div class="card-header"><h2 class="card-title">Manual Order Items Confirmation latest 20</h2></div>
     <div class="card-body">
         <?php if (!empty($manualOrderItemRows)): ?>
-        <table class="data-table" style="width:100%;">
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Manual Order Item ID</th>
@@ -142,6 +160,7 @@ $cell = static function (array $row, string $key): string {
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php else: ?>
         <p class="page-description"><span class="badge badge-warn">Empty state</span> <?= e($manualOrderItemReadInventory['status_message'] ?? 'Manual order item confirmation is not ready yet.') ?></p>
         <?php endif; ?>
@@ -154,7 +173,8 @@ $cell = static function (array $row, string $key): string {
         <?php if ($bridgeReady): ?>
             <p class="page-description">Latest bridged ERP orders from <code>ibs_orders</code>. SELECT only; no payable, stock deduction, invoice, or sync is triggered by this display.</p>
             <?php if (!empty($bridgeOrderRows)): ?>
-            <table class="data-table" style="width:100%; margin-top: 1rem;">
+            <div class="table-scroll" style="margin-top: 1rem;">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>Order ID</th>
@@ -167,11 +187,13 @@ $cell = static function (array $row, string $key): string {
                         <th>IBS Status</th>
                         <th>Order Total</th>
                         <th>Cost Snapshot Total</th>
+                        <th>Confirmation Note</th>
                         <th>Created At</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($bridgeOrderRows as $row): ?>
+                    <?php $bridgeNote = $orderBridgeNotes[(int) ($row['order_id'] ?? 0)] ?? ''; ?>
                     <tr>
                         <td><?= e($cell($row, 'order_id')) ?></td>
                         <td><?= e($cell($row, 'order_reference')) ?></td>
@@ -183,11 +205,13 @@ $cell = static function (array $row, string $key): string {
                         <td><?= e($cell($row, 'ibs_status')) ?></td>
                         <td><?= e($cell($row, 'order_total')) ?></td>
                         <td><?= e($cell($row, 'cost_snapshot_total')) ?></td>
+                        <td><strong class="audit-note"><?= e($displayNote($bridgeNote)) ?></strong></td>
                         <td><?= e($cell($row, 'created_at')) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
             <?php else: ?>
             <p class="page-description" style="margin-top: 1rem;"><span class="badge badge-warn">Empty state</span> ERP bridge tables are ready, but no bridged ERP orders are visible yet.</p>
             <?php endif; ?>
@@ -197,14 +221,20 @@ $cell = static function (array $row, string $key): string {
     </div>
 </div>
 
-<h2 class="section-heading" style="margin: 1.5rem 0 0.75rem;">Raw Read Inventory</h2>
-<p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes, no migration apply, no payable creation, no stock deduction, no invoice generation, and no channel sync from these inventory cards.</p>
-<?php view('partials.read-inventory-card', ['readInventory' => $manualOrderReadInventory, 'cardTitle' => 'Manual Orders raw read inventory']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $manualOrderItemReadInventory, 'cardTitle' => 'Manual Order Items raw read inventory']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'ERP Orders raw read inventory']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $orderItemReadInventory, 'cardTitle' => 'ERP Order Items raw read inventory']); ?>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Raw Read Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description" style="margin-bottom: 1rem;">SELECT only. No database writes, no migration apply, no payable creation, no stock deduction, no invoice generation, and no channel sync from these inventory cards.</p>
+        <?php view('partials.read-inventory-card', ['readInventory' => $manualOrderReadInventory, 'cardTitle' => 'Manual Orders raw read inventory']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $manualOrderItemReadInventory, 'cardTitle' => 'Manual Order Items raw read inventory']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $orderReadInventory, 'cardTitle' => 'ERP Orders raw read inventory']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $orderItemReadInventory, 'cardTitle' => 'ERP Order Items raw read inventory']); ?>
+    </div>
+</details>
 
-<h2 class="section-heading" style="margin: 1.5rem 0 1rem;">Planning Foundation</h2>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
 <div class="card-grid">
     <div class="card">
@@ -381,3 +411,6 @@ $cell = static function (array $row, string $key): string {
         </div>
     </div>
 </div>
+
+    </div>
+</details>

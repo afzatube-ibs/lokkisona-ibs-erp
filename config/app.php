@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '0.4.3.0',
-    'release_label' => 'IBS-LK Light/Dark Modern SaaS UI Foundation',
+    'version' => '0.4.4.0',
+    'release_label' => 'Fulfillment Workflow Action Foundation',
     'env' => 'local',
     'timezone' => 'UTC',
     'url' => '',

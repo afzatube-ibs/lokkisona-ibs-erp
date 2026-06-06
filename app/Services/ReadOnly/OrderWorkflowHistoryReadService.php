@@ -32,4 +32,9 @@ class OrderWorkflowHistoryReadService
     {
         return $this->repository->count();
     }
+
+    public function findByOrderId(int $orderId, int $limit = 20): array
+    {
+        return $this->repository->findByOrderId($orderId, $limit);
+    }
 }

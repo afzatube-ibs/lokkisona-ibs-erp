@@ -51,4 +51,20 @@
         if (saved) { applyTheme(saved); }
     } catch (e) { /* storage blocked */ }
 
+    /* ── Workflow action confirmation ── */
+    document.querySelectorAll('.js-workflow-action-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            var label = form.getAttribute('data-confirm-label') || 'this action';
+            var confirmedField = form.querySelector('.js-action-confirmed');
+            if (!confirmedField || confirmedField.value === '1') {
+                return;
+            }
+            e.preventDefault();
+            if (window.confirm('Confirm workflow action: ' + label + '?')) {
+                confirmedField.value = '1';
+                form.submit();
+            }
+        });
+    });
+
 }());

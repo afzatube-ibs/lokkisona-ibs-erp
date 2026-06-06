@@ -1,4 +1,4 @@
-/* IBS-LK Business Manager v0.4.3.0 — Light/Dark Modern SaaS UI Foundation */
+/* IBS-LK Business Manager v0.4.4.0 — Responsive layout + UI foundation */
 
 /* =========================================================================
    DESIGN TOKENS — Light theme (default)
@@ -82,6 +82,8 @@ html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 [data-theme="dark"] {
@@ -315,6 +317,12 @@ select.form-input,
     display: grid;
     gap: 0.875rem;
     max-width: 640px;
+    min-width: 0;
+    width: 100%;
+}
+
+.form-grid-wide {
+    max-width: 760px;
 }
 
 .form-grid label {
@@ -458,6 +466,9 @@ select.form-input,
 .admin-shell {
     display: flex;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 /* Sidebar */
@@ -589,10 +600,13 @@ select.form-input,
 /* Main wrapper */
 .main-wrapper {
     flex: 1;
+    min-width: 0;
     margin-left: var(--sidebar-width);
+    max-width: calc(100vw - var(--sidebar-width));
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 /* Topbar */
@@ -608,6 +622,8 @@ select.form-input,
     top: 0;
     z-index: 50;
     box-shadow: var(--shadow-sm);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .sidebar-toggle {
@@ -750,7 +766,16 @@ select.form-input,
 /* Main content */
 .main-content {
     flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
     padding: 1.5rem;
+    overflow-x: hidden;
+}
+
+.main-content > * {
+    max-width: 100%;
+    min-width: 0;
 }
 
 /* Footer */
@@ -806,6 +831,13 @@ select.form-input,
     box-shadow: var(--shadow);
     border: 1px solid var(--color-border);
     overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.card .card {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .card-header {
@@ -826,17 +858,27 @@ select.form-input,
 
 .card-body {
     padding: 1.25rem 1.375rem;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .card-body-flush {
     padding: 0;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     gap: 1.25rem;
     margin-bottom: 1.25rem;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .card-warn-border {
@@ -965,8 +1007,23 @@ select.form-input,
 /* =========================================================================
    TABLES
    ========================================================================= */
+.table-scroll {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 0.5rem;
+}
+
+.table-scroll > .data-table {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 .data-table {
     width: 100%;
+    min-width: max-content;
     border-collapse: collapse;
     font-size: 0.875rem;
 }
@@ -976,6 +1033,9 @@ select.form-input,
     padding: 0.75rem 1.25rem;
     text-align: left;
     border-bottom: 1px solid var(--color-border);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
 }
 
 .data-table th {
@@ -1021,7 +1081,19 @@ select.form-input,
     font-weight: 700;
     color: var(--color-text);
     font-size: 0.9375rem;
-    max-width: 280px;
+    min-width: 8rem;
+    max-width: 24rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.text-break {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.model-columns-line {
+    overflow-wrap: anywhere;
     word-break: break-word;
 }
 
@@ -1160,6 +1232,8 @@ select.form-input,
 
 .planned-table-grid code {
     display: block;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* =========================================================================
@@ -1195,6 +1269,103 @@ select.form-input,
     font-weight: 600;
     font-size: 0.875rem;
     text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.planning-collapsible {
+    margin: 1.25rem 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    overflow: hidden;
+}
+
+.planning-collapsible-summary {
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+    padding: 0.875rem 1.125rem;
+    background: var(--color-bg-subtle);
+    border-bottom: 1px solid transparent;
+    list-style: none;
+}
+
+.planning-collapsible-summary::-webkit-details-marker {
+    display: none;
+}
+
+.planning-collapsible[open] .planning-collapsible-summary {
+    border-bottom-color: var(--color-border);
+}
+
+.planning-collapsible-body {
+    padding: 1rem 1.125rem 1.25rem;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.workflow-group {
+    margin-bottom: 1.5rem;
+}
+
+.workflow-order-card {
+    margin-bottom: 1rem;
+}
+
+.workflow-action-form {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.workflow-action-form label {
+    display: block;
+    margin-top: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.workflow-action-form textarea {
+    width: 100%;
+    min-height: 56px;
+    margin-top: 0.25rem;
+}
+
+.workflow-action-grid {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 100%;
+}
+
+.workflow-info-banner {
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.workflow-confirm-checkbox {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.workflow-confirm-checkbox input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
 }
 
 /* =========================================================================
@@ -1233,6 +1404,8 @@ select.form-input,
     padding: 2rem;
     border-radius: var(--radius-lg);
     margin-bottom: 1.5rem;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .version-hero-mark {
@@ -1266,6 +1439,7 @@ select.form-input,
 
     .main-wrapper {
         margin-left: 0;
+        max-width: 100vw;
     }
 
     .sidebar-toggle {
@@ -1276,11 +1450,6 @@ select.form-input,
         flex-direction: column;
         gap: 0.25rem;
         text-align: center;
-    }
-
-    .data-table {
-        display: block;
-        overflow-x: auto;
     }
 
     .version-hero {

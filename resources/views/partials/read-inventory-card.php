@@ -76,11 +76,12 @@ $shouldRedactColumn = static function (string $column, array $inventory): bool {
         </dl>
 
     <?php if (!empty($inventory['columns'])): ?>
-        <p class="page-description mt-1"><strong>Model columns:</strong> <?= e(implode(', ', $inventory['columns'])) ?></p>
+        <p class="page-description model-columns-line mt-1"><strong>Model columns:</strong> <?= e(implode(', ', $inventory['columns'])) ?></p>
     <?php endif; ?>
 
     <?php if (!empty($inventory['rows'])): ?>
-        <table class="data-table mt-1">
+        <div class="table-scroll">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <?php foreach ($inventory['columns'] as $column): ?>
@@ -103,6 +104,7 @@ $shouldRedactColumn = static function (string $column, array $inventory): bool {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
         <p class="page-description mt-075"><?= e($inventory['status_message'] ?? '') ?></p>
     <?php else: ?>
         <div class="empty-state">

@@ -29,6 +29,8 @@ class ManualOrdersController extends Controller
         $this->authorize('manual_orders.view');
         ActivityLog::record('manual_orders_access', 'Manual and External Order planning foundation page viewed');
 
+        $confirmationNoteMaps = $this->buildManualOrderConfirmationNoteMaps();
+
         $this->render('manual-orders.index', [
             'pageTitle' => 'Manual Orders',
             'breadcrumbs' => [
@@ -62,8 +64,11 @@ class ManualOrdersController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeGate' => WriteGate::manualOrders(),
-            'writeGateReady' => WriteGate::manualOrders()['ready'],
+            'writeGate' => $this->manualOrderWriteGate(),
+            'writeGateReady' => $this->manualOrderWriteGate()['ready'],
+            'writeGateMigrationHint' => '0005_orders_manual_orders_workflow.sql (Group C) plus Group B product/source tables.',
+            'manualOrderConfirmationNotes' => $confirmationNoteMaps['manual'],
+            'orderBridgeConfirmationNotes' => $confirmationNoteMaps['order'],
         ]);
     }
 
@@ -73,6 +78,10 @@ class ManualOrdersController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
+            redirect('/manual-orders');
+        }
+        if (!$this->manualOrderWriteGate()['ready']) {
+            $this->flash('error', WriteGate::WARNING_MESSAGE);
             redirect('/manual-orders');
         }
         $this->redirectWithWriteResult('/manual-orders', (new ManualOrderWriteService())->create($_POST));
@@ -490,5 +499,45 @@ class ManualOrdersController extends Controller
             'user_agent',
             'created_at',
         ];
+    }
+
+    private function manualOrderWriteGate(): array
+    {
+        return WriteGate::manualOrderCreateForm();
+    }
+
+    /**
+     * Confirmation notes are stored in file ActivityLog on manual order create (not in ibs_manual_orders).
+     *
+     * @return array{manual: array<int, string>, order: array<int, string>}
+     */
+    private function buildManualOrderConfirmationNoteMaps(): array
+    {
+        $manual = [];
+        $order = [];
+
+        foreach (ActivityLog::recent(200) as $entry) {
+            if (($entry['action'] ?? '') !== 'manual_order_created') {
+                continue;
+            }
+
+            $context = is_array($entry['context'] ?? null) ? $entry['context'] : [];
+            $note = trim((string) ($context['confirmation_note'] ?? ''));
+            if ($note === '') {
+                continue;
+            }
+
+            $manualOrderId = (int) ($context['manual_order_id'] ?? 0);
+            if ($manualOrderId > 0 && !isset($manual[$manualOrderId])) {
+                $manual[$manualOrderId] = $note;
+            }
+
+            $orderId = (int) ($context['order_id'] ?? 0);
+            if ($orderId > 0 && !isset($order[$orderId])) {
+                $order[$orderId] = $note;
+            }
+        }
+
+        return ['manual' => $manual, 'order' => $order];
     }
 }

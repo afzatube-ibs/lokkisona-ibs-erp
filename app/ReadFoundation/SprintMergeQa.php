@@ -148,7 +148,7 @@ class SprintMergeQa
             [
                 'module' => 'Manual order create',
                 'page' => '/manual-orders',
-                'required_tables' => 'manual_orders, manual_order_items, orders, order_items',
+                'required_tables' => 'manual_orders, manual_order_items, orders, order_items, order_workflow_histories, products, product_variants, business_sources, suppliers',
                 'write_service' => 'ManualOrderWriteService',
                 'safety_status' => 'CSRF + table gate + duplicate ref block',
                 'migration_required' => '0005',

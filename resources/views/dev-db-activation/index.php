@@ -12,7 +12,8 @@
         <p class="page-description"><?= e($activationStatus['prefix_mismatch_message'] ?? \App\Migration\DevDatabaseActivation::PREFIX_MISMATCH_MESSAGE) ?></p>
         <p class="page-description">Configured prefix: <code><?= e($activationStatus['table_prefix'] ?? 'ibs_') ?></code>. Table readiness below checks <code>ibs_*</code> names only.</p>
         <?php if (!empty($activationStatus['prefix_mismatch_tables'])): ?>
-        <table class="data-table" style="width: 100%; margin-top: 1rem;">
+        <div class="table-scroll" style="margin-top: 1rem;">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Found (non-prefixed)</th>
@@ -28,6 +29,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php endif; ?>
         <p class="page-description" style="margin-top: 1rem;">Migration draft files (v0.4.2.4) now create <code>ibs_*</code> tables. If older non-prefixed tables exist from a prior manual apply, rename or reset the dev database before continuing.</p>
     </div>
@@ -106,7 +108,8 @@
         <h2 class="card-title">Migration Apply Order</h2>
     </div>
     <div class="card-body">
-        <table class="data-table" style="width: 100%;">
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>File</th>
@@ -124,6 +127,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <p class="page-description" style="margin-top: 1rem;">Group 0004 (status mapping/sync preview) is optional for core write-path testing. Groups A–F above map to migrations 0002, 0003, 0005, 0006, 0007, and 0008.</p>
     </div>
 </div>
@@ -151,7 +155,8 @@
                 </dd>
             </div>
         </dl>
-        <table class="data-table" style="width: 100%; margin-top: 1rem;">
+        <div class="table-scroll" style="margin-top: 1rem;">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Table</th>
@@ -173,6 +178,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <h3 style="margin-top: 1.25rem;">After apply — can test</h3>
         <p><?= e($group['testable_after']) ?></p>
         <h3>Must stay blocked</h3>

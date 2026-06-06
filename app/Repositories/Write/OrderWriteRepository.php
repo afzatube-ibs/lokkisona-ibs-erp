@@ -49,4 +49,32 @@ class OrderWriteRepository extends BaseWriteRepository
 
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
+
+    public function mirrorManualOrderStatusByReference(string $orderReference, string $status): bool
+    {
+        if ($orderReference === '') {
+            return false;
+        }
+
+        $manualTable = config('database.prefix', 'ibs_') . 'manual_orders';
+        $database = config('database.database', '');
+
+        $checkSql = 'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table';
+        $check = $this->pdo->prepare($checkSql);
+        $check->execute(['schema' => $database, 'table' => $manualTable]);
+        $row = $check->fetch(\PDO::FETCH_ASSOC);
+        if (((int) ($row['table_count'] ?? 0)) === 0) {
+            return false;
+        }
+
+        $sql = 'UPDATE `' . $this->escapeIdentifier($manualTable) . '` '
+            . 'SET ibs_status = :status, updated_at = NOW() '
+            . 'WHERE manual_order_reference = :order_reference LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute([
+            'status' => $status,
+            'order_reference' => $orderReference,
+        ]);
+    }
 }

@@ -108,7 +108,8 @@
     <div class="card-body">
         <p class="page-description"><?= e($costStockHistoryDisplay['status_message'] ?? 'Cost/stock audit history is not fully ready yet.') ?></p>
         <?php if (!empty($costStockHistoryDisplay['rows'])): ?>
-        <table class="data-table mt-1">
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Product</th>
@@ -142,6 +143,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php elseif (!empty($costStockHistoryDisplay['cost_table_exists']) || !empty($costStockHistoryDisplay['stock_table_exists'])): ?>
         <p class="page-description mt-1">No audit history rows yet. Save cost/stock with a note using the form above.</p>
         <?php endif; ?>
@@ -153,7 +155,8 @@
     <div class="card-body">
         <p class="page-description"><?= e($variantDisplay['status_message'] ?? '') ?></p>
         <?php if (!empty($variantDisplay['rows'])): ?>
-        <table class="data-table mt-1">
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>Variant ID</th>
@@ -181,6 +184,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <?php elseif (!empty($variantDisplay['table_exists'])): ?>
         <p class="page-description mt-1">No variant/option rows yet. Add a variant using the form above.</p>
         <?php endif; ?>
@@ -188,15 +192,20 @@
 </div>
 
 
-<h2 class="section-heading mt-0 mb-075">Read-Only Product Inventory</h2>
-<p class="page-description mb-1">Live Read Inventory (SELECT only). No sync, no migration apply from this page.</p>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Read-Only Product Inventory (developer reference)</summary>
+    <div class="planning-collapsible-body">
+        <p class="page-description mb-1">Live Read Inventory (SELECT only). No sync, no migration apply from this page.</p>
+        <?php view('partials.read-inventory-card', ['readInventory' => $productReadInventory, 'cardTitle' => 'Products']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $productVariantReadInventory, 'cardTitle' => 'Product Variants (raw read inventory)']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $productCostHistoryReadInventory, 'cardTitle' => 'Product Cost History (raw read inventory)']); ?>
+        <?php view('partials.read-inventory-card', ['readInventory' => $productStockHistoryReadInventory, 'cardTitle' => 'Product Stock History (raw read inventory)']); ?>
+    </div>
+</details>
 
-<?php view('partials.read-inventory-card', ['readInventory' => $productReadInventory, 'cardTitle' => 'Products']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $productVariantReadInventory, 'cardTitle' => 'Product Variants (raw read inventory)']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $productCostHistoryReadInventory, 'cardTitle' => 'Product Cost History (raw read inventory)']); ?>
-<?php view('partials.read-inventory-card', ['readInventory' => $productStockHistoryReadInventory, 'cardTitle' => 'Product Stock History (raw read inventory)']); ?>
-
-<h2 class="section-heading mt-15 mb-1">Planning Foundation</h2>
+<details class="planning-collapsible">
+    <summary class="planning-collapsible-summary">Planning Foundation (reference)</summary>
+    <div class="planning-collapsible-body">
 
 <div class="card-grid">
     <div class="card">
@@ -279,6 +288,7 @@
             <h2 class="card-title">Business Rules</h2>
         </div>
         <div class="card-body">
+            <div class="table-scroll">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -295,6 +305,7 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>
@@ -431,3 +442,6 @@
         </div>
     </div>
 </div>
+
+    </div>
+</details>
