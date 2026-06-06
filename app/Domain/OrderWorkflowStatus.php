@@ -305,4 +305,23 @@ class OrderWorkflowStatus
             ['code' => 'order_returning', 'label' => 'Customer Return / Order Returning', 'description' => 'From PIT/OpenCart return status mapping. Not a normal supplier manual action in v0.4.4.0.'],
         ];
     }
+
+    public static function stageAccentClass(string $code): string
+    {
+        return match ($code) {
+            'new_order' => 'workflow-accent-primary',
+            'order_received' => 'workflow-accent-info',
+            'packaging' => 'workflow-accent-purple',
+            'shipped' => 'workflow-accent-success',
+            'dispatch_report_created' => 'workflow-accent-warn',
+            'out_for_delivery' => 'workflow-accent-cyan',
+            'delivered' => 'workflow-accent-success',
+            'hold' => 'workflow-accent-warn',
+            'cancelled' => 'workflow-accent-muted',
+            'delivery_stop' => 'workflow-accent-error',
+            'hub_return' => 'workflow-accent-warn',
+            'order_returning' => 'workflow-accent-error',
+            default => 'workflow-accent-muted',
+        };
+    }
 }

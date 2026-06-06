@@ -1,4 +1,5 @@
 <?php
+use App\Domain\OrderWorkflowStatus;
 use App\Domain\SupplierTerminology;
 
 $analytics = $dashboardAnalytics ?? [];
@@ -199,19 +200,20 @@ foreach ($products['rows'] ?? [] as $row) {
         </div>
         <div class="card-body">
             <?php if (!empty($pipeline)): ?>
-            <div class="dash-bar-chart">
+            <div class="workflow-stage-grid workflow-stage-grid-dashboard">
                 <?php foreach ($pipeline as $stage): ?>
-                <div class="dash-bar-row">
-                    <span class="dash-bar-label"><?= e((string) ($stage['label'] ?? '')) ?></span>
-                    <div class="dash-bar-track">
-                        <div class="dash-bar-fill dash-bar-fill-primary" style="width: <?= e((string) max(4, (float) ($stage['pct'] ?? 0))) ?>%;"></div>
-                    </div>
-                    <span class="dash-bar-value"><?= e((string) ($stage['count'] ?? 0)) ?></span>
-                </div>
+                <?php
+                $code = (string) ($stage['status'] ?? '');
+                $count = (int) ($stage['count'] ?? 0);
+                ?>
+                <a href="<?= e(url('/order-workflow?status=' . rawurlencode($code))) ?>" class="workflow-stage-card workflow-stage-link <?= e(OrderWorkflowStatus::stageAccentClass($code)) ?>">
+                    <span class="workflow-stage-label"><?= e((string) ($stage['label'] ?? '')) ?></span>
+                    <span class="workflow-stage-value<?= $count === 0 ? ' workflow-stage-value-zero' : '' ?>"><?= e((string) $count) ?></span>
+                </a>
                 <?php endforeach; ?>
             </div>
             <?php else: ?>
-            <div class="empty-state"><p>No active orders in pipeline.</p></div>
+            <div class="empty-state"><p>No orders in pipeline yet.</p></div>
             <?php endif; ?>
         </div>
     </div>

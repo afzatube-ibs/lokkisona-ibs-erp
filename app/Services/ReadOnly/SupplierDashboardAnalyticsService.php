@@ -80,7 +80,7 @@ class SupplierDashboardAnalyticsService
         }
         unset($row);
 
-        return array_values(array_filter($rows, static fn (array $r): bool => $r['count'] > 0));
+        return $rows;
     }
 
     /**

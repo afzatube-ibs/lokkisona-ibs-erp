@@ -3,6 +3,7 @@
 /**
  * OpenCart / PIT connection config (v0.5.7).
  * Credentials stay on server — do not commit live API keys to Git.
+ * Staging template: config/opencart.staging.example.php (api_base_url = staging.lokkisona.com).
  */
 return [
     'enabled' => false,

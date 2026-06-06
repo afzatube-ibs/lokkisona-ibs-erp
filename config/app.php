@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.5.1',
-    'release_label' => 'Product Control - Supplier Fields Only',
+    'version' => '1.5.2',
+    'release_label' => 'Staging Product Sync Deploy',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

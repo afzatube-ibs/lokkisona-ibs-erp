@@ -47,6 +47,10 @@
     --kpi-accent-success:   var(--color-success);
     --kpi-accent-error:     var(--color-error);
     --kpi-accent-muted:     var(--color-text-muted);
+    --kpi-accent-purple:    #7c3aed;
+    --kpi-accent-cyan:      #0e7490;
+    --color-primary-soft:   rgba(26, 77, 140, 0.08);
+    --workflow-stage-active-bg: rgba(26, 77, 140, 0.06);
     --topbar-height:        60px;
     --devbanner-height:     36px;
 
@@ -76,6 +80,9 @@
     --shadow-sm:            0 1px 2px rgba(0,0,0,0.3);
     --shadow:               0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
     --shadow-md:            0 4px 16px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2);
+
+    --color-primary-soft:   rgba(45, 108, 181, 0.18);
+    --workflow-stage-active-bg: rgba(45, 108, 181, 0.14);
 }
 
 /* =========================================================================
@@ -1485,55 +1492,119 @@ select.form-input,
     line-height: 1.4;
 }
 
+.workflow-stages-panel .card-body {
+    padding: 1rem 1.125rem 1.125rem;
+}
+
+.workflow-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+}
+
 .workflow-stage-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr));
+    gap: 0.625rem;
+}
+
+.workflow-stage-grid-dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
     gap: 0.5rem;
 }
 
 .workflow-stage-card {
+    --workflow-accent: var(--color-primary);
+    position: relative;
+    min-height: 5.75rem;
     border: 1px solid var(--color-border);
-    border-top: 3px solid var(--color-border-strong);
-    border-radius: var(--radius);
-    padding: 0.65rem 0.75rem;
+    border-top: 3px solid var(--workflow-accent);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 0.875rem;
     background: var(--color-surface);
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    justify-content: flex-start;
+    gap: 0.35rem;
     box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
+
+.workflow-accent-primary { --workflow-accent: var(--kpi-accent-primary); }
+.workflow-accent-info    { --workflow-accent: var(--kpi-accent-info); }
+.workflow-accent-warn    { --workflow-accent: var(--kpi-accent-warn); }
+.workflow-accent-success { --workflow-accent: var(--kpi-accent-success); }
+.workflow-accent-error   { --workflow-accent: var(--kpi-accent-error); }
+.workflow-accent-muted   { --workflow-accent: var(--kpi-accent-muted); }
+.workflow-accent-purple  { --workflow-accent: var(--kpi-accent-purple); }
+.workflow-accent-cyan    { --workflow-accent: var(--kpi-accent-cyan); }
+
 .workflow-stage-link,
 .workflow-chip-link,
 .workflow-filter-pill {
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.15s, background 0.15s;
-}
-.workflow-stage-link:hover,
-.workflow-chip-link:hover,
-.workflow-filter-pill:hover {
-    border-color: var(--color-primary);
-}
-.workflow-stage-link.is-active,
-.workflow-chip-link.is-active,
-.workflow-filter-pill.is-active {
-    border-color: var(--color-primary);
-    border-top-color: var(--kpi-accent-primary);
-    background: var(--color-primary-soft, rgba(59, 130, 246, 0.08));
 }
 
-[data-theme="dark"] .workflow-stage-link.is-active {
-    background: rgba(45, 108, 181, 0.12);
+.workflow-stage-link:hover {
+    border-color: var(--workflow-accent);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: inherit;
 }
+
+.workflow-stage-link.is-active {
+    border-color: var(--workflow-accent);
+    border-top-color: var(--workflow-accent);
+    background: var(--workflow-stage-active-bg);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--workflow-accent) 35%, transparent);
+}
+
 .workflow-filter-pill {
     display: inline-flex;
     align-items: center;
-    padding: 0.35rem 0.75rem;
+    padding: 0.4rem 0.9rem;
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     font-size: 0.8125rem;
     font-weight: 600;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
+
+.workflow-filter-pill:hover {
+    border-color: var(--color-primary-light);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.workflow-filter-pill.is-active {
+    border-color: var(--color-primary-light);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-light);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary-light) 25%, transparent);
+}
+
+[data-theme="dark"] .workflow-filter-pill {
+    background: var(--color-bg-subtle);
+    border-color: var(--color-border-strong);
+}
+
+[data-theme="dark"] .workflow-filter-pill:hover {
+    border-color: #60a5fa;
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .workflow-filter-pill.is-active {
+    color: #bfdbfe;
+    border-color: #60a5fa;
+    background: rgba(59, 130, 246, 0.18);
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.35);
+}
+
 .workflow-orders-header {
     display: flex;
     align-items: center;
@@ -1543,29 +1614,155 @@ select.form-input,
 }
 
 .workflow-stage-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-text-muted);
+    letter-spacing: 0.01em;
 }
 
-.workflow-stage-count {
-    align-self: flex-start;
+.workflow-stage-link.is-active .workflow-stage-label {
+    color: var(--color-text);
+}
+
+.workflow-stage-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-text);
+    margin-top: auto;
+}
+
+.workflow-stage-value-zero {
+    color: var(--color-text-subtle);
 }
 
 .workflow-chip-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    padding-top: 0.875rem;
+    margin-top: 0.875rem;
+    border-top: 1px solid var(--color-border);
 }
 
 .workflow-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
     border: 1px solid var(--color-border);
-    border-radius: 999px;
-    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+    padding: 0.38rem 0.8rem;
     font-size: 0.8125rem;
-    background: var(--color-bg);
+    font-weight: 500;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.workflow-chip strong {
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.workflow-chip-link:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.workflow-chip-link.is-active {
+    border-color: var(--color-primary-light);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-light);
+}
+
+[data-theme="dark"] .workflow-chip-link.is-active {
+    color: var(--workflow-accent);
+    border-color: var(--workflow-accent);
+    background: color-mix(in srgb, var(--workflow-accent) 16%, var(--color-bg-subtle));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--workflow-accent) 40%, transparent);
+}
+
+[data-theme="dark"] .workflow-stages-panel {
+    background: var(--color-surface-raised);
+    border-color: var(--color-border-strong);
+}
+
+[data-theme="dark"] .workflow-stage-card {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--workflow-accent) 16%, var(--color-surface)) 0%,
+        var(--color-surface) 32%
+    );
+    border-color: var(--color-border-strong);
+    border-top-width: 4px;
+    box-shadow: var(--shadow-sm), 0 1px 0 color-mix(in srgb, var(--workflow-accent) 22%, transparent);
+}
+
+[data-theme="dark"] .workflow-accent-primary { --workflow-accent: #60a5fa; }
+[data-theme="dark"] .workflow-accent-info    { --workflow-accent: #22d3ee; }
+[data-theme="dark"] .workflow-accent-warn    { --workflow-accent: #fbbf24; }
+[data-theme="dark"] .workflow-accent-success { --workflow-accent: #4ade80; }
+[data-theme="dark"] .workflow-accent-error   { --workflow-accent: #f87171; }
+[data-theme="dark"] .workflow-accent-muted   { --workflow-accent: #94a3b8; }
+[data-theme="dark"] .workflow-accent-purple  { --workflow-accent: #a78bfa; }
+[data-theme="dark"] .workflow-accent-cyan    { --workflow-accent: #2dd4bf; }
+
+[data-theme="dark"] .workflow-stage-label {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .workflow-stage-link:hover {
+    border-color: var(--workflow-accent);
+    box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in srgb, var(--workflow-accent) 35%, transparent);
+}
+
+[data-theme="dark"] .workflow-stage-link.is-active {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--workflow-accent) 30%, var(--color-surface)) 0%,
+        color-mix(in srgb, var(--workflow-accent) 12%, var(--color-surface)) 100%
+    );
+    border-color: color-mix(in srgb, var(--workflow-accent) 70%, var(--color-border-strong));
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--workflow-accent) 55%, transparent),
+        0 4px 16px color-mix(in srgb, var(--workflow-accent) 22%, transparent);
+}
+
+[data-theme="dark"] .workflow-stage-link.is-active .workflow-stage-label {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .workflow-stage-value:not(.workflow-stage-value-zero) {
+    color: var(--workflow-accent);
+}
+
+[data-theme="dark"] .workflow-stage-link.is-active .workflow-stage-value {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .workflow-stage-value-zero {
+    color: #64748b;
+}
+
+[data-theme="dark"] .workflow-chip-row {
+    border-top-color: var(--color-border-strong);
+}
+
+[data-theme="dark"] .workflow-chip {
+    background: var(--color-bg-subtle);
+    border-color: var(--color-border-strong);
+}
+
+[data-theme="dark"] .workflow-chip-link:hover {
+    border-color: color-mix(in srgb, var(--workflow-accent) 55%, var(--color-border-strong));
+    background: color-mix(in srgb, var(--workflow-accent) 8%, var(--color-bg-subtle));
+}
+
+.workflow-filter-note {
+    margin: 0.875rem 0 0;
 }
 
 .product-card-grid {

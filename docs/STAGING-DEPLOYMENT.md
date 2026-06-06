@@ -1,5 +1,7 @@
 # IBS-LK Staging Domain Deployment Guide (v0.5.0)
 
+**Product sync from OpenCart staging:** see [STAGING-PRODUCT-SYNC.md](STAGING-PRODUCT-SYNC.md) (`staging.lokkisona.com` → ERP staging host).
+
 ## Requirements
 
 - PHP 8.2+
@@ -41,7 +43,7 @@ php -S 127.0.0.1:8010 -t public public/router.php
 ## 3. Database activation (manual only)
 
 1. Owner backup staging database.
-2. Apply migration drafts in order: `0002`, `0003`, `0005`, `0006`, `0008`. Add `0004` before sync tests, `0007` before invoice tests, `0009` before settlement tests.
+2. Apply migration drafts in order: `0002`, `0003`, `0005`, `0006`, `0008`. Add `0004` before sync tests, `0007` before invoice tests, `0009` before settlement tests, `0010` for quick invoice, `0011` before Product Control category/sync QA.
 3. Follow [STAGING-QA-CHECKLIST.md](STAGING-QA-CHECKLIST.md) for full E2E sign-off.
 4. Open `/dev-db-activation` and confirm Groups A–F show **Ready**.
 5. Run `powershell -ExecutionPolicy Bypass -File tools/check-local.ps1` — expect `[OK] ALL GREEN`.

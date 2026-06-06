@@ -15,32 +15,10 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
 <?php if (!empty($writeGateReady)): ?>
-<?php if (!empty($workflowStageNav)): ?>
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Workflow Stages</h2></div>
-    <div class="card-body">
-        <div class="workflow-filter-row" style="margin-bottom:0.75rem;">
-            <a href="<?= e(url($workflowStageNav['all_url'] ?? '/order-workflow')) ?>" class="workflow-filter-pill<?= !empty($workflowStageNav['all_active']) ? ' is-active' : '' ?>">All stages</a>
-        </div>
-        <div class="workflow-stage-grid">
-            <?php foreach ($workflowStageNav['main'] ?? [] as $stage): ?>
-            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-stage-card workflow-stage-link<?= !empty($stage['active']) ? ' is-active' : '' ?>">
-                <span class="workflow-stage-label"><?= e($stage['label']) ?></span>
-                <span class="workflow-stage-count badge"><?= (int) ($stage['count'] ?? 0) ?></span>
-            </a>
-            <?php endforeach; ?>
-        </div>
-        <div class="workflow-chip-row" style="margin-top: 0.75rem;">
-            <?php foreach ($workflowStageNav['exceptions'] ?? [] as $stage): ?>
-            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-chip workflow-chip-link<?= !empty($stage['active']) ? ' is-active' : '' ?>"><?= e($stage['label']) ?> <strong><?= (int) ($stage['count'] ?? 0) ?></strong></a>
-            <?php endforeach; ?>
-        </div>
-        <?php if ($statusFilter !== null): ?>
-        <p class="page-description" style="margin:0.75rem 0 0;">Showing <strong><?= e(\App\Domain\OrderWorkflowStatus::groupDisplayLabel($statusFilter)) ?></strong> only. <a href="<?= e(url('/order-workflow')) ?>">Clear filter</a></p>
-        <?php endif; ?>
-    </div>
-</div>
-<?php endif; ?>
+<?php view('partials.workflow-stage-nav', [
+    'workflowStageNav' => $workflowStageNav ?? [],
+    'statusFilter' => $statusFilter,
+]); ?>
 
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header workflow-orders-header">

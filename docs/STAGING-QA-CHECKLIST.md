@@ -36,7 +36,7 @@ Apply manually in SQL client — never via page load:
 
 | Step | Page / action | Expected |
 |------|---------------|----------|
-| 1 | `/product-control` | Create product + variant with cost |
+| 1 | `/sync-preview` + `/product-control` | Pull warehouse products; edit supplier fields in Product Control (no manual create) |
 | 2 | `/manual-orders` or `/order-workflow` modal | Create manual order with confirmation |
 | 3 | `/order-workflow` | Advance order through fulfillment stages to Shipped |
 | 4 | `/dispatch-reports` | Create dispatch batch from shipped orders |
