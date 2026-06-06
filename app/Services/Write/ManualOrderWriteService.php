@@ -142,6 +142,7 @@ class ManualOrderWriteService
                     'order_id' => $orderId,
                     'product_id' => $line['product_id'],
                     'product_variant_id' => $line['variant_id'],
+                    'source_product_id' => null,
                     'product_name' => $line['product_name'],
                     'variant_label' => $line['variant_label'],
                     'quantity' => $line['quantity'],

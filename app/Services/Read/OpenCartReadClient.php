@@ -20,6 +20,31 @@ class OpenCartReadClient
         return [];
     }
 
+    public function fetchWarehouseProducts(): array
+    {
+        $route = trim((string) config('opencart.product_api_route', ''));
+        if ($route === '') {
+            return [];
+        }
+
+        if ((bool) config('opencart.enabled', false)) {
+            return $this->fetchLiveWarehouseProducts($route);
+        }
+
+        if ((bool) config('opencart.demo_mode', false)) {
+            return $this->demoWarehouseProducts();
+        }
+
+        return [];
+    }
+
+    public function warehouseProductPullAvailable(): bool
+    {
+        $route = trim((string) config('opencart.product_api_route', ''));
+
+        return $route !== '' && ((bool) config('opencart.enabled', false) || (bool) config('opencart.demo_mode', false));
+    }
+
     public function connectionStatus(): array
     {
         if ((bool) config('opencart.enabled', false)) {
@@ -145,5 +170,61 @@ class OpenCartReadClient
     private function maxOrders(): int
     {
         return max(1, min((int) config('opencart.max_orders_per_request', 50), 50));
+    }
+
+    private function demoWarehouseProducts(): array
+    {
+        $products = config('opencart.demo_warehouse_products', []);
+
+        return is_array($products) ? array_slice($this->normalizeWarehouseProducts($products), 0, 50) : [];
+    }
+
+    private function fetchLiveWarehouseProducts(string $route): array
+    {
+        $baseUrl = rtrim((string) config('opencart.api_base_url', ''), '/');
+        $apiKey = (string) config('opencart.api_key', '');
+        if ($baseUrl === '' || $apiKey === '') {
+            return [];
+        }
+
+        $separator = str_contains($route, '?') ? '&' : '?';
+        $url = $baseUrl . '/index.php?route=' . ltrim($route, '=') . $separator . 'api_token=' . rawurlencode($apiKey);
+        $response = $this->httpGet($url);
+        if ($response === null) {
+            return [];
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $products = $decoded['products'] ?? $decoded['data'] ?? $decoded;
+        if (!is_array($products)) {
+            return [];
+        }
+
+        return array_slice($this->normalizeWarehouseProducts($products), 0, 50);
+    }
+
+    private function normalizeWarehouseProducts(array $products): array
+    {
+        $normalized = [];
+        foreach ($products as $product) {
+            if (!is_array($product)) {
+                continue;
+            }
+
+            $fromWarehouse = (int) ($product['from_warehouse'] ?? $product['fromWarehouse'] ?? 0);
+            $normalized[] = [
+                'source_product_id' => (string) ($product['product_id'] ?? $product['source_product_id'] ?? ''),
+                'product_name' => (string) ($product['name'] ?? $product['product_name'] ?? ''),
+                'source_model' => (string) ($product['model'] ?? $product['source_model'] ?? ''),
+                'source_stock' => isset($product['quantity']) ? (int) $product['quantity'] : (isset($product['source_stock']) ? (int) $product['source_stock'] : null),
+                'from_warehouse' => $fromWarehouse,
+            ];
+        }
+
+        return $normalized;
     }
 }

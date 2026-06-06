@@ -1,6 +1,6 @@
 <div class="page-header page-header-compact">
     <h1 class="page-title">Settlements</h1>
-    <p class="ops-page-subtitle">Draft → Prepared → Owner Approved → Paid → Closed settlement periods.</p>
+    <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? 'Your settlement history with Lokkisona — read-only; owner prepares and closes periods.' : 'Draft → Prepared → Owner Approved → Paid → Closed settlement periods.' ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

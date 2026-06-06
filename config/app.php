@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.2.1',
-    'release_label' => 'Dashboard Metrics Fix',
+    'version' => '1.5.0',
+    'release_label' => 'Product Control + Sync Identity Wiring',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
@@ -18,5 +18,6 @@ return [
         'password' => 'admin',
         'supplier_username' => 'supplier',
         'supplier_password' => 'supplier',
+        'supplier_id' => 1,
     ],
 ];

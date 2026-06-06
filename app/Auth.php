@@ -68,6 +68,12 @@ class Auth
         $_SESSION['ibs_role'] = $role;
         $_SESSION['ibs_login_at'] = time();
 
+        if ($role === 'supplier') {
+            $_SESSION['ibs_supplier_id'] = (int) config('app.auth.supplier_id', 1);
+        } else {
+            unset($_SESSION['ibs_supplier_id']);
+        }
+
         app_log('User logged in: ' . $username);
         ActivityLog::record('login', 'User logged in', [
             'user' => $username,

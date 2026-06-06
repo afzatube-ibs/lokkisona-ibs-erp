@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderWorkflowHistory;
 use App\Permission;
+use App\SupplierContext;
 use App\Repositories\DispatchReportRepository;
 use App\Services\ReadOnly\OrderItemReadService;
 use App\Services\ReadOnly\OrderReadService;
@@ -70,6 +71,8 @@ class OrderWorkflowController extends Controller
             'variantOptionsByProduct' => $manualOrderForm['variantOptionsByProduct'],
             'productCostById' => $manualOrderForm['productCostById'],
             'canManageWorkflow' => Permission::can('order_workflow.manage'),
+            'canCreateOrders' => Permission::can('manual_orders.manage') && !SupplierContext::isSupplier(),
+            'isSupplierView' => SupplierContext::isSupplier(),
             'statusFilter' => $statusFilter,
             'workflowBoard' => $this->buildWorkflowBoard($statusFilter),
             'workflowStageNav' => $this->buildWorkflowStageNav($statusFilter),
@@ -84,7 +87,11 @@ class OrderWorkflowController extends Controller
 
     public function create()
     {
-        $this->authorize('order_workflow.manage');
+        if (SupplierContext::isSupplier()) {
+            $this->flash('error', 'Online orders are created by Lokkisona owner only. Use Offline Invoices for shop sales.');
+            redirect('/order-workflow');
+        }
+        $this->authorize('manual_orders.manage');
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');

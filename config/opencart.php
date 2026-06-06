@@ -11,6 +11,24 @@ return [
     'api_key' => '',
     'business_source_id' => 1,
     'max_orders_per_request' => 50,
+    // Set to your existing OpenCart product list route (e.g. extension/api/warehouse_product). Empty = pull disabled.
+    'product_api_route' => 'demo/warehouse_product',
+    'demo_warehouse_products' => [
+        [
+            'product_id' => '501',
+            'name' => 'Demo Warehouse Stroller',
+            'model' => 'OC-STROLLER-501',
+            'quantity' => 12,
+            'from_warehouse' => 1,
+        ],
+        [
+            'product_id' => '502',
+            'name' => 'Demo Shop-Only Item',
+            'model' => 'OC-SHOP-502',
+            'quantity' => 99,
+            'from_warehouse' => 0,
+        ],
+    ],
     'skip_status_ids' => ['0'],
     'skip_status_names' => ['Missing', 'missing'],
     'demo_orders' => [

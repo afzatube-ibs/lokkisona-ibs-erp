@@ -24,6 +24,7 @@ Apply manually in SQL client — never via page load:
 | 7 | `0007_invoices_printing_supplier_tools.sql` | Before invoice tests |
 | 8 | `0009_settlements_workflow.sql` | Before settlement tests |
 | 9 | `0010_supplier_quick_invoice_totals.sql` | Quick invoice totals |
+| 10 | `0011_supplier_product_category.sql` | Product Control supplier category column + category sales reports |
 
 ## Activation verification
 

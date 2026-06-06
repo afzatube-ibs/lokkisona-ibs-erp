@@ -7,6 +7,7 @@ use App\Csrf;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Services\ReadOnly\TestSyncPreviewService;
+use App\Services\Read\OpenCartReadClient;
 use App\Services\Write\SyncImportWriteService;
 use App\Services\Write\SyncPreviewWriteService;
 
@@ -31,6 +32,7 @@ class SyncPreviewController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::syncPreviewImport(),
             'writeGateReady' => WriteGate::syncPreviewImport()['ready'],
+            'warehouseProductPullAvailable' => (new OpenCartReadClient())->warehouseProductPullAvailable(),
             'canManage' => Permission::can('sync_preview.manage'),
             'currentContext' => $this->currentContext(),
             'purpose' => $this->purpose(),
@@ -568,6 +570,17 @@ class SyncPreviewController extends Controller
             redirect('/sync-preview');
         }
         $this->redirectWithWriteResult('/sync-preview', (new SyncPreviewWriteService())->runTestSync($_POST));
+    }
+
+    public function pullWarehouseProducts()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+        $this->redirectWithWriteResult('/sync-preview', (new SyncPreviewWriteService())->pullWarehouseProducts($_POST));
     }
 
     public function import()

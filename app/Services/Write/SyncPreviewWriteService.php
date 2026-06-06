@@ -204,4 +204,25 @@ class SyncPreviewWriteService
 
         return null;
     }
+
+    public function pullWarehouseProducts(array $input = []): WriteResult
+    {
+        if (!WriteGate::syncPreviewImport()['ready']) {
+            return WriteResult::fail(WriteGate::WARNING_MESSAGE);
+        }
+
+        $route = trim((string) config('opencart.product_api_route', ''));
+        if ($route === '') {
+            return WriteResult::fail('OpenCart product API route is not configured. Set product_api_route in config/opencart.php when your shop exposes the warehouse product endpoint.');
+        }
+
+        $products = $this->client->fetchWarehouseProducts();
+        if ($products === []) {
+            return WriteResult::fail('No warehouse products returned. Check OpenCart connection, API route, and From Warehouse = Yes filter on the shop.');
+        }
+
+        $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
+
+        return (new ProductWriteService())->upsertWarehouseProducts($sourceId, $products);
+    }
 }

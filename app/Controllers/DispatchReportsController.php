@@ -9,6 +9,7 @@ use App\Domain\DispatchCostSnapshot;
 use App\Domain\DispatchReportReference;
 use App\Models\DispatchReport;
 use App\Permission;
+use App\SupplierContext;
 use App\Csrf;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderItemRepository;
@@ -24,11 +25,13 @@ class DispatchReportsController extends Controller
         $this->authorize('dispatch_reports.view');
         ActivityLog::record('dispatch_reports_access', 'Dispatch Report read foundation page viewed');
 
-        $latestReports = $this->buildLatestReports();
+        $supplierId = SupplierContext::enforceSupplierId(0);
+        $latestReports = $this->buildLatestReports($supplierId);
         $selectedReportId = (int) ($_GET['report_id'] ?? 0);
         if ($selectedReportId <= 0 && !empty($latestReports[0]['dispatch_report_id'])) {
             $selectedReportId = (int) $latestReports[0]['dispatch_report_id'];
         }
+        $reportDetail = $this->buildReportDetail($selectedReportId > 0 ? $selectedReportId : null, $supplierId);
 
         $this->render('dispatch-reports.index', [
             'pageTitle' => 'Dispatch Reports',
@@ -37,10 +40,12 @@ class DispatchReportsController extends Controller
                 ['label' => 'Dispatch Reports', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
-            'eligibleOrders' => $this->buildEligibleOrders(),
+            'eligibleOrders' => SupplierContext::isSupplier() ? [] : $this->buildEligibleOrders(),
             'latestReports' => $latestReports,
-            'reportDetail' => $this->buildReportDetail($selectedReportId > 0 ? $selectedReportId : null),
+            'reportDetail' => $reportDetail,
             'selectedReportId' => $selectedReportId,
+            'canManageDispatch' => Permission::can('dispatch_reports.manage'),
+            'isSupplierView' => SupplierContext::isSupplier(),
             'productLineDevNote' => DispatchReportReference::PRODUCT_LINE_DEV_NOTE,
             'payableCheckpointNote' => DispatchReportReference::PAYABLE_CHECKPOINT_NOTE,
             'readInventory' => $this->buildReadInventory(),
@@ -106,10 +111,10 @@ class DispatchReportsController extends Controller
         return $eligible;
     }
 
-    private function buildLatestReports(): array
+    private function buildLatestReports(int $supplierId = 0): array
     {
         try {
-            $reports = (new DispatchReportRepository())->latest(20);
+            $reports = (new DispatchReportRepository())->latestForSupplier($supplierId, 20);
             foreach ($reports as $index => $report) {
                 $reports[$index]['status_label'] = DispatchReportReference::statusLabel(
                     (string) ($report['status'] ?? '')
@@ -122,7 +127,7 @@ class DispatchReportsController extends Controller
         }
     }
 
-    private function buildReportDetail(?int $reportId): ?array
+    private function buildReportDetail(?int $reportId, int $supplierId = 0): ?array
     {
         if ($reportId === null || $reportId <= 0) {
             return null;
@@ -136,6 +141,10 @@ class DispatchReportsController extends Controller
 
             $report = $repository->findById($reportId);
             if ($report === null) {
+                return null;
+            }
+
+            if ($supplierId > 0 && (int) ($report['supplier_id'] ?? 0) !== $supplierId) {
                 return null;
             }
 

@@ -1,0 +1,276 @@
+================================================================================
+IBS-LK BUSINESS MANAGER — v1.1.0 FULL UI/UX REVAMP PROMPT (CLAUDE AI)
+================================================================================
+
+Paste this entire file into Claude AI. Attach the owner's latest local project ZIP
+(commit e25600c / v1.0.0 Production Launch or newer).
+
+OWNER FEEDBACK (confirmed in browser at http://127.0.0.1:8010/dashboard):
+  "Overview too long, left menu too complicated."
+  The app works but does NOT feel like a polished production SaaS product.
+  v1.0.0 shipped business logic — v1.1.0 is PURE UI/UX / navigation revamp.
+
+================================================================================
+=== SECTION 1: BASELINE ===
+================================================================================
+
+Project:     IBS-LK Business Manager
+Business:    Lokkisona / Sonamoni — Iqbal & Brothers supplier fulfillment ERP
+Local path:  D:\IBS-ERP\lokkisona-ibs-erp
+Version:     1.0.0 — Production Launch (your target: 1.1.0 — UI/UX Revamp)
+
+Read before coding:
+  - docs/IBS_LK_ERP_Production_Continuation_Prompt.txt (business rules)
+  - docs/V1.0.0-PRODUCTION-LAUNCH-HANDOFF.md
+  - public/assets/css/app.css (existing theme — extend, do not replace)
+  - resources/views/manual-orders/index.php (gold page layout)
+  - resources/views/order-workflow/index.php (gold page layout)
+
+Checkpoint: powershell -ExecutionPolicy Bypass -File tools\check-local.ps1
+Dev server: php -S 127.0.0.1:8010 -t public public/router.php
+Logins: admin/admin (owner) | supplier/supplier (supplier)
+
+================================================================================
+=== SECTION 2: THE PROBLEM — BE SPECIFIC ===
+================================================================================
+
+CURRENT OWNER/ADMIN SIDEBAR: 29 flat links (overwhelming)
+
+  Core (mislabeled — includes dev tools):
+    Dashboard, Health Check, Version, Activity Log
+  Admin:
+    Role & Permissions
+  Dev / Database (8 items — should NOT dominate daily nav):
+    Database Safety, Dev DB Activation, Migration Runner, Migration Files,
+    Migration Dry Run, Migration Approval, Migration Execution Lock, Build Queue
+  Operations:
+    Users, Suppliers, Business Sources, Product Control, Order Workflow,
+    Dispatch Reports
+  Finance:
+    Supplier Payables, Settlements, Reports, Supplier Opening Balances
+  Tools & Sync:
+    Return Receive, Status Mapping, Sync Preview, Invoice Printing,
+    Supplier Tools, Manual Orders
+
+CURRENT SUPPLIER SIDEBAR: 4 links only — THIS IS THE GOLD STANDARD
+    Dashboard, Order Workflow, Return Receive, Supplier Tools
+  → Supplier UX is correct. Copy this simplicity philosophy for owner daily nav.
+
+OTHER UI PROBLEMS:
+  1. DEV/TEST MODE banner on EVERY page (layouts/admin.php) — screams unfinished
+  2. Owner dashboard Quick Control mixes ops links WITH "Dev DB Activation"
+  3. Dashboard "System" card duplicates topbar (user, role, version)
+  4. Planning Foundation collapsible still on dashboard main view
+  5. Section labels in sidebar (navSectionMap) are weak — dev items before ops
+  6. No visual hierarchy — every link same weight, same icon size
+  7. 260px sidebar eats laptop width; long scroll to reach Manual Orders
+  8. Breadcrumbs exist but sidebar already shows everything — redundant noise
+
+================================================================================
+=== SECTION 3: v1.1.0 MISSION — "UI/UX Revamp" ===
+================================================================================
+
+Bump: config/app.php => 1.1.0, release_label "UI/UX Revamp"
+Add VersionController feature bullet.
+
+GOAL: Make the app feel like a modern production SaaS ERP a non-technical owner
+and a busy supplier can use daily WITHOUT scrolling through 29 menu items.
+
+NO new business features. NO schema. NO migrations. NO backend rewrites.
+Navigation restructure + dashboard redesign + layout polish ONLY.
+
+================================================================================
+=== SECTION 4: NAVIGATION REVAMP (HIGHEST PRIORITY) ===
+================================================================================
+
+Refactor app/Permission.php menuItems() AND resources/views/layouts/admin.php
+to support GROUPED, ROLE-AWARE navigation.
+
+### Owner/Admin — proposed PRIMARY sidebar (always visible, ~10 items max)
+
+  FULFILLMENT
+    Dashboard
+    Order Workflow
+    Manual Orders
+    Dispatch Reports
+    Return Receive
+
+  FINANCE
+    Supplier Payables
+    Settlements
+    Reports
+
+  CATALOG & SYNC
+    Product Control
+    Status Mapping
+    Sync Preview
+    Invoice Printing
+
+  (Optional single link: Supplier Tools — or keep header icons only)
+
+### Owner/Admin — SECONDARY nav (collapsed <details> or flyout "More")
+
+  SETUP
+    Users, Suppliers, Business Sources, Supplier Opening Balances
+
+  SYSTEM (collapsed by default)
+    Activity Log, Health Check, Version
+
+  DEVELOPER (collapsed by default — hidden entirely when env === 'production')
+    Database Safety, Dev DB Activation, Migration Runner, Migration Files,
+    Migration Dry Run, Migration Approval, Migration Execution Lock,
+    Build Queue, Role & Permissions
+
+Implementation options (pick one, document in handoff):
+  A) Add 'group' + 'tier' fields to menu items in Permission.php
+     (tier: primary | secondary | developer)
+  B) Collapsible sidebar sections with CSS + minimal JS
+  C) Icon-only compact sidebar with expandable labels on hover
+  D) Top-level tabs (Fulfillment | Finance | Settings) + sub-nav
+
+REQUIREMENTS:
+  - Daily ops reachable in ≤2 clicks from any page
+  - Developer/migration items NEVER above Order Workflow in visual order
+  - When config('app.env') === 'production', developer tier hidden completely
+  - Supplier role: keep 4-item nav unchanged (do not regress)
+  - Active state + section headers must still work
+  - Mobile: sidebar collapse/toggle must remain usable
+
+================================================================================
+=== SECTION 5: DASHBOARD REVAMP (owner/admin) ===
+================================================================================
+
+Redesign resources/views/dashboard/index.php as a COMMAND CENTER, not a link dump.
+
+TARGET LAYOUT (top to bottom):
+
+  1) Compact greeting strip (no version essay in subtitle)
+     "Good morning · Iqbal & Brothers · v1.1.0"
+
+  2) KPI row (keep existing 4 stat cards — polish spacing/icons)
+     Net Payable | Dispatch Snapshots | Pending Returns | Payable Drafts
+
+  3) TODAY'S WORK — 4–6 large action tiles (workflow-first)
+     - New Orders (count) → /order-workflow?status=new_order
+     - Awaiting Dispatch (shipped count) → /dispatch-reports
+     - Payable Drafts (count) → /supplier-payables
+     - Pending Returns → /return-receive
+     - Open Settlements → /settlements
+     Use task-card or engage-tool-card pattern from supplier dashboard.
+
+  4) RECENT ACTIVITY — single card, max 5 lines (from existing recentNotes)
+
+  5) REMOVE from main view:
+     - "Dev DB Activation" from Quick Control
+     - Redundant "System" card (info already in topbar)
+     - "Sync status: Not connected — planning only" dev text (move to Sync page)
+     - Planning Foundation collapsible (dev links belong in Developer nav tier)
+
+  6) Optional: "Needs attention" alert strip when draft_count > 0 or pending returns > 0
+
+Supplier dashboard: minor polish only — already good. Do not add dev text.
+
+================================================================================
+=== SECTION 6: LAYOUT & GLOBAL POLISH ===
+================================================================================
+
+resources/views/layouts/admin.php + public/assets/css/app.css:
+
+  1) DEV/TEST MODE banner:
+     - Show ONLY when config('app.env') === 'local' or 'staging'
+     - Hide completely on production
+     - On staging: shorter text, amber, dismissible optional
+
+  2) Topbar:
+     - Consider moving Health/Version to user dropdown or System tier (not sidebar)
+     - Keep calculator + quick invoice icons for supplier/owner
+
+  3) Sidebar visual:
+     - Tighter item padding for primary tier
+     - Section labels: FULFILLMENT / FINANCE / CATALOG (all caps, muted)
+     - Collapsed developer section: smaller font, chevron indicator
+     - Consider narrowing sidebar to 220px for primary-only mode
+
+  4) Main content:
+     - Consistent page-header pattern across all ops pages
+     - Reduce duplicate safety strips where page already has stat cards
+
+  5) Do NOT break dark mode toggle or existing CSS variables
+
+================================================================================
+=== SECTION 7: PAGE-LEVEL POLISH (secondary — if time permits) ===
+================================================================================
+
+Light touch only — do not rewrite business forms:
+
+  - order-workflow: already gold — no regression
+  - manual-orders: already gold — no regression
+  - supplier-payables, dispatch-reports, return-receive: ensure page-header
+    matches new dashboard tone (shorter subtitles)
+  - login page: already updated in v1.0.0 — keep
+
+================================================================================
+=== SECTION 8: NEVER DO ===
+================================================================================
+
+- Do NOT remove routes or permissions — only change how nav DISPLAYS them
+- Do NOT delete developer pages — hide/collapse them
+- Do NOT add npm/webpack/React — plain PHP views + app.css + minimal JS only
+- Do NOT break SupplierPayablesController or any v0.7.x backend
+- Do NOT add page-load DDL, migrations, stock deduction, live sync
+- Do NOT commit or push Git
+
+================================================================================
+=== SECTION 9: QUALITY GATES ===
+================================================================================
+
+Before returning ZIP:
+
+  1. Owner sidebar: count primary visible links ≤ 12 (developer tier collapsed)
+  2. Supplier sidebar: still exactly 4 links
+  3. Dashboard: no Dev DB Activation on main view
+  4. DEV banner hidden when env=production (test by documenting — owner verifies)
+  5. tools/check-local.ps1 → [OK] ALL GREEN
+  6. All 30 route smoke tests still pass
+  7. No PHP syntax errors (especially do not touch SupplierPayablesController
+     unless absolutely necessary)
+
+Create docs/V1.1.0-UI-REVAMP-HANDOFF.md with:
+  - before/after sidebar structure diagram (text)
+  - screenshots description per page
+  - files changed list
+  - browser test checklist
+
+================================================================================
+=== SECTION 10: BROWSER ACCEPTANCE (owner will verify) ===
+================================================================================
+
+As admin/admin:
+  [ ] Sidebar shows ≤12 primary links; developer items in collapsed section
+  [ ] Order Workflow reachable in 1 click from dashboard tile
+  [ ] No "Dev DB Activation" on dashboard main view
+  [ ] No DEV/TEST banner when env=production (local may still show)
+  [ ] Dashboard feels like a command center, not a documentation index
+  [ ] Dark mode still works
+
+As supplier/supplier:
+  [ ] Sidebar still 4 items only
+  [ ] Task cards unchanged in function
+  [ ] No new dev/migration links appeared
+
+================================================================================
+=== SECTION 11: DELIVERABLE ===
+================================================================================
+
+ZIP on owner's actual v1.0.0 tree (edit in place — do not reconstruct repo).
+Version: 1.1.0 — UI/UX Revamp
+
+START:
+  1. Read Permission.php menuItems() and layouts/admin.php
+  2. Design tiered nav structure
+  3. Revamp owner dashboard
+  4. Polish app.css sidebar + dashboard components
+  5. Handoff doc + static lint
+
+This is the polish pass that makes v1.0.0 FEEL like a real product.
+================================================================================

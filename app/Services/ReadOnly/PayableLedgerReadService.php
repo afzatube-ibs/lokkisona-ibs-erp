@@ -3,6 +3,7 @@
 namespace App\Services\ReadOnly;
 
 use App\Domain\PayableLedgerType;
+use App\SupplierContext;
 use App\Repositories\PayableLedgerRepository;
 use App\Repositories\Write\PayableLedgerWriteRepository;
 
@@ -52,6 +53,46 @@ class PayableLedgerReadService
     public function currentBalanceForSupplier(int $supplierId): float
     {
         return $this->writeRepository->getPostedBalanceForSupplier($supplierId);
+    }
+
+    public function summaryForSupplier(int $supplierId): array
+    {
+        if ($supplierId <= 0) {
+            return [
+                'draft_count' => 0,
+                'posted_count' => 0,
+                'net_payable' => 0.0,
+                'total_debit_posted' => 0.0,
+                'total_credit_posted' => 0.0,
+            ];
+        }
+
+        $rows = $this->forSupplier($supplierId, 500);
+        $draftCount = 0;
+        $postedCount = 0;
+        $totalDebit = 0.0;
+        $totalCredit = 0.0;
+
+        foreach ($rows as $row) {
+            if (($row['status'] ?? '') === 'draft') {
+                $draftCount++;
+            }
+            if (($row['status'] ?? '') === 'posted') {
+                $postedCount++;
+                $totalDebit += (float) ($row['debit_amount'] ?? 0);
+                $totalCredit += (float) ($row['credit_amount'] ?? 0);
+            }
+        }
+
+        $netPayable = $this->currentBalanceForSupplier($supplierId);
+
+        return [
+            'draft_count' => $draftCount,
+            'posted_count' => $postedCount,
+            'net_payable' => $netPayable,
+            'total_debit_posted' => round($totalDebit, 2),
+            'total_credit_posted' => round($totalCredit, 2),
+        ];
     }
 
     public function summary(): array
@@ -107,8 +148,9 @@ class PayableLedgerReadService
 
         $type = (string) ($row['ledger_type'] ?? '');
         $source = (string) ($row['source_reference'] ?? '');
-        $row['type_label'] = PayableLedgerType::label($type);
-        $row['description'] = PayableLedgerType::descriptionFor($type, $source !== '' ? $source : null);
+        $supplierView = SupplierContext::isSupplier();
+        $row['type_label'] = PayableLedgerType::labelForRole($type, $supplierView);
+        $row['description'] = PayableLedgerType::descriptionForRole($type, $supplierView, $source !== '' ? $source : null);
 
         return $row;
     }

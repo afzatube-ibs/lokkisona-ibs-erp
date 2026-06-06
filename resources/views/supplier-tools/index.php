@@ -1,3 +1,80 @@
+<?php if (!empty($isSupplierView)): ?>
+
+<div class="page-header page-header-compact">
+    <h1 class="page-title">Offline Invoices</h1>
+    <p class="ops-page-subtitle">Shop and walk-in sales — independent from Lokkisona online orders. Not ERP payable unless owner posts separately.</p>
+</div>
+
+<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<?php view('partials.ops-safety-strip', ['message' => 'Offline transactions only · Online orders are owner-managed on Order Workflow · One-time print access after generate']); ?>
+
+<div class="card mb-15">
+    <div class="card-header card-header-flex">
+        <h2 class="card-title">New Invoice</h2>
+        <?php if (!empty($writeGateReady)): ?>
+        <button type="button" class="btn btn-primary btn-sm" data-open-modal="supplierQuickInvoiceModal">+ Create Invoice</button>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <?php if (empty($writeGateReady)): ?>
+            <p class="page-description"><?= e($writeGate['message'] ?? 'Tables not ready.') ?> Apply migrations 0007 + 0010 manually before generating invoices.</p>
+        <?php else: ?>
+            <p class="page-description">Create invoices for phone orders, counter sales, and other offline business. Use the calculator icon in the header for quick totals.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php if (!empty($showInvoiceLog) && !empty($quickInvoiceLog)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Recent Offline Invoices</h2></div>
+    <div class="card-body card-body-flush">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Balance Due</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($quickInvoiceLog as $entry): ?>
+                    <tr>
+                        <td><code><?= e((string) ($entry['quick_invoice_reference'] ?? '')) ?></code></td>
+                        <td><?= e((string) ($entry['customer_name'] ?? '')) ?></td>
+                        <td><?= e(number_format((float) ($entry['invoice_total'] ?? 0), 2)) ?></td>
+                        <td><?= e(number_format((float) ($entry['balance_due'] ?? $entry['invoice_total'] ?? 0), 2)) ?></td>
+                        <td><?= e((string) ($entry['output_status'] ?? '')) ?></td>
+                        <td><?= e((string) ($entry['generated_at'] ?? $entry['created_at'] ?? '')) ?></td>
+                        <td>
+                            <?php if (($entry['output_status'] ?? '') === 'generated' && empty($entry['downloaded_at'])): ?>
+                            <a class="btn btn-sm btn-secondary" href="<?= e(url('/supplier-tools/quick-invoice/print/' . (int) ($entry['supplier_quick_invoice_id'] ?? 0))) ?>">Print</a>
+                            <?php else: ?>
+                            <span class="text-muted">Printed</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php elseif (!empty($showInvoiceLog)): ?>
+<div class="card mb-15">
+    <div class="card-body">
+        <div class="empty-state"><p>No offline invoices yet. Click <strong>Create Invoice</strong> above.</p></div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php else: ?>
+
 <div class="page-header">
     <h1 class="page-title">Supplier Tools</h1>
     <p class="page-description">Supplier engagement hub — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Use the <strong>calculator</strong> and <strong>quick invoice</strong> icons in the top header bar, or open them from the supplier dashboard. Independent tools — no ERP payable, stock, or order impact.</p>
@@ -78,60 +155,17 @@
                     <dt>Primary Supplier</dt>
                     <dd><?= e($currentContext['primarySupplier']) ?></dd>
                 </div>
+                <div class="info-row">
+                    <dt>Role</dt>
+                    <dd><?= e($currentContext['role']) ?></dd>
+                </div>
             </dl>
             <p class="page-description"><?= e($currentContext['summary']) ?></p>
         </div>
     </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Supplier Tools Purpose</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($purpose as $item): ?>
-                    <li><?= e($item) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <?php foreach ([$independentSafetyRule, $quickInvoicePlan, $oneTimeAccessRule, $adminAuditRule] as $section): ?>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($section['title']) ?></h2>
-        </div>
-        <div class="card-body">
-            <p><?= e($section['summary']) ?></p>
-            <ul class="feature-list">
-                <?php foreach ($section['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-
-<div class="card-grid">
-    <?php foreach ([$calculatorPlan, $noAccountingImpactRule] as $section): ?>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($section['title']) ?></h2>
-        </div>
-        <div class="card-body">
-            <p><?= e($section['summary']) ?></p>
-            <ul class="feature-list">
-                <?php foreach ($section['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-    <?php endforeach; ?>
 </div>
 
 </div>
 </details>
+
+<?php endif; ?>

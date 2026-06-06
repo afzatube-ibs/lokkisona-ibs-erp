@@ -9,7 +9,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 ?>
 <div class="page-header page-header-compact">
     <h1 class="page-title">Order Workflow</h1>
-    <p class="ops-page-subtitle">Filter by stage, create manual orders in-page, and advance through allowed actions. Created Report batches on <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a>.</p>
+    <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? '<strong>Operations work queue</strong> — receive, pack, and ship Lokkisona online orders here. Charts and business summary are on <a href="' . e(url('/dashboard')) . '">Dashboard</a>. Offline sales: <a href="' . e(url('/supplier-tools')) . '">Offline Invoices</a>.' : 'Filter by stage, create manual orders in-page, and advance through allowed actions. Created Report batches on <a href="' . e(url('/dispatch-reports')) . '">Dispatch Reports</a>.' ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -45,7 +45,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header workflow-orders-header">
         <h2 class="card-title">Vendor Fulfillment Orders</h2>
-        <?php if (!empty($canManageWorkflow)): ?>
+        <?php if (!empty($canCreateOrders)): ?>
         <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
         <?php endif; ?>
     </div>
@@ -55,7 +55,11 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
                 <?php if ($statusFilter !== null): ?>
                     No orders in this stage yet.
                 <?php else: ?>
+                    <?php if (!empty($isSupplierView)): ?>
+                    No Lokkisona online orders in workflow yet. Owner creates and syncs online orders.
+                    <?php else: ?>
                     No orders in workflow yet. Use <strong>Create New Order</strong> above or enter orders on <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>.
+                    <?php endif; ?>
                 <?php endif; ?>
             </p>
         <?php else: ?>
@@ -72,6 +76,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
                     'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
                     'displayActionNote' => $displayActionNote,
                     'statusFilter' => $statusFilter,
+                    'isSupplierView' => !empty($isSupplierView),
                 ]); ?>
                 <?php endforeach; ?>
             </div>
@@ -114,7 +119,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 </div>
 <?php endif; ?>
 
-<?php if (!empty($canManageWorkflow)): ?>
+<?php if (!empty($canCreateOrders)): ?>
 <?php view('partials.order-workflow-create-order-modal', [
     'manualOrderGateReady' => $manualOrderGateReady ?? false,
     'writeGateMessage' => $manualOrderGateMessage ?? '',

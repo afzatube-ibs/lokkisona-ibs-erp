@@ -25,8 +25,11 @@ class Controller
         $data['currentPath'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $data['canUseCalculator'] = Permission::can('supplier_calculator.view');
         $data['canUseQuickInvoice'] = Permission::can('supplier_quick_invoice.manage');
-        $data['quickInvoiceGateReady'] = WriteGate::supplierQuickInvoice()['ready'];
-        $data['writeGateMessage'] = WriteGate::WARNING_MESSAGE;
+        $quickInvoiceGate = WriteGate::supplierQuickInvoice();
+        $data['quickInvoiceGateReady'] = $quickInvoiceGate['ready'];
+        $data['writeGateMessage'] = $quickInvoiceGate['ready']
+            ? WriteGate::WARNING_MESSAGE
+            : 'Apply migrations 0007_invoices_printing_supplier_tools.sql and 0010_supplier_quick_invoice_totals.sql manually before generating shop invoices.';
         $data['csrfField'] = Csrf::field();
 
         ob_start();

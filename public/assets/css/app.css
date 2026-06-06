@@ -2012,7 +2012,244 @@ a.kpi-card:hover {
     background: var(--color-surface);
 }
 
+/* ── Supplier analytics dashboard (v1.3.1) ── */
+.dash-supplier-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.dash-supplier-hero-text .page-title {
+    margin: 0;
+}
+
+.dash-supplier-tagline {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    max-width: 42rem;
+    line-height: 1.5;
+}
+
+.dash-supplier-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.dash-hero-kpis {
+    margin-bottom: 1.5rem;
+}
+
+.dash-analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.dash-chart-card .card-body {
+    min-height: 220px;
+}
+
+.dash-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.dash-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.dash-legend-swatch {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 2px;
+}
+
+.dash-legend-orders { background: var(--color-primary); }
+.dash-legend-sales { background: var(--color-success); }
+
+.dash-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.dash-bar-chart-compact {
+    margin-top: 1rem;
+}
+
+.dash-bar-row {
+    display: grid;
+    grid-template-columns: minmax(6rem, 8.5rem) 1fr 2.5rem;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.dash-bar-label {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dash-bar-track {
+    height: 0.55rem;
+    background: var(--color-bg-subtle);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.dash-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 4px;
+    transition: width 0.35s ease;
+}
+
+.dash-bar-fill-primary { background: linear-gradient(90deg, var(--color-primary), #4f8fd9); }
+.dash-bar-fill-success { background: linear-gradient(90deg, var(--color-success), #34c38f); }
+
+.dash-bar-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--color-text);
+}
+
+.dash-column-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem;
+    height: 160px;
+    padding-top: 0.5rem;
+}
+
+.dash-column-chart-compact {
+    height: 120px;
+    margin-top: 1rem;
+}
+
+.dash-column-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.dash-column-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    height: 130px;
+    width: 100%;
+}
+
+.dash-column-chart-compact .dash-column-bars {
+    height: 90px;
+}
+
+.dash-column {
+    width: 42%;
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+}
+
+.dash-column-orders { background: var(--color-primary); opacity: 0.9; }
+.dash-column-sales { background: var(--color-success); opacity: 0.85; }
+.dash-column-debit { background: var(--color-warn); opacity: 0.9; }
+.dash-column-credit { background: var(--color-info); opacity: 0.9; }
+
+.dash-column-label {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    text-align: center;
+}
+
+.dash-payment-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.dash-payment-stat {
+    padding: 0.75rem 0.875rem;
+    background: var(--color-bg-subtle);
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+}
+
+.dash-payment-label {
+    display: block;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.dash-payment-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.dash-chart-footnote {
+    margin: 0.75rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}
+
+.dash-product-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.dash-product-stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.15rem;
+}
+
+.attention-list-inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.attention-list-inline .attention-item {
+    flex: 1 1 auto;
+    min-width: 12rem;
+}
+
+.text-warn {
+    color: var(--color-warn);
+}
+
 @media (max-width: 1100px) {
+    .dash-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
     .kpi-grid,
     .kpi-grid-4 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2022,6 +2259,162 @@ a.kpi-card:hover {
 @media (max-width: 768px) {
     .kpi-grid,
     .dash-widget-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Unified business KPI wallboard (v1.4.0) ── */
+.dash-wallboard-grid {
+    display: grid;
+    grid-template-columns: minmax(14rem, 1fr) minmax(10rem, 0.75fr) minmax(16rem, 1.4fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dash-wallboard-grid-3 {
+    grid-template-columns: 2fr 1fr 1fr;
+}
+
+.dash-metric-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 180px;
+}
+
+.dash-metric-body {
+    align-items: flex-start;
+    text-align: left;
+}
+
+.dash-metric-ring {
+    --gauge-pct: 35%;
+    position: relative;
+    width: 9.5rem;
+    height: 9.5rem;
+    border-radius: 50%;
+    background: conic-gradient(var(--color-success) 0 var(--gauge-pct), var(--color-bg-subtle) var(--gauge-pct) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+
+.dash-metric-ring-inner {
+    width: 7.25rem;
+    height: 7.25rem;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    padding: 0.5rem;
+}
+
+.dash-metric-big-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--color-text);
+}
+
+.dash-metric-big-value-warn {
+    color: var(--color-warn);
+}
+
+.dash-metric-unit {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.dash-metric-trend {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+.dash-metric-trend-up { color: var(--color-success); }
+.dash-metric-trend-down { color: var(--color-error); }
+
+.dash-metric-sub {
+    margin: 0.35rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.dash-metric-ratio {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.dash-metric-ratio .dash-metric-big-value {
+    font-size: 2.5rem;
+}
+
+.dash-metric-ratio-sep {
+    font-size: 1.75rem;
+    color: var(--color-text-subtle);
+    font-weight: 300;
+}
+
+.dash-metric-ratio-denom {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.dash-metric-table-card .card-body {
+    min-height: auto;
+    padding: 0;
+}
+
+.dash-rank-table th,
+.dash-rank-table td {
+    font-size: 0.8125rem;
+}
+
+.dash-chart-wide {
+    grid-column: span 1;
+}
+
+.dash-trend-sparkline-wrap {
+    width: 100%;
+}
+
+.dash-trend-sparkline {
+    width: 100%;
+    height: 72px;
+    display: block;
+}
+
+.dash-sparkline-sale {
+    stroke: var(--color-success);
+}
+
+.dash-sparkline-retail {
+    stroke: var(--color-primary);
+    opacity: 0.75;
+}
+
+.dash-legend-retail {
+    background: var(--color-primary);
+}
+
+.dash-trend-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+}
+
+@media (max-width: 1100px) {
+    .dash-wallboard-grid,
+    .dash-wallboard-grid-3 {
         grid-template-columns: 1fr;
     }
 }

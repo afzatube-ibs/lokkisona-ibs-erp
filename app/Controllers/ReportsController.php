@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Permission;
+use App\SupplierContext;
 use App\Repositories\SupplierRepository;
 use App\Services\ReadOnly\SupplierReportsReadService;
 
@@ -15,11 +16,14 @@ class ReportsController extends Controller
         ActivityLog::record('reports_access', 'Supplier reports page viewed');
 
         $reportKey = trim((string) ($_GET['report'] ?? ''));
-        $supplierId = (int) ($_GET['supplier_id'] ?? 0);
+        $supplierId = SupplierContext::enforceSupplierId((int) ($_GET['supplier_id'] ?? 0));
         $month = trim((string) ($_GET['month'] ?? date('Y-m')));
 
         $service = new SupplierReportsReadService();
         $definitions = $service->definitions();
+        if (SupplierContext::isSupplier()) {
+            unset($definitions['activity_log']);
+        }
         $reportData = $reportKey !== '' ? $service->run($reportKey, $supplierId, $month) : null;
 
         $this->render('reports.index', [
@@ -31,9 +35,11 @@ class ReportsController extends Controller
             'definitions' => $definitions,
             'reportKey' => $reportKey,
             'reportData' => $reportData,
-            'suppliers' => $this->loadSuppliers(),
+            'suppliers' => SupplierContext::canSelectSupplier() ? $this->loadSuppliers() : [],
             'selectedSupplierId' => $supplierId,
             'selectedMonth' => $month,
+            'canSelectSupplier' => SupplierContext::canSelectSupplier(),
+            'isSupplierView' => SupplierContext::isSupplier(),
             'accessMode' => Permission::accessMode(),
         ]);
     }

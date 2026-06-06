@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Auth;
+use App\SupplierContext;
+use App\Services\ReadOnly\BusinessDashboardAnalyticsService;
 use App\Services\ReadOnly\DashboardReadService;
 
 class DashboardController extends Controller
@@ -14,8 +16,9 @@ class DashboardController extends Controller
         ActivityLog::record('dashboard_access', 'Dashboard viewed');
 
         $role = Auth::role();
-        $service = new DashboardReadService();
         $isSupplier = $role === 'supplier';
+        $supplierId = $isSupplier ? SupplierContext::supplierId() : 0;
+        $showRetailAmounts = !$isSupplier;
 
         $this->render('dashboard.index', [
             'pageTitle' => 'Dashboard',
@@ -23,11 +26,9 @@ class DashboardController extends Controller
                 ['label' => 'Dashboard', 'active' => true],
             ],
             'isSupplierView' => $isSupplier,
-            'supplierTasks' => $isSupplier ? $service->supplierTaskCounts() : [],
-            'ownerMetrics' => $isSupplier ? [] : $service->ownerMetrics(),
-            'workflowStageCounts' => $isSupplier ? [] : $service->workflowStageCounts(),
-            'needsAttention' => $isSupplier ? [] : $service->needsAttention(),
-            'recentNotes' => $service->recentNotes(),
+            'showRetailAmounts' => $showRetailAmounts,
+            'dashboardAnalytics' => (new BusinessDashboardAnalyticsService())->build($supplierId, $showRetailAmounts),
+            'recentNotes' => (new DashboardReadService())->recentNotes(),
             'currentRole' => $role,
             'welcomeDate' => date('l, d F Y'),
         ]);

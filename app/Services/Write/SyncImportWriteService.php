@@ -124,18 +124,29 @@ class SyncImportWriteService
             $costTotal = 0.0;
             $lineItems = [];
             foreach (($orderPayload['items'] ?? []) as $line) {
-                $productId = isset($line['product_id']) ? (int) $line['product_id'] : null;
-                if ($productId !== null && $productId <= 0) {
-                    $productId = null;
+                $sourceProductId = null;
+                if (isset($line['product_id']) && (int) $line['product_id'] > 0) {
+                    $sourceProductId = (string) (int) $line['product_id'];
+                }
+                $erpProductId = null;
+                if ($sourceProductId !== null) {
+                    $erpProduct = $this->products->findBySourceProductId($sourceId, $sourceProductId);
+                    if ($erpProduct !== null) {
+                        $erpProductId = (int) ($erpProduct['product_id'] ?? 0);
+                        if ($erpProductId <= 0) {
+                            $erpProductId = null;
+                        }
+                    }
                 }
                 $qty = max(1, (int) ($line['quantity'] ?? 1));
                 $sellingPrice = round((float) ($line['selling_price'] ?? 0), 2);
-                $costSnapshot = $this->resolveCostSnapshot($productId, null);
+                $costSnapshot = $this->resolveCostSnapshot($erpProductId, null);
                 $lineTotal = round($sellingPrice * $qty, 2);
                 $costTotal += round($costSnapshot * $qty, 2);
                 $lineItems[] = [
-                    'product_id' => $productId,
+                    'product_id' => $erpProductId,
                     'product_variant_id' => null,
+                    'source_product_id' => $sourceProductId,
                     'product_name' => (string) ($line['product_name'] ?? 'Synced item'),
                     'variant_label' => $line['variant_label'] ?? null,
                     'quantity' => $qty,

@@ -32,7 +32,14 @@ view('partials.write-gate-warning', [
             </label>
             <button type="submit" class="btn btn-secondary">Import Eligible Rows</button>
         </form>
-        <p class="page-description" style="margin-top:0.75rem;">Full Sync stays hidden. One request only — no background loops.</p>
+        <?php if (!empty($warehouseProductPullAvailable)): ?>
+        <form method="post" action="/sync-preview/pull-warehouse-products" style="display:inline-block;margin-left:0.5rem;">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
+            <button type="submit" class="btn btn-secondary">Pull warehouse products</button>
+        </form>
+        <?php endif; ?>
+        <p class="page-description" style="margin-top:0.75rem;">Full Sync stays hidden. One request only — no background loops. Warehouse pull upserts only <strong>From Warehouse = Yes</strong> OpenCart products into Product Control (does not overwrite supplier cost/stock).</p>
     </div>
 </div>
 <?php endif; ?>

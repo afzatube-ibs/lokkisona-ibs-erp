@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\ProductCostHistory;
 use App\Models\ProductStockHistory;
 use App\Permission;
+use App\SupplierContext;
 use App\Csrf;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
@@ -38,6 +39,23 @@ class ProductControlController extends Controller
             $productStockHistoryReadInventory
         );
 
+        if (SupplierContext::isSupplier()) {
+            $supplierId = SupplierContext::supplierId();
+            $productReadInventory = $this->filterRowsBySupplierId($productReadInventory, $supplierId);
+            $productVariantReadInventory = $this->filterVariantRowsForSupplierProducts(
+                $productVariantReadInventory,
+                $productReadInventory
+            );
+            $productCostHistoryReadInventory = $this->filterRowsBySupplierId($productCostHistoryReadInventory, $supplierId);
+            $productStockHistoryReadInventory = $this->filterRowsBySupplierId($productStockHistoryReadInventory, $supplierId);
+            $costStockHistoryDisplay = $this->buildCostStockHistoryDisplay(
+                $productReadInventory,
+                $productVariantReadInventory,
+                $productCostHistoryReadInventory,
+                $productStockHistoryReadInventory
+            );
+        }
+
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
             'breadcrumbs' => [
@@ -51,7 +69,9 @@ class ProductControlController extends Controller
             'productStockHistoryReadInventory' => $productStockHistoryReadInventory,
             'costStockHistoryDisplay' => $costStockHistoryDisplay,
             'productSelectOptions' => $this->productSelectOptionsFromInventory($productReadInventory),
+            'productDisplay' => $this->buildProductDisplayFromInventory($productReadInventory),
             'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
+            'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'currentSupplier' => $this->currentSupplier(),
             'purpose' => $this->purpose(),
             'futureSyncedStructure' => $this->futureSyncedStructure(),
@@ -70,10 +90,13 @@ class ProductControlController extends Controller
             'csrfField' => Csrf::field(),
             'writeGateProductCreate' => WriteGate::productCreateForm(),
             'writeGateProductCreateReady' => WriteGate::productCreateForm()['ready'],
+            'writeGateProductEditReady' => WriteGate::productCreateForm()['ready'],
             'writeGateVariantForm' => WriteGate::productVariantForm(),
             'writeGateVariantFormReady' => WriteGate::productVariantForm()['ready'],
             'writeGateCostStock' => WriteGate::productCostStockForm(),
             'writeGateCostStockReady' => WriteGate::productCostStockForm()['ready'],
+            'isSupplierView' => SupplierContext::isSupplier(),
+            'boundSupplierId' => SupplierContext::isSupplier() ? SupplierContext::supplierId() : 0,
         ]);
     }
 
@@ -85,7 +108,8 @@ class ProductControlController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/product-control');
         }
-        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->create($_POST));
+        $input = $this->applySupplierProductScope($_POST);
+        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->create($input));
     }
 
     public function editProduct()
@@ -97,7 +121,12 @@ class ProductControlController extends Controller
             redirect('/product-control');
         }
         $id = (int) ($_POST['product_id'] ?? 0);
-        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->applyEdit($id, $_POST));
+        if (!$this->assertProductOwnedBySupplier($id)) {
+            $this->flash('error', 'Product not found for your supplier account.');
+            redirect('/product-control');
+        }
+        $input = $this->applySupplierProductScope($_POST);
+        $this->redirectWithWriteResult('/product-control', (new ProductWriteService())->applyEdit($id, $input));
     }
 
     public function createVariant()
@@ -106,6 +135,11 @@ class ProductControlController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        if (!$this->assertProductOwnedBySupplier($productId)) {
+            $this->flash('error', 'Product not found for your supplier account.');
             redirect('/product-control');
         }
         $this->redirectWithWriteResult('/product-control', (new ProductVariantWriteService())->create($_POST));
@@ -119,11 +153,20 @@ class ProductControlController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/product-control');
         }
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        if (!empty($_POST['product_variant_id'])) {
+            $variantId = (int) $_POST['product_variant_id'];
+            $productId = $this->productIdForVariant($variantId) ?: $productId;
+        }
+        if ($productId > 0 && !$this->assertProductOwnedBySupplier($productId)) {
+            $this->flash('error', 'Product not found for your supplier account.');
+            redirect('/product-control');
+        }
         $service = new ProductCostStockWriteService();
         if (!empty($_POST['product_variant_id'])) {
             $result = $service->updateVariantCostStock((int) $_POST['product_variant_id'], $_POST);
         } else {
-            $result = $service->updateProductCostStock((int) ($_POST['product_id'] ?? 0), $_POST);
+            $result = $service->updateProductCostStock($productId, $_POST);
         }
         $this->redirectWithWriteResult('/product-control', $result);
     }
@@ -267,6 +310,42 @@ class ProductControlController extends Controller
             'sort_id' => 0,
         ];
     }
+    private function buildProductDisplayFromInventory(array $productReadInventory): array
+    {
+        $display = [
+            'status' => $productReadInventory['status'] ?? 'error',
+            'status_message' => $productReadInventory['status_message'] ?? 'Product inventory unavailable.',
+            'row_count' => (int) ($productReadInventory['row_count'] ?? 0),
+            'table_exists' => (bool) ($productReadInventory['table_exists'] ?? false),
+            'rows' => [],
+        ];
+
+        if (!in_array($display['status'], ['ok', 'empty'], true)) {
+            return $display;
+        }
+
+        foreach ($productReadInventory['rows'] ?? [] as $product) {
+            $display['rows'][] = [
+                'product_id' => (int) ($product['product_id'] ?? 0),
+                'product_name' => trim((string) ($product['product_name'] ?? '')),
+                'supplier_model' => (string) ($product['supplier_model'] ?? ''),
+                'supplier_product_category' => (string) ($product['supplier_product_category'] ?? ''),
+                'product_cost' => $product['product_cost'] ?? '',
+                'vendor_stock' => (int) ($product['vendor_stock'] ?? 0),
+                'source_product_id' => (string) ($product['source_product_id'] ?? ''),
+                'source_model' => (string) ($product['source_model'] ?? ''),
+                'source_stock' => $product['source_stock'] ?? '',
+                'last_synced_at' => (string) ($product['last_synced_at'] ?? ''),
+                'low_warning_threshold' => $product['low_warning_threshold'] ?? '',
+                'status' => (string) ($product['status'] ?? 'active'),
+                'business_source_id' => $product['business_source_id'] ?? '',
+                'supplier_id' => $product['supplier_id'] ?? '',
+            ];
+        }
+
+        return $display;
+    }
+
     private function buildVariantDisplayFromInventories(array $productReadInventory, array $productVariantReadInventory): array
     {
         $display = [
@@ -282,20 +361,24 @@ class ProductControlController extends Controller
         }
 
         $productNames = [];
+        $productCategories = [];
         foreach ($productReadInventory['rows'] ?? [] as $product) {
             $pid = (int) ($product['product_id'] ?? 0);
             if ($pid > 0) {
                 $productNames[$pid] = trim((string) ($product['product_name'] ?? ''));
+                $productCategories[$pid] = trim((string) ($product['supplier_product_category'] ?? ''));
             }
         }
 
         foreach ($productVariantReadInventory['rows'] ?? [] as $variant) {
             $productId = (int) ($variant['product_id'] ?? 0);
             $productName = $productNames[$productId] ?? '';
+            $category = $productCategories[$productId] ?? '';
             $display['rows'][] = [
                 'product_variant_id' => $variant['product_variant_id'] ?? '',
                 'product_id' => $productId,
                 'product_name' => $productName !== '' ? $productName : '(product #' . $productId . ')',
+                'supplier_product_category' => $category !== '' ? $category : '—',
                 'option_name' => $variant['option_name'] ?? '',
                 'option_value' => $variant['option_value'] ?? '',
                 'supplier_model' => $variant['supplier_model'] ?? '',
@@ -428,6 +511,84 @@ class ProductControlController extends Controller
         }
     }
 
+    private function applySupplierProductScope(array $input): array
+    {
+        if (!SupplierContext::isSupplier()) {
+            return $input;
+        }
+
+        $input['supplier_id'] = SupplierContext::supplierId();
+
+        return $input;
+    }
+
+    private function assertProductOwnedBySupplier(int $productId): bool
+    {
+        if (!SupplierContext::isSupplier() || $productId <= 0) {
+            return true;
+        }
+
+        try {
+            $product = (new \App\Repositories\ProductRepository())->findById($productId);
+            if ($product === null) {
+                return false;
+            }
+
+            return (int) ($product['supplier_id'] ?? 0) === SupplierContext::supplierId();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function productIdForVariant(int $variantId): int
+    {
+        if ($variantId <= 0) {
+            return 0;
+        }
+
+        try {
+            $variant = (new \App\Repositories\ProductVariantRepository())->findById($variantId);
+
+            return (int) ($variant['product_id'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function filterRowsBySupplierId(array $inventory, int $supplierId): array
+    {
+        $rows = $inventory['rows'] ?? [];
+        $filtered = array_values(array_filter($rows, static function (array $row) use ($supplierId): bool {
+            return (int) ($row['supplier_id'] ?? 0) === $supplierId;
+        }));
+        $inventory['rows'] = $filtered;
+        $inventory['row_count'] = count($filtered);
+        $inventory['status'] = $filtered === [] ? 'empty' : ($inventory['status'] ?? 'ok');
+
+        return $inventory;
+    }
+
+    private function filterVariantRowsForSupplierProducts(array $variantInventory, array $productInventory): array
+    {
+        $productIds = [];
+        foreach ($productInventory['rows'] ?? [] as $product) {
+            $pid = (int) ($product['product_id'] ?? 0);
+            if ($pid > 0) {
+                $productIds[$pid] = true;
+            }
+        }
+
+        $rows = $variantInventory['rows'] ?? [];
+        $filtered = array_values(array_filter($rows, static function (array $row) use ($productIds): bool {
+            return isset($productIds[(int) ($row['product_id'] ?? 0)]);
+        }));
+        $variantInventory['rows'] = $filtered;
+        $variantInventory['row_count'] = count($filtered);
+        $variantInventory['status'] = $filtered === [] ? 'empty' : ($variantInventory['status'] ?? 'ok');
+
+        return $variantInventory;
+    }
+
     private function currentSupplier()
     {
         return [
@@ -440,10 +601,11 @@ class ProductControlController extends Controller
     private function purpose()
     {
         return [
-            'Plan supplier-side product, cost, and stock control without OpenCart sync or database writes.',
-            'Separate platform/source product data from supplier-editable model, cost, and stock fields.',
-            'Prepare cost and stock history so dispatch and payable can use cost snapshots instead of live changing values.',
-            'Stay channel-neutral so manual, offline, ecommerce, and marketplace products can share the same control model.',
+            'Supplier catalog is manual in ERP today; set OpenCart source product ID to map order line items.',
+            'OpenCart sync is order-only (Test Sync + status mapping). Product pull is optional when product_api_route is configured.',
+            'Only OpenCart products marked From Warehouse = Yes belong in the ERP supplier catalog (Dispatch Location rule).',
+            'Separate platform read-only fields (source model/stock) from supplier-editable model, sale/cost, and vendor stock.',
+            'Cost and stock history support dispatch and payable cost snapshots instead of live changing values.',
         ];
     }
 
@@ -476,18 +638,23 @@ class ProductControlController extends Controller
     private function editableFields()
     {
         return [
+            'Product name',
             'Supplier Model',
-            'Product Cost (with history)',
+            'Supplier category (ERP reporting)',
+            'OpenCart source product ID (manual map before live pull)',
+            'Product Cost / Sale amount (with history)',
             'Vendor Stock (with history)',
             'Low Warning Threshold (warning only)',
+            'Status (active / inactive)',
         ];
     }
 
     private function readOnlyFields()
     {
         return [
-            'OpenCart / Source Model (read-only when synced later)',
-            'OpenCart / Source Stock (read-only when synced later)',
+            'OpenCart / Source Model (read-only after sync or warehouse pull)',
+            'OpenCart / Source Stock (read-only after sync or warehouse pull)',
+            'Last synced at (read-only platform timestamp)',
             'Improved Option Model (read-only when synced later)',
             'Improved Option Stock (read-only when synced later)',
         ];

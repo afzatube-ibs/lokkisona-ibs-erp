@@ -6,6 +6,8 @@ use App\ActivityLog;
 use App\Database\Connection;
 use App\Database\QueryGuard;
 use App\Domain\PayableLedgerType;
+use App\Domain\SupplierTerminology;
+use App\SupplierContext;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\ReturnReceiveRepository;
 use App\Services\ReadOnly\PayableLedgerReadService;
@@ -28,6 +30,8 @@ class SupplierReportsReadService
             'supplier_ledger' => ['title' => 'Supplier Ledger Report', 'group' => 'Financial'],
             'dispatch_payable' => ['title' => 'Dispatch Payable Report', 'group' => 'Dispatch'],
             'product_dispatch' => ['title' => 'Product-wise Dispatch Report', 'group' => 'Dispatch'],
+            'product_sales' => ['title' => 'Product-wise Sales Report', 'group' => 'Sales'],
+            'category_sales' => ['title' => 'Sales by Supplier Category', 'group' => 'Sales'],
             'hub_return' => ['title' => 'Hub Return / Courier Return Report', 'group' => 'Returns'],
             'customer_return' => ['title' => 'Customer Return Report', 'group' => 'Returns'],
             'vendor_return' => ['title' => 'Vendor Return Report', 'group' => 'Returns'],
@@ -53,6 +57,8 @@ class SupplierReportsReadService
             'supplier_ledger' => $this->supplierLedgerReport($supplierId),
             'dispatch_payable' => $this->dispatchPayableReport($supplierId),
             'product_dispatch' => $this->productDispatchReport($supplierId),
+            'product_sales' => $this->productWiseSalesReport($supplierId),
+            'category_sales' => $this->categorySalesReport($supplierId),
             'hub_return' => $this->returnReport('hub_courier_return', 'Hub Return / Courier Return Report', $supplierId),
             'customer_return' => $this->returnReport('customer_return_to_supplier', 'Customer Return Report', $supplierId),
             'vendor_return' => $this->vendorReturnReport($supplierId),
@@ -121,11 +127,15 @@ class SupplierReportsReadService
             ];
         }
 
+        $supplierView = SupplierContext::isSupplier();
+
         return [
-            'title' => 'Dispatch Payable Report',
-            'columns' => ['Date', 'Dispatch Ref', 'Orders', 'Cost Snapshot', 'Report Status', 'Payable Status'],
+            'title' => $supplierView ? 'Dispatch Sales Report' : 'Dispatch Payable Report',
+            'columns' => ['Date', 'Dispatch Ref', 'Orders', $supplierView ? 'Sale Amount' : 'Cost Snapshot', 'Report Status', $supplierView ? 'Ledger Status' : 'Payable Status'],
             'rows' => $rows,
-            'summary' => 'Dispatch reports: ' . count($rows) . ' — cost snapshots are immutable.',
+            'summary' => $supplierView
+                ? 'Dispatch batches: ' . count($rows) . ' — locked sale amounts are immutable.'
+                : 'Dispatch reports: ' . count($rows) . ' — cost snapshots are immutable.',
             'empty_message' => 'No dispatch reports found.',
         ];
     }
@@ -159,13 +169,159 @@ class SupplierReportsReadService
             (string) ($r['created_at'] ?? ''),
         ], $data);
 
+        $supplierView = SupplierContext::isSupplier();
+
         return [
-            'title' => 'Product-wise Dispatch Report',
-            'columns' => ['Dispatch Ref', 'Order No', 'Qty', 'Line Cost Snapshot', 'Created'],
+            'title' => $supplierView ? 'Product-wise Sales Report' : 'Product-wise Dispatch Report',
+            'columns' => ['Dispatch Ref', 'Order No', 'Qty', $supplierView ? SupplierTerminology::lineSaleSnapshot() : 'Line Cost Snapshot', 'Created'],
             'rows' => $rows,
             'summary' => 'Order-level dispatch lines: ' . count($rows),
             'empty_message' => 'No dispatch line items found.',
         ];
+    }
+
+    private function productWiseSalesReport(int $supplierId): array
+    {
+        if (!$this->tableExists('order_items') || !$this->tableExists('orders')) {
+            return $this->emptyReport('Product-wise Sales Report', 'Order tables not applied.');
+        }
+
+        $supplierView = SupplierContext::isSupplier();
+        $showRetail = !$supplierView;
+        $categorySelect = $this->hasProductCategoryColumn()
+            ? "COALESCE(NULLIF(p.supplier_product_category, ''), 'Uncategorized')"
+            : "'Uncategorized'";
+
+        $sql = 'SELECT COALESCE(p.product_name, CONCAT("Product #", oi.product_id)) AS product_name, '
+            . $categorySelect . ' AS category, '
+            . 'COALESCE(SUM(oi.quantity), 0) AS qty, '
+            . 'COALESCE(SUM(oi.supplier_cost_snapshot * oi.quantity), 0) AS sale_bdt';
+        if ($showRetail) {
+            $sql .= ', COALESCE(SUM(oi.selling_price * oi.quantity), 0) AS retail_bdt';
+        }
+        $sql .= ' FROM `' . $this->escape($this->prefix . 'order_items') . '` oi '
+            . 'INNER JOIN `' . $this->escape($this->prefix . 'orders') . '` o ON o.order_id = oi.order_id '
+            . 'LEFT JOIN `' . $this->escape($this->prefix . 'products') . '` p ON p.product_id = oi.product_id '
+            . 'WHERE oi.product_id IS NOT NULL';
+        $params = [];
+        if ($supplierId > 0) {
+            $sql .= ' AND o.supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
+        $sql .= ' GROUP BY oi.product_id, product_name, category ORDER BY sale_bdt DESC LIMIT 200';
+        QueryGuard::assertReadOnly($sql);
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        $data = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $columns = ['Product', 'Category', 'Qty', $supplierView ? 'Sale Amount' : 'Sale BDT'];
+        if ($showRetail) {
+            $columns[] = 'Retail BDT';
+        }
+
+        $rows = [];
+        foreach ($data as $row) {
+            $line = [
+                (string) ($row['product_name'] ?? ''),
+                (string) ($row['category'] ?? 'Uncategorized'),
+                (string) ($row['qty'] ?? 0),
+                number_format((float) ($row['sale_bdt'] ?? 0), 2),
+            ];
+            if ($showRetail) {
+                $line[] = number_format((float) ($row['retail_bdt'] ?? 0), 2);
+            }
+            $rows[] = $line;
+        }
+
+        return [
+            'title' => $supplierView ? 'Product-wise Sales Report' : 'Product-wise Sales Report (Owner)',
+            'columns' => $columns,
+            'rows' => $rows,
+            'summary' => 'Products ranked by sale amount (cost snapshot). Offline shop invoices without product link are excluded.',
+            'empty_message' => 'No product sales found.',
+        ];
+    }
+
+    private function categorySalesReport(int $supplierId): array
+    {
+        if (!$this->tableExists('order_items') || !$this->tableExists('orders')) {
+            return $this->emptyReport('Sales by Supplier Category', 'Order tables not applied.');
+        }
+
+        $supplierView = SupplierContext::isSupplier();
+        $showRetail = !$supplierView;
+        $categorySelect = $this->hasProductCategoryColumn()
+            ? "COALESCE(NULLIF(p.supplier_product_category, ''), 'Uncategorized')"
+            : "'Uncategorized'";
+
+        $sql = 'SELECT ' . $categorySelect . ' AS category, '
+            . 'COUNT(DISTINCT o.order_id) AS orders, '
+            . 'COALESCE(SUM(oi.quantity), 0) AS qty, '
+            . 'COALESCE(SUM(oi.supplier_cost_snapshot * oi.quantity), 0) AS sale_bdt';
+        if ($showRetail) {
+            $sql .= ', COALESCE(SUM(oi.selling_price * oi.quantity), 0) AS retail_bdt';
+        }
+        $sql .= ' FROM `' . $this->escape($this->prefix . 'order_items') . '` oi '
+            . 'INNER JOIN `' . $this->escape($this->prefix . 'orders') . '` o ON o.order_id = oi.order_id '
+            . 'LEFT JOIN `' . $this->escape($this->prefix . 'products') . '` p ON p.product_id = oi.product_id '
+            . 'WHERE 1=1';
+        $params = [];
+        if ($supplierId > 0) {
+            $sql .= ' AND o.supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
+        $sql .= ' GROUP BY category ORDER BY sale_bdt DESC LIMIT 100';
+        QueryGuard::assertReadOnly($sql);
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        $data = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $columns = ['Category', 'Orders', 'Qty', $supplierView ? 'Sale Amount' : 'Sale BDT'];
+        if ($showRetail) {
+            $columns[] = 'Retail BDT';
+        }
+
+        $rows = [];
+        foreach ($data as $row) {
+            $line = [
+                (string) ($row['category'] ?? 'Uncategorized'),
+                (string) ($row['orders'] ?? 0),
+                (string) ($row['qty'] ?? 0),
+                number_format((float) ($row['sale_bdt'] ?? 0), 2),
+            ];
+            if ($showRetail) {
+                $line[] = number_format((float) ($row['retail_bdt'] ?? 0), 2);
+            }
+            $rows[] = $line;
+        }
+
+        return [
+            'title' => 'Sales by Supplier Category',
+            'columns' => $columns,
+            'rows' => $rows,
+            'summary' => 'ERP supplier categories from Product Control — not OpenCart categories.',
+            'empty_message' => 'No category sales found. Assign supplier_product_category on products first.',
+        ];
+    }
+
+    private function hasProductCategoryColumn(): bool
+    {
+        try {
+            $database = config('database.database', '');
+            $check = $this->pdo->prepare(
+                'SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS '
+                . 'WHERE TABLE_SCHEMA = :s AND TABLE_NAME = :t AND COLUMN_NAME = :c'
+            );
+            $check->execute([
+                's' => $database,
+                't' => $this->prefix . 'products',
+                'c' => 'supplier_product_category',
+            ]);
+
+            return ((int) ($check->fetch(PDO::FETCH_ASSOC)['c'] ?? 0)) > 0;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     private function returnReport(string $type, string $title, int $supplierId): array
@@ -196,9 +352,11 @@ class SupplierReportsReadService
             (string) ($r['received_at'] ?? $r['created_at'] ?? ''),
         ], $filtered);
 
+        $supplierView = SupplierContext::isSupplier();
+
         return [
             'title' => $title,
-            'columns' => ['Return Ref', 'Type', 'Items', 'Cost Snapshot', 'Status', 'Received'],
+            'columns' => ['Return Ref', 'Type', 'Items', $supplierView ? SupplierTerminology::saleAmount() : 'Cost Snapshot', 'Status', 'Received'],
             'rows' => $rows,
             'summary' => 'Returns: ' . count($rows),
             'empty_message' => 'No returns found for this report.',
@@ -209,10 +367,11 @@ class SupplierReportsReadService
     {
         $hub = $this->returnReport('hub_courier_return', 'Hub', $supplierId);
         $customer = $this->returnReport('customer_return_to_supplier', 'Customer', $supplierId);
+        $supplierView = SupplierContext::isSupplier();
 
         return [
             'title' => 'Vendor Return Report',
-            'columns' => ['Return Ref', 'Type', 'Items', 'Cost Snapshot', 'Status', 'Received'],
+            'columns' => ['Return Ref', 'Type', 'Items', $supplierView ? SupplierTerminology::saleAmount() : 'Cost Snapshot', 'Status', 'Received'],
             'rows' => array_merge($hub['rows'], $customer['rows']),
             'summary' => 'Supplier-side returns (Hub + Customer to Supplier): ' . (count($hub['rows']) + count($customer['rows'])),
             'empty_message' => 'No vendor returns found.',
@@ -359,19 +518,21 @@ class SupplierReportsReadService
             ? $service->currentBalanceForSupplier($supplierId)
             : round($opening + $productCost + $invoices + $additional + $debitAdj - $deductions - $payments - $advances - $creditAdj, 2);
 
+        $supplierView = SupplierContext::isSupplier();
+
         return [
             'title' => 'Settlement Report Summary',
             'columns' => ['Line Item', 'Amount (BDT)'],
             'rows' => [
                 ['Opening Balance', number_format($opening, 2)],
-                ['Product Cost Payable', number_format($productCost, 2)],
-                ['Supplier Invoice', number_format($invoices, 2)],
-                ['Additional Payable', number_format($additional, 2)],
-                ['Debit Adjustment', number_format($debitAdj, 2)],
+                [$supplierView ? 'Sales (Dispatch)' : 'Product Cost Payable', number_format($productCost, 2)],
+                [$supplierView ? 'Supplier Sale Invoice' : 'Supplier Invoice', number_format($invoices, 2)],
+                [$supplierView ? 'Additional Sale' : 'Additional Payable', number_format($additional, 2)],
+                [$supplierView ? 'Sale Adjustment (Debit)' : 'Debit Adjustment', number_format($debitAdj, 2)],
                 ['Return Deduction', number_format($deductions, 2)],
                 ['Payment Made', number_format($payments, 2)],
                 ['Advance Received', number_format($advances, 2)],
-                ['Credit Adjustment', number_format($creditAdj, 2)],
+                [$supplierView ? 'Sale Adjustment (Credit)' : 'Credit Adjustment', number_format($creditAdj, 2)],
                 ['Closing Balance / Net Payable', number_format($closing, 2)],
             ],
             'summary' => 'Settlement summary from posted ledger entries. Full settlement workflow (Draft → Paid) is planned for a later release.',

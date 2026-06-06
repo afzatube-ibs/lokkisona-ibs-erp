@@ -4,6 +4,7 @@ namespace App\Services\Write;
 
 use App\ActivityLog;
 use App\Auth;
+use App\SupplierContext;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\SupplierQuickInvoiceAuditWriteRepository;
 use App\Repositories\Write\SupplierQuickInvoiceItemWriteRepository;
@@ -64,9 +65,15 @@ class SupplierQuickInvoiceWriteService
 
         $balanceDue = round($afterDiscount - $advance, 2);
         $reference = 'SQI-' . date('YmdHis') . '-' . random_int(100, 999);
+        $invoiceDate = trim((string) ($input['invoice_date'] ?? ''));
+        if ($invoiceDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $invoiceDate)) {
+            return WriteResult::fail('Valid invoice date is required.');
+        }
+        $generatedAt = $invoiceDate . ' 00:00:00';
+        $supplierId = SupplierContext::isSupplier() ? SupplierContext::supplierId() : null;
 
         $invoiceId = $this->invoices->create([
-            'supplier_id' => null,
+            'supplier_id' => $supplierId,
             'quick_invoice_reference' => $reference,
             'supplier_name' => 'Iqbal & Brothers',
             'customer_name' => $customerName,
@@ -80,6 +87,7 @@ class SupplierQuickInvoiceWriteService
             'notes' => trim((string) ($input['notes'] ?? '')) ?: null,
             'output_status' => 'generated',
             'created_by' => null,
+            'generated_at' => $generatedAt,
         ]);
 
         foreach ($lineItems as $line) {
@@ -163,6 +171,15 @@ class SupplierQuickInvoiceWriteService
         }
 
         return $this->invoices->listRecent($limit);
+    }
+
+    public function recentForSupplier(int $supplierId, int $limit = 20): array
+    {
+        if (!$this->invoices->tableExists() || $supplierId <= 0) {
+            return [];
+        }
+
+        return $this->invoices->listRecentForSupplier($supplierId, $limit);
     }
 
     private function parseLineItems($raw): array

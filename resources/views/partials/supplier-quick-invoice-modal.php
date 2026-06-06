@@ -6,7 +6,7 @@ $supplierLabel = 'Iqbal & Brothers';
 <div class="modal-overlay" id="supplierQuickInvoiceModal" hidden aria-hidden="true">
     <div class="modal-panel modal-panel-wide" role="dialog" aria-labelledby="invoiceModalTitle" aria-modal="true">
         <div class="modal-header">
-            <h2 class="modal-title" id="invoiceModalTitle">Quick Invoice Generator</h2>
+            <h2 class="modal-title" id="invoiceModalTitle">Offline Invoice</h2>
             <button type="button" class="modal-close" data-modal-close="supplierQuickInvoiceModal" aria-label="Close invoice generator">&times;</button>
         </div>
         <div class="modal-body">
@@ -97,7 +97,7 @@ $supplierLabel = 'Iqbal & Brothers';
                     <button type="button" class="btn btn-secondary" id="qiClearForm">Clear</button>
                     <button type="submit" class="btn btn-primary">Generate &amp; Print</button>
                 </div>
-                <p class="modal-hint">Independent supplier invoice — no ERP payable, order, or stock impact.</p>
+                <p class="modal-hint">Independent supplier invoice — no ERP payable, order, or stock impact. After you print or download once, reprint requires owner access (one-time supplier print policy).</p>
             </form>
             <?php endif; ?>
         </div>

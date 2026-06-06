@@ -34,14 +34,14 @@ $displayActionNote = $displayActionNote ?? static function (?string $note): stri
             <div class="card product-line-card">
                 <div class="card-body">
                     <p style="margin: 0 0 0.25rem;"><strong><?= e((string) ($line['product_name'] ?? '')) ?></strong></p>
-                    <span class="page-description">ID <?= e((string) ($line['product_id'] ?? '')) ?> · <?= e((string) ($line['variant_label'] ?? '-')) ?> · Qty <?= e((string) ($line['quantity'] ?? '0')) ?><?php if ((float) ($line['cost_snapshot'] ?? 0) > 0): ?> · Cost <?= e(number_format((float) $line['cost_snapshot'], 2)) ?> × <?= e((string) ($line['quantity'] ?? '0')) ?> = <strong><?= e(number_format((float) ($line['line_cost_total'] ?? 0), 2)) ?></strong><?php endif; ?></span>
+                    <span class="page-description">ID <?= e((string) ($line['product_id'] ?? '')) ?> · <?= e((string) ($line['variant_label'] ?? '-')) ?> · Qty <?= e((string) ($line['quantity'] ?? '0')) ?><?php if ((float) ($line['cost_snapshot'] ?? 0) > 0): ?> · <?= !empty($isSupplierView) ? 'Sale' : 'Cost' ?> <?= e(number_format((float) $line['cost_snapshot'], 2)) ?> × <?= e((string) ($line['quantity'] ?? '0')) ?> = <strong><?= e(number_format((float) ($line['line_cost_total'] ?? 0), 2)) ?></strong><?php endif; ?></span>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
         <div class="workflow-order-totals" style="display:flex; gap:1.25rem; flex-wrap:wrap; margin-bottom:0.75rem; padding:0.5rem 0.75rem; border-top:1px solid var(--color-border); border-bottom:1px solid var(--color-border);">
             <span class="page-description" style="margin:0;">Total Qty: <strong><?= e((string) ($order['total_quantity'] ?? 0)) ?></strong></span>
-            <span class="page-description" style="margin:0;">Total Cost (snapshot): <strong><?= e(number_format((float) ($order['total_cost_snapshot'] ?? 0), 2)) ?> BDT</strong></span>
+            <span class="page-description" style="margin:0;"><?= !empty($isSupplierView) ? 'Total Sale (snapshot)' : 'Total Cost (snapshot)' ?>: <strong><?= e(number_format((float) ($order['total_cost_snapshot'] ?? 0), 2)) ?> BDT</strong></span>
         </div>
         <?php endif; ?>
 

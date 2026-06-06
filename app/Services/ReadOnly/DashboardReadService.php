@@ -64,6 +64,138 @@ class DashboardReadService
         return $tasks;
     }
 
+    public function supplierDashboardMetrics(int $supplierId): array
+    {
+        $repo = new OrderWriteRepository();
+        $ledger = new PayableLedgerReadService();
+        $ledgerSummary = $supplierId > 0 ? $ledger->summaryForSupplier($supplierId) : $ledger->summary();
+
+        $activeOrders = 0;
+        $newOrders = 0;
+        $packaging = 0;
+        $shipped = 0;
+        $pendingReturns = 0;
+
+        if ($repo->tableExists()) {
+            $activeOrders = $repo->countByStatuses(self::ACTIVE_FULFILLMENT_STATUSES, $supplierId);
+            $newOrders = $repo->countByStatus('new_order', $supplierId);
+            $packaging = $repo->countByStatus('packaging', $supplierId);
+            $shipped = $repo->countByStatus('shipped', $supplierId);
+            try {
+                $pendingReturns = $repo->countReturnPending('hub_courier_return', 'hub_return')
+                    + $repo->countReturnPending('customer_return_to_supplier', 'order_returning');
+            } catch (\Throwable $e) {
+                $pendingReturns = 0;
+            }
+        }
+
+        $dispatchBatchesMonth = 0;
+        $shopInvoiceCount = 0;
+        $shopInvoiceTotal = 0.0;
+
+        try {
+            $pdo = Connection::pdo();
+            $prefix = config('database.prefix', 'ibs_');
+            $database = config('database.database', '');
+            $check = $pdo->prepare('SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :s AND TABLE_NAME = :t');
+
+            $check->execute(['s' => $database, 't' => $prefix . 'dispatch_reports']);
+            if (((int) ($check->fetch(PDO::FETCH_ASSOC)['c'] ?? 0)) > 0) {
+                $sql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $prefix . 'dispatch_reports') . '` '
+                    . 'WHERE created_at >= :month_start';
+                $dispatchParams = ['month_start' => date('Y-m-01 00:00:00')];
+                if ($supplierId > 0) {
+                    $sql .= ' AND supplier_id = :supplier_id';
+                    $dispatchParams['supplier_id'] = $supplierId;
+                }
+                QueryGuard::assertReadOnly($sql);
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($dispatchParams);
+                $dispatchBatchesMonth = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+            }
+
+            $check->execute(['s' => $database, 't' => $prefix . 'supplier_quick_invoices']);
+            if (((int) ($check->fetch(PDO::FETCH_ASSOC)['c'] ?? 0)) > 0) {
+                $sql = 'SELECT COUNT(*) AS c, COALESCE(SUM(invoice_total), 0) AS total FROM `'
+                    . str_replace('`', '``', $prefix . 'supplier_quick_invoices') . '` '
+                    . 'WHERE created_at >= :month_start';
+                $invoiceParams = ['month_start' => date('Y-m-01 00:00:00')];
+                if ($supplierId > 0) {
+                    $sql .= ' AND supplier_id = :supplier_id';
+                    $invoiceParams['supplier_id'] = $supplierId;
+                }
+                QueryGuard::assertReadOnly($sql);
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($invoiceParams);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                $shopInvoiceCount = (int) ($row['c'] ?? 0);
+                $shopInvoiceTotal = round((float) ($row['total'] ?? 0), 2);
+            }
+        } catch (\Throwable $e) {
+            // Graceful when DB unavailable.
+        }
+
+        return [
+            'active_fulfillment_orders' => $activeOrders,
+            'new_orders' => $newOrders,
+            'packaging_orders' => $packaging,
+            'shipped_orders' => $shipped,
+            'pending_returns' => $pendingReturns,
+            'net_payable' => (float) ($ledgerSummary['net_payable'] ?? 0),
+            'pending_draft_entries' => (int) ($ledgerSummary['draft_count'] ?? 0),
+            'dispatch_batches_month' => $dispatchBatchesMonth,
+            'shop_invoices_month' => $shopInvoiceCount,
+            'shop_invoices_month_total' => $shopInvoiceTotal,
+        ];
+    }
+
+    /**
+     * @return array<int, array{label: string, count: int, url: string, tone: string}>
+     */
+    public function supplierNeedsAttention(int $supplierId): array
+    {
+        $metrics = $this->supplierDashboardMetrics($supplierId);
+        $items = [];
+
+        if ((int) ($metrics['new_orders'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'New orders awaiting action',
+                'count' => (int) $metrics['new_orders'],
+                'url' => '/order-workflow?status=new_order',
+                'tone' => 'primary',
+            ];
+        }
+
+        if ((int) ($metrics['pending_returns'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Returns pending receive',
+                'count' => (int) $metrics['pending_returns'],
+                'url' => '/return-receive',
+                'tone' => 'info',
+            ];
+        }
+
+        if ((int) ($metrics['pending_draft_entries'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Ledger drafts awaiting owner post',
+                'count' => (int) $metrics['pending_draft_entries'],
+                'url' => '/supplier-payables',
+                'tone' => 'warn',
+            ];
+        }
+
+        if ((int) ($metrics['shipped_orders'] ?? 0) > 0) {
+            $items[] = [
+                'label' => 'Shipped orders in pipeline',
+                'count' => (int) $metrics['shipped_orders'],
+                'url' => '/order-workflow?status=shipped',
+                'tone' => 'primary',
+            ];
+        }
+
+        return $items;
+    }
+
     public function ownerMetrics(): array
     {
         $ledger = new PayableLedgerReadService();

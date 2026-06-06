@@ -89,15 +89,20 @@ class OrderWriteRepository extends BaseWriteRepository
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function countByStatus(string $status): int
+    public function countByStatus(string $status, int $supplierId = 0): int
     {
         if (!$this->tableExists()) {
             return 0;
         }
 
         $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE ibs_status = :status';
+        $params = ['status' => $status];
+        if ($supplierId > 0) {
+            $sql .= ' AND supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['status' => $status]);
+        $statement->execute($params);
         $row = $statement->fetch(\PDO::FETCH_ASSOC);
 
         return (int) ($row['row_count'] ?? 0);
@@ -106,7 +111,7 @@ class OrderWriteRepository extends BaseWriteRepository
     /**
      * @param array<int, string> $statuses
      */
-    public function countByStatuses(array $statuses): int
+    public function countByStatuses(array $statuses, int $supplierId = 0): int
     {
         if (!$this->tableExists() || $statuses === []) {
             return 0;
@@ -122,6 +127,10 @@ class OrderWriteRepository extends BaseWriteRepository
 
         $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` '
             . 'WHERE ibs_status IN (' . implode(', ', $placeholders) . ')';
+        if ($supplierId > 0) {
+            $sql .= ' AND supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
         $statement = $this->pdo->prepare($sql);
         $statement->execute($params);
         $row = $statement->fetch(\PDO::FETCH_ASSOC);

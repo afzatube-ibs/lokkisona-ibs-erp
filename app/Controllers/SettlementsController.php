@@ -6,6 +6,7 @@ use App\ActivityLog;
 use App\Csrf;
 use App\Domain\SettlementWorkflowStatus;
 use App\Permission;
+use App\SupplierContext;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\SupplierRepository;
 use App\Repositories\Write\SettlementWriteRepository;
@@ -18,7 +19,7 @@ class SettlementsController extends Controller
         $this->authorize('settlements.view');
         ActivityLog::record('settlements_access', 'Supplier settlement workflow page viewed');
 
-        $supplierId = (int) ($_GET['supplier_id'] ?? 0);
+        $supplierId = SupplierContext::enforceSupplierId((int) ($_GET['supplier_id'] ?? 0));
         $repo = new SettlementWriteRepository();
         $rows = $repo->listRecent(50, $supplierId);
 
@@ -30,8 +31,10 @@ class SettlementsController extends Controller
             ],
             'accessMode' => Permission::accessMode(),
             'settlements' => $rows,
-            'suppliers' => $this->loadSuppliers(),
+            'suppliers' => SupplierContext::canSelectSupplier() ? $this->loadSuppliers() : [],
             'selectedSupplierId' => $supplierId,
+            'canSelectSupplier' => SupplierContext::canSelectSupplier(),
+            'isSupplierView' => SupplierContext::isSupplier(),
             'periodTypes' => SettlementWorkflowStatus::periodTypes(),
             'workflowLabels' => SettlementWorkflowStatus::labels(),
             'flashSuccess' => $this->pullFlash('success'),

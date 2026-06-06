@@ -28,6 +28,7 @@
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php if (!empty($canSelectSupplier)): ?>
             <div class="form-group">
                 <label for="supplier_id">Supplier (optional)</label>
                 <select name="supplier_id" id="supplier_id" class="form-input">
@@ -39,6 +40,9 @@
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php elseif (!empty($selectedSupplierId)): ?>
+            <input type="hidden" name="supplier_id" value="<?= e((string) $selectedSupplierId) ?>">
+            <?php endif; ?>
             <div class="form-group">
                 <label for="month">Month (monthly report)</label>
                 <input type="month" name="month" id="month" class="form-input" value="<?= e($selectedMonth ?? date('Y-m')) ?>">

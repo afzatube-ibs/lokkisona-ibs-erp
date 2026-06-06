@@ -94,11 +94,7 @@
         calcState.fresh = true;
     }
 
-    document.querySelectorAll('[data-calc-action]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var action = btn.getAttribute('data-calc-action');
-            var value = btn.getAttribute('data-calc-value');
-
+    function handleCalcAction(action, value, opLabel) {
             if (action === 'clear') {
                 calcState = { display: '0', expression: '', pendingOp: null, pendingValue: null, fresh: true };
                 renderCalc();
@@ -145,7 +141,7 @@
                     calcState.pendingValue = parseDisplay();
                 }
                 calcState.pendingOp = value;
-                calcState.expression = calcState.pendingValue + ' ' + btn.textContent;
+                calcState.expression = calcState.pendingValue + ' ' + (opLabel || value);
                 calcState.fresh = true;
                 renderCalc();
                 return;
@@ -160,7 +156,67 @@
                     calcState.fresh = true;
                 }
             }
+    }
+
+    document.querySelectorAll('[data-calc-action]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            handleCalcAction(btn.getAttribute('data-calc-action'), btn.getAttribute('data-calc-value'), btn.textContent);
         });
+    });
+
+    function isCalculatorOpen() {
+        var modal = document.getElementById('supplierCalculatorModal');
+        return modal && !modal.hidden;
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (!isCalculatorOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+        var key = e.key;
+
+        if (/^[0-9]$/.test(key)) {
+            e.preventDefault();
+            handleCalcAction('digit', key, null);
+            return;
+        }
+        if (key === '.') {
+            e.preventDefault();
+            handleCalcAction('decimal', null, null);
+            return;
+        }
+        if (key === '+') {
+            e.preventDefault();
+            handleCalcAction('op', '+', '+');
+            return;
+        }
+        if (key === '-') {
+            e.preventDefault();
+            handleCalcAction('op', '-', '−');
+            return;
+        }
+        if (key === '*') {
+            e.preventDefault();
+            handleCalcAction('op', '*', '×');
+            return;
+        }
+        if (key === '/') {
+            e.preventDefault();
+            handleCalcAction('op', '/', '÷');
+            return;
+        }
+        if (key === 'Enter' || key === '=') {
+            e.preventDefault();
+            handleCalcAction('equals', null, null);
+            return;
+        }
+        if (key === 'Backspace') {
+            e.preventDefault();
+            handleCalcAction('backspace', null, null);
+            return;
+        }
+        if (key === '%') {
+            e.preventDefault();
+            handleCalcAction('percent', null, null);
+        }
     });
 
     /* ── Quick Invoice line items ── */
@@ -237,6 +293,36 @@
 
     if (discountInput) discountInput.addEventListener('input', recalcInvoiceTotals);
     if (advanceInput) advanceInput.addEventListener('input', recalcInvoiceTotals);
+
+    var quickInvoiceForm = document.getElementById('quickInvoiceForm');
+    if (quickInvoiceForm) {
+        quickInvoiceForm.addEventListener('submit', function (e) {
+            var customer = quickInvoiceForm.querySelector('[name="customer_name"]');
+            var invoiceDate = quickInvoiceForm.querySelector('[name="invoice_date"]');
+            var hasLine = false;
+            if (itemsBody) {
+                itemsBody.querySelectorAll('.qi-item-row').forEach(function (row) {
+                    var name = (row.querySelector('[name*="[name]"]')?.value || '').trim();
+                    var qty = parseFloat(row.querySelector('.qi-qty')?.value) || 0;
+                    if (name !== '' && qty > 0) hasLine = true;
+                });
+            }
+            if (!customer || customer.value.trim() === '') {
+                e.preventDefault();
+                alert('Customer name is required.');
+                return;
+            }
+            if (!invoiceDate || invoiceDate.value.trim() === '') {
+                e.preventDefault();
+                alert('Invoice date is required.');
+                return;
+            }
+            if (!hasLine) {
+                e.preventDefault();
+                alert('Add at least one product line with quantity.');
+            }
+        });
+    }
 
     var clearBtn = document.getElementById('qiClearForm');
     if (clearBtn) {

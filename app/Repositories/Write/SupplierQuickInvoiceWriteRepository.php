@@ -17,7 +17,7 @@ class SupplierQuickInvoiceWriteRepository extends BaseWriteRepository
             . '(supplier_id, quick_invoice_reference, supplier_name, customer_name, customer_phone, customer_address, '
             . 'invoice_total, subtotal, discount_amount, advance_amount, balance_due, notes, output_status, created_by, generated_at, created_at) '
             . 'VALUES (:supplier_id, :quick_invoice_reference, :supplier_name, :customer_name, :customer_phone, :customer_address, '
-            . ':invoice_total, :subtotal, :discount_amount, :advance_amount, :balance_due, :notes, :output_status, :created_by, NOW(), NOW())';
+            . ':invoice_total, :subtotal, :discount_amount, :advance_amount, :balance_due, :notes, :output_status, :created_by, :generated_at, NOW())';
         $statement = $this->pdo->prepare($sql);
         $statement->execute($data);
 
@@ -45,13 +45,27 @@ class SupplierQuickInvoiceWriteRepository extends BaseWriteRepository
 
     public function listRecent(int $limit = 50): array
     {
+        return $this->listRecentForSupplier(0, $limit);
+    }
+
+    public function listRecentForSupplier(int $supplierId = 0, int $limit = 50): array
+    {
         if (!$this->tableExists()) {
             return [];
         }
 
         $limit = max(1, min($limit, 100));
-        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` ORDER BY supplier_quick_invoice_id DESC LIMIT ' . $limit;
-        $statement = $this->pdo->query($sql);
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` ';
+        if ($supplierId > 0) {
+            $sql .= 'WHERE supplier_id = :supplier_id ';
+        }
+        $sql .= 'ORDER BY supplier_quick_invoice_id DESC LIMIT ' . $limit;
+        if ($supplierId > 0) {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['supplier_id' => $supplierId]);
+        } else {
+            $statement = $this->pdo->query($sql);
+        }
 
         return $statement ? ($statement->fetchAll(\PDO::FETCH_ASSOC) ?: []) : [];
     }

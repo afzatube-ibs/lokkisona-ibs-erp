@@ -13,6 +13,11 @@ class DispatchReportRepository extends BaseReadOnlyRepository
 
     public function latest(int $limit = 20): array
     {
+        return $this->latestForSupplier(0, $limit);
+    }
+
+    public function latestForSupplier(int $supplierId = 0, int $limit = 20): array
+    {
         if (!$this->tableExists()) {
             return [];
         }
@@ -21,10 +26,18 @@ class DispatchReportRepository extends BaseReadOnlyRepository
             $limit = max(1, min($limit, 50));
             $table = \App\Database\TableName::forModel(DispatchReport::class);
             $primaryKey = DispatchReport::primaryKey();
-            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` '
-                . 'ORDER BY created_at DESC, `' . $this->escapeIdentifier($primaryKey) . '` DESC LIMIT ' . $limit;
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` ';
+            if ($supplierId > 0) {
+                $sql .= 'WHERE supplier_id = :supplier_id ';
+            }
+            $sql .= 'ORDER BY created_at DESC, `' . $this->escapeIdentifier($primaryKey) . '` DESC LIMIT ' . $limit;
             \App\Database\QueryGuard::assertReadOnly($sql);
-            $statement = $this->pdo->query($sql);
+            if ($supplierId > 0) {
+                $statement = $this->pdo->prepare($sql);
+                $statement->execute(['supplier_id' => $supplierId]);
+            } else {
+                $statement = $this->pdo->query($sql);
+            }
 
             return $statement ? ($statement->fetchAll(\PDO::FETCH_ASSOC) ?: []) : [];
         } catch (\Throwable $e) {

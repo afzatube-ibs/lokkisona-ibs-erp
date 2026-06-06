@@ -165,4 +165,19 @@ class PayableLedgerWriteRepository extends BaseWriteRepository
 
         return (int) ($row['row_count'] ?? 0);
     }
+
+    public function countBySupplierAndStatus(int $supplierId, string $status): int
+    {
+        if (!$this->tableExists() || $supplierId <= 0) {
+            return 0;
+        }
+
+        $sql = 'SELECT COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE supplier_id = :supplier_id AND status = :status';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['supplier_id' => $supplierId, 'status' => $status]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return (int) ($row['row_count'] ?? 0);
+    }
 }

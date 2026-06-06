@@ -1,11 +1,11 @@
 <div class="page-header page-header-compact">
     <h1 class="page-title">Supplier Payables</h1>
-    <p class="ops-page-subtitle">Dispatch locked cost snapshots become payable drafts — owner approval required before posting.</p>
+    <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? 'Your accounts with Lokkisona — sales, payments, and adjustments. Owner posts dispatch sales to the ledger.' : 'Dispatch locked cost snapshots become payable drafts — owner approval required before posting.' ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<?php view('partials.ops-safety-strip', ['message' => 'All entries are draft until owner posts them · Payable uses locked dispatch snapshots only · No live sync']); ?>
+<?php view('partials.ops-safety-strip', ['message' => !empty($isSupplierView) ? 'All entries are draft until owner posts them · Sales use locked dispatch amounts only · No live sync' : 'All entries are draft until owner posts them · Payable uses locked dispatch snapshots only · No live sync']); ?>
 
 <div class="kpi-grid">
     <div class="kpi-card kpi-accent-primary">
@@ -42,6 +42,7 @@ view('partials.write-gate-warning', [
     <div class="card-body">
         <form method="post" action="<?= e(url('/supplier-payables/create')) ?>" class="form-grid">
             <?= $csrfField ?>
+            <?php if (!empty($canSelectSupplier)): ?>
             <div class="form-group">
                 <label for="supplier_id">Supplier</label>
                 <select name="supplier_id" id="supplier_id" class="form-input" required>
@@ -53,6 +54,9 @@ view('partials.write-gate-warning', [
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php else: ?>
+            <input type="hidden" name="supplier_id" value="<?= e((string) ($selectedSupplierId ?? '')) ?>">
+            <?php endif; ?>
             <div class="form-group">
                 <label for="ledger_type">Entry Type</label>
                 <select name="ledger_type" id="ledger_type" class="form-input" required>
@@ -136,7 +140,7 @@ view('partials.write-gate-warning', [
 <div class="card mb-15">
     <div class="card-header card-header-flex">
         <h2 class="card-title">Payable Ledger</h2>
-        <?php if (!empty($suppliers)): ?>
+        <?php if (!empty($canSelectSupplier) && !empty($suppliers)): ?>
         <form method="get" action="<?= e(url('/supplier-payables')) ?>" class="inline-filter-form">
             <select name="supplier_id" class="form-input form-input-sm" onchange="this.form.submit()">
                 <option value="">All suppliers</option>
@@ -152,7 +156,7 @@ view('partials.write-gate-warning', [
     <div class="card-body card-body-flush">
         <?php if (empty($ledgerRows)): ?>
             <div class="empty-state">
-                <p>No ledger entries yet. Product Cost Payable drafts are created automatically when a dispatch report is locked.</p>
+                <p><?= !empty($isSupplierView) ? 'No ledger entries yet. Sale drafts are created when owner locks a dispatch batch.' : 'No ledger entries yet. Product Cost Payable drafts are created automatically when a dispatch report is locked.' ?></p>
             </div>
         <?php else: ?>
         <div class="table-scroll">
@@ -182,7 +186,7 @@ view('partials.write-gate-warning', [
                         <td><?= ($row['balance_after'] ?? null) !== null ? e(number_format((float) $row['balance_after'], 2)) : '—' ?></td>
                         <td><span class="badge badge-<?= ($row['status'] ?? '') === 'posted' ? 'success' : (($row['status'] ?? '') === 'draft' ? 'warn' : 'muted') ?>"><?= e((string) ($row['status'] ?? '')) ?></span></td>
                         <td>
-                            <?php if (!empty($canManage) && ($row['status'] ?? '') === 'draft'): ?>
+                            <?php if (!empty($canApproveLedger) && ($row['status'] ?? '') === 'draft'): ?>
                             <form method="post" action="<?= e(url('/supplier-payables/approve')) ?>" class="inline-form">
                                 <?= $csrfField ?>
                                 <input type="hidden" name="payable_ledger_id" value="<?= e((string) ($row['payable_ledger_id'] ?? '')) ?>">
@@ -206,6 +210,21 @@ view('partials.write-gate-warning', [
     </div>
 </div>
 
+<?php if (!empty($isSupplierView)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">How Your Balance Works</h2></div>
+    <div class="card-body">
+        <p><?= e($netPayableFormula['summary']) ?></p>
+        <ul class="feature-list">
+            <?php foreach ($netPayableFormula['points'] as $point): ?>
+                <li><?= e($point) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (empty($isSupplierView)): ?>
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Read-Only Payable Inventory (developer reference)</summary>
     <div class="planning-collapsible-body">
@@ -225,3 +244,4 @@ view('partials.write-gate-warning', [
         <p class="page-description">Supplier payable is based on product cost from dispatch snapshots only — never selling price or live changing cost. Return deductions require receive confirmation plus owner approval. Supplier Tools remain independent unless owner posts a ledger entry.</p>
     </div>
 </details>
+<?php endif; ?>

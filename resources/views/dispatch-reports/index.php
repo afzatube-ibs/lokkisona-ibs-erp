@@ -1,13 +1,14 @@
+<?php use App\Domain\SupplierTerminology; ?>
 <div class="page-header page-header-compact">
     <h1 class="page-title">Dispatch Reports</h1>
-    <p class="ops-page-subtitle">Daily dispatch batches from shipped orders — max 50 per batch, locked cost snapshots.</p>
+    <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? 'Batch reports created by Lokkisona — locked sale amounts for your account.' : 'Daily dispatch batches from shipped orders — max 50 per batch, locked cost snapshots.' ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<?php view('partials.ops-safety-strip', ['message' => 'No payable · No stock deducted · No invoice · No live sync · Cost snapshot is immutable once locked']); ?>
+<?php view('partials.ops-safety-strip', ['message' => !empty($isSupplierView) ? 'Sale amounts are locked when owner creates the batch — they do not change if catalog prices change later.' : 'No payable · No stock deducted · No invoice · No live sync · Cost snapshot is immutable once locked']); ?>
 
-<?php if (!empty($writeGateReady)): ?>
+<?php if (!empty($canManageDispatch) && !empty($writeGateReady)): ?>
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header"><h2 class="card-title">Create Daily Dispatch Report</h2></div>
     <div class="card-body">
@@ -71,7 +72,7 @@
                         <th>Reference</th>
                         <th>Date</th>
                         <th>Orders</th>
-                        <th>Total Cost Snapshot</th>
+                        <th><?= !empty($isSupplierView) ? e(SupplierTerminology::totalSaleSnapshot()) : 'Total Cost Snapshot' ?></th>
                         <th>Status</th>
                         <th>Created</th>
                         <th>View</th>
@@ -105,7 +106,7 @@
         <dl class="info-list" style="margin-bottom: 1rem;">
             <div class="info-row"><dt>Reference</dt><dd><?= e((string) ($reportDetail['report']['dispatch_reference'] ?? '')) ?></dd></div>
             <div class="info-row"><dt>Total Orders</dt><dd><?= e((string) ($reportDetail['report']['total_orders'] ?? '0')) ?></dd></div>
-            <div class="info-row"><dt>Total Cost Snapshot</dt><dd><?= e((string) ($reportDetail['report']['total_product_cost'] ?? '0.00')) ?></dd></div>
+            <div class="info-row"><dt><?= !empty($isSupplierView) ? e(SupplierTerminology::totalSaleSnapshot()) : 'Total Cost Snapshot' ?></dt><dd><?= e((string) ($reportDetail['report']['total_product_cost'] ?? '0.00')) ?></dd></div>
             <div class="info-row"><dt>Status</dt><dd><span class="badge <?= ($reportDetail['report']['status'] ?? '') === 'locked' ? 'badge-ok' : 'badge-warn' ?>"><?= e((string) ($reportDetail['report']['status_label'] ?? $reportDetail['report']['status'] ?? '')) ?></span></dd></div>
             <?php if (!empty($reportDetail['report']['locked_at'])): ?>
             <div class="info-row"><dt>Locked At</dt><dd><?= e((string) $reportDetail['report']['locked_at']) ?></dd></div>
@@ -116,11 +117,11 @@
         <div class="card workflow-order-card" style="margin-bottom: 1rem;">
             <div class="card-body">
                 <p><strong>Order <?= e((string) ($item['order_reference'] ?? $item['erp_order_reference'] ?? '')) ?></strong> — <?= e((string) ($item['customer_name'] ?? '')) ?></p>
-                <p class="page-description">Stored cost snapshot: <strong><?= e((string) ($item['product_cost_snapshot'] ?? '0.00')) ?></strong> · Qty: <?= e((string) ($item['item_count'] ?? '0')) ?> · Status: <?= e((string) ($item['ibs_status'] ?? '')) ?></p>
+                <p class="page-description"><?= !empty($isSupplierView) ? 'Stored sale amount' : 'Stored cost snapshot' ?>: <strong><?= e((string) ($item['product_cost_snapshot'] ?? '0.00')) ?></strong> · Qty: <?= e((string) ($item['item_count'] ?? '0')) ?> · Status: <?= e((string) ($item['ibs_status'] ?? '')) ?></p>
                 <?php if (!empty($item['product_lines'])): ?>
                 <div class="table-scroll">
                     <table class="data-table">
-                        <thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th>Line supplier_cost_snapshot (informational)</th></tr></thead>
+                        <thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th><?= !empty($isSupplierView) ? e(SupplierTerminology::lineSaleSnapshot()) : 'Line supplier_cost_snapshot (informational)' ?></th></tr></thead>
                         <tbody>
                             <?php foreach ($item['product_lines'] as $line): ?>
                             <tr>
@@ -141,6 +142,7 @@
 </div>
 <?php endif; ?>
 
+<?php if (empty($isSupplierView)): ?>
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Read-Only Dispatch Report Inventory (developer reference)</summary>
     <div class="planning-collapsible-body">
@@ -385,3 +387,4 @@
 
     </div>
 </details>
+<?php endif; ?>

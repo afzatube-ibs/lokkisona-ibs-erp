@@ -18,6 +18,7 @@ class Product extends BaseModel
         'source_model',
         'source_stock',
         'supplier_model',
+        'supplier_product_category',
         'product_cost',
         'vendor_stock',
         'low_warning_threshold',

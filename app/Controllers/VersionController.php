@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-10',
+            'release_date' => '2026-06-11',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,9 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.4.0 Unified Business KPI Dashboard: one Plecto-style wallboard for owner and supplier — sales MTD gauge, orders ratio, top products/categories, 6-week sales trend, avg sale/order, return rate, pipeline, payments, catalog; owner sees retail BDT columns, supplier sees sale amounts only; ERP supplier_product_category on products (migration 0011) + Product Control field + Sales by Category report',
+                'v1.3.1 Supplier Dashboard Analytics: professional supplier overview — 4 hero KPIs, order pipeline bar chart, 6-month growth columns (orders + offline sales), payment/ledger trend, product catalog snapshot; removes duplicate workflow task grid from dashboard; Orders page labeled as operations work queue',
+                'v1.3.0 Supplier Full Business App: supplier role becomes a full scoped business app — SupplierContext binds supplier_id on login; expanded permissions for payables (manual debit/credit drafts), reports, settlements (read), dispatch (read), products, manual orders; modern supplier dashboard KPI grid; server-side supplier_id scoping on finance/ops modules; calculator keyboard + quick invoice date save + WriteGate/reprint UX fixes — owner still posts dispatch payables and settlements',
                 'v1.2.1 Dashboard Metrics Fix: accurate COUNT(*) for dashboard and supplier task KPIs — replaces count(findByStatus LIMIT 50) that silently capped Active Orders, Shipped Awaiting Dispatch, workflow breakdown, and supplier task grid at 50; adds OrderWriteRepository::countByStatus, countByStatuses, countReturnPending — read-only metrics only, no UI or schema changes',
                 'v1.2.0 Ops UI Alignment: extends v1.1.0 design system to daily ops pages — shared ops-safety-strip partial, kpi-grid replaces stats-grid on payables/settlements/sync-preview, compact page headers, workflow stage card accent borders, setup-tier pages (users, roles, suppliers, business-sources, opening-balances) collapse planning/reference into planning-collapsible — visual only, no business-logic or schema changes',
                 'v1.1.0 UI/UX Revamp: NexaERP-inspired owner command center — tiered sidebar (Primary Fulfillment/Finance/Catalog ~12 links, collapsed Setup & Admin / System / Developer tiers), env-gated DEV banner (local/staging only), dashboard welcome strip + 6 KPI cards + workflow breakdown + needs-attention widgets + recent activity; supplier dashboard keeps 4-link nav with matching KPI card styling; full dark/light theme via CSS tokens — no business-logic, schema, or route changes',

@@ -34,6 +34,24 @@ class PayableLedgerType
         return self::labels()[$type] ?? ucwords(str_replace('_', ' ', $type));
     }
 
+    /** Supplier UI — debit side is sale amount owed to supplier. */
+    public static function supplierLabel(string $type): string
+    {
+        return match ($type) {
+            self::PRODUCT_COST_PAYABLE => 'Sale',
+            self::ADDITIONAL_PAYABLE => 'Additional Sale',
+            self::SUPPLIER_INVOICE => 'Supplier Sale Invoice',
+            self::DEBIT_ADJUSTMENT => 'Sale Adjustment (Debit)',
+            self::CREDIT_ADJUSTMENT => 'Sale Adjustment (Credit)',
+            default => self::label($type),
+        };
+    }
+
+    public static function labelForRole(string $type, bool $supplierView): string
+    {
+        return $supplierView ? self::supplierLabel($type) : self::label($type);
+    }
+
     public static function manualEntryTypes(): array
     {
         return [
@@ -70,7 +88,12 @@ class PayableLedgerType
 
     public static function descriptionFor(string $type, ?string $sourceReference = null, ?string $note = null): string
     {
-        $label = self::label($type);
+        return self::descriptionForRole($type, false, $sourceReference, $note);
+    }
+
+    public static function descriptionForRole(string $type, bool $supplierView, ?string $sourceReference = null, ?string $note = null): string
+    {
+        $label = self::labelForRole($type, $supplierView);
         $parts = [$label];
         if ($sourceReference !== null && $sourceReference !== '') {
             $parts[] = 'Ref: ' . $sourceReference;

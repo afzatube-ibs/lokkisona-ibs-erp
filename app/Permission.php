@@ -46,6 +46,7 @@ class Permission
             ['label' => 'Supplier Payables', 'short_label' => 'Payables', 'path' => '/supplier-payables', 'permission' => 'supplier_payables.view', 'tier' => 'primary', 'group' => 'Finance', 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>'],
             ['label' => 'Settlements', 'path' => '/settlements', 'permission' => 'settlements.view', 'tier' => 'primary', 'group' => 'Finance', 'icon' => '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="18" cy="18" r="3"/>'],
             ['label' => 'Reports', 'path' => '/reports', 'permission' => 'supplier_payables.view', 'tier' => 'primary', 'group' => 'Finance', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>'],
+            ['label' => 'Offline Invoices', 'short_label' => 'Invoices', 'path' => '/supplier-tools', 'permission' => 'supplier_quick_invoice.manage', 'tier' => 'primary', 'group' => 'Finance', 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],
             ['label' => 'Product Control', 'short_label' => 'Products', 'path' => '/product-control', 'permission' => 'product_control.view', 'tier' => 'primary', 'group' => 'Catalog', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'],
             ['label' => 'Status Mapping', 'path' => '/status-mapping', 'permission' => 'status_mapping.view', 'tier' => 'primary', 'group' => 'Catalog', 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>'],
             ['label' => 'Sync Preview', 'path' => '/sync-preview', 'permission' => 'sync_preview.view', 'tier' => 'primary', 'group' => 'Catalog', 'icon' => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'],
@@ -73,16 +74,6 @@ class Permission
             return self::can($item['permission']);
         }));
 
-        if (self::currentRole() === 'supplier') {
-            foreach ($filtered as &$item) {
-                if (($item['path'] ?? '') === '/supplier-tools') {
-                    $item['tier'] = 'primary';
-                    $item['group'] = 'Fulfillment';
-                }
-            }
-            unset($item);
-        }
-
         return $filtered;
     }
 
@@ -93,7 +84,7 @@ class Permission
      */
     public static function menuNavigation(): array
     {
-        $primaryOrder = ['Fulfillment', 'Finance', 'Catalog'];
+        $primaryOrder = ['Fulfillment', 'Finance', 'Catalog', 'Tools'];
         $primary = [];
         $setup = [];
         $system = [];
