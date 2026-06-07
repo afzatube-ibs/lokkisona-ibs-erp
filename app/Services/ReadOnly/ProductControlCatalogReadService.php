@@ -39,24 +39,49 @@ class ProductControlCatalogReadService
 
     public function summarizeKpis(array $catalogRows): array
     {
-        $readyCount = 0;
-        $needsWorkCount = 0;
+        $missingCost = 0;
+        $missingModel = 0;
+        $lowStock = 0;
+        $syncedToday = 0;
         $variantLineCount = 0;
+        $variantQtyTotal = 0;
+        $needsWork = 0;
+        $ready = 0;
 
         foreach ($catalogRows as $row) {
-            if (($row['completeness'] ?? '') === 'ready') {
-                $readyCount++;
-            } else {
-                $needsWorkCount++;
+            $flags = $row['filter_flags'] ?? [];
+            if (!empty($flags['missing_cost'])) {
+                $missingCost++;
+            }
+            if (!empty($flags['missing_model'])) {
+                $missingModel++;
+            }
+            if (!empty($flags['low_stock'])) {
+                $lowStock++;
+            }
+            if (!empty($flags['synced_today'])) {
+                $syncedToday++;
+            }
+            if (!empty($flags['needs_work'])) {
+                $needsWork++;
+            }
+            if (!empty($flags['ready'])) {
+                $ready++;
             }
             $variantLineCount += (int) ($row['variant_count'] ?? 0);
+            $variantQtyTotal += (int) ($row['vendor_stock'] ?? 0);
         }
 
         return [
             'total_products' => count($catalogRows),
-            'ready' => $readyCount,
+            'ready' => $ready,
             'variants' => $variantLineCount,
-            'needs_work' => $needsWorkCount,
+            'variant_qty_total' => $variantQtyTotal,
+            'missing_cost' => $missingCost,
+            'missing_model' => $missingModel,
+            'low_stock' => $lowStock,
+            'synced_today' => $syncedToday,
+            'needs_work' => $needsWork,
         ];
     }
 
@@ -80,30 +105,9 @@ class ProductControlCatalogReadService
             : (int) ($product['source_stock'] ?? 0);
         $syncStatus = $this->syncStatusLabel($product, $noOptionsSynced);
 
-        $workspaceVariants = [];
-        if ($hasVariants) {
-            foreach ($variants as $variant) {
-                $variantId = (int) ($variant['product_variant_id'] ?? 0);
-                $lineHealth = $this->variantHealth($variant, $product, $isSupplierView);
-                $workspaceVariants[] = [
-                    'product_variant_id' => $variantId,
-                    'line_label' => trim((string) ($variant['option_name'] ?? '') . ': ' . (string) ($variant['option_value'] ?? ''), ': '),
-                    'option_name' => (string) ($variant['option_name'] ?? ''),
-                    'option_value' => (string) ($variant['option_value'] ?? ''),
-                    'image_path' => (string) ($variant['option_image_path'] ?? ''),
-                    'image_url' => opencart_media_url((string) ($variant['option_image_path'] ?? '')),
-                    'source_model' => (string) ($variant['source_model'] ?? ''),
-                    'supplier_model' => (string) ($variant['supplier_model'] ?? ''),
-                    'supplier_note' => (string) ($variant['supplier_note'] ?? ''),
-                    'source_stock' => $variant['source_stock'] ?? null,
-                    'product_cost' => $variant['product_cost'] ?? '',
-                    'vendor_stock' => (int) ($variant['vendor_stock'] ?? 0),
-                    'warning' => $lineHealth['low_stock'] ? 'Low' : '',
-                    'health' => $lineHealth['label'],
-                    'status' => (string) ($variant['status'] ?? 'active'),
-                ];
-            }
-        }
+        $workspaceVariants = $this->buildVariantRows($variants, $product, $isSupplierView);
+        $displayHealth = $this->displayHealthLabel($health['primary_label'], $isSupplierView);
+        $vendorStockIndicator = $this->vendorStockIndicator($product, $variants, $health['low_stock']);
 
         return [
             'catalog' => [
@@ -115,7 +119,9 @@ class ProductControlCatalogReadService
                 'type' => $isVariable ? 'variable' : 'simple',
                 'no_options_synced' => $noOptionsSynced,
                 'source_model' => (string) ($product['source_model'] ?? ''),
+                'source_stock' => $hasVariants ? $ownerStock : ($product['source_stock'] ?? null),
                 'supplier_model' => (string) ($product['supplier_model'] ?? ''),
+                'product_cost' => $product['product_cost'] ?? '',
                 'average_cost' => $costDisplay,
                 'owner_stock' => $ownerStock,
                 'vendor_stock' => $vendorStock,
@@ -123,14 +129,21 @@ class ProductControlCatalogReadService
                 'low_warning' => $health['low_stock'],
                 'badges' => $health['badges'],
                 'completeness' => $health['completeness'],
-                'health_label' => $health['primary_label'],
+                'health_label' => $displayHealth,
                 'health_class' => $health['class'],
+                'health_status_display' => $displayHealth,
+                'health_status_class' => $health['class'],
+                'vendor_stock_label' => $vendorStockIndicator['label'],
+                'vendor_stock_class' => $vendorStockIndicator['class'],
+                'low_warning_label' => $health['low_stock'] ? 'Low' : 'OK',
+                'low_warning_class' => $health['low_stock'] ? 'warn' : 'ok',
                 'sync_status' => $syncStatus,
                 'filter_flags' => $health['filter_flags'],
                 'supplier_product_category' => (string) ($product['supplier_product_category'] ?? ''),
                 'last_synced_at' => $lastSyncedDisplay,
                 'status' => (string) ($product['status'] ?? 'active'),
                 'variant_count' => count($variants),
+                'variants' => $workspaceVariants,
                 'search_blob' => strtolower(implode(' ', array_filter([
                     (string) ($product['product_name'] ?? ''),
                     (string) ($product['supplier_model'] ?? ''),
@@ -193,25 +206,20 @@ class ProductControlCatalogReadService
         }
 
         $needsWork = $missingModel || $missingCost;
-        $isReady = !$needsWork;
+        $isReady = !$needsWork && !$lowStock;
+        $primaryLabel = $this->primaryHealthLabel($missingCost, $missingModel, $lowStock, $needsWork);
+        $healthClass = match ($primaryLabel) {
+            'Complete' => 'ok',
+            'Low Stock' => 'warn',
+            'Needs Cost', 'Needs Model', 'Needs Work' => 'warn',
+            default => 'muted',
+        };
 
         $badges = [];
-        if ($syncedToday) {
+        $displayLabel = $this->displayHealthLabel($primaryLabel, $isSupplierView);
+        $badges[] = ['label' => $displayLabel, 'class' => $healthClass];
+        if ($syncedToday && $primaryLabel !== 'Complete') {
             $badges[] = ['label' => 'Synced Today', 'class' => 'ok'];
-        }
-        if ($isReady) {
-            $badges[] = ['label' => 'Ready', 'class' => 'ok'];
-        } else {
-            $badges[] = ['label' => 'Needs Work', 'class' => 'warn'];
-        }
-        if ($lowStock) {
-            $badges[] = ['label' => 'Low Stock', 'class' => 'warn'];
-        }
-        if ($missingCost) {
-            $badges[] = ['label' => 'Missing Cost', 'class' => 'warn'];
-        }
-        if ($missingModel) {
-            $badges[] = ['label' => 'Missing Model', 'class' => 'warn'];
         }
         if ($syncRequired) {
             $badges[] = ['label' => 'Sync Required', 'class' => 'info'];
@@ -220,8 +228,8 @@ class ProductControlCatalogReadService
         return [
             'badges' => $badges,
             'completeness' => $isReady ? 'ready' : 'needs_work',
-            'primary_label' => $isReady ? 'Ready' : 'Needs Work',
-            'class' => $isReady ? 'ok' : 'warn',
+            'primary_label' => $primaryLabel,
+            'class' => $healthClass,
             'is_ready' => $isReady,
             'low_stock' => $lowStock,
             'filter_flags' => [
@@ -229,10 +237,109 @@ class ProductControlCatalogReadService
                 'missing_cost' => $missingCost,
                 'missing_model' => $missingModel,
                 'needs_work' => $needsWork,
+                'ready' => $isReady,
                 'sync_required' => $syncRequired,
                 'synced_today' => $syncedToday,
+                'active' => ($product['status'] ?? 'active') === 'active',
+                'inactive' => ($product['status'] ?? 'active') === 'inactive',
             ],
         ];
+    }
+
+    private function displayHealthLabel(string $primaryLabel, bool $isSupplierView): string
+    {
+        return match ($primaryLabel) {
+            'Complete' => 'Ready',
+            'Needs Cost' => $isSupplierView ? 'Missing Rate' : 'Missing Cost',
+            'Needs Model' => 'Missing Supplier Model',
+            'Low Stock' => 'Low Stock',
+            'Needs Work' => 'Needs Work',
+            default => $primaryLabel,
+        };
+    }
+
+    private function vendorStockIndicator(array $product, array $variants, bool $lowStock): array
+    {
+        $vendorStock = $this->vendorStockTotal($product, $variants);
+        $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
+        $hasSupplierData = trim((string) ($product['supplier_model'] ?? '')) !== ''
+            || ($product['product_cost'] !== null && $product['product_cost'] !== '')
+            || $lowWarning > 0;
+
+        if ($variants !== []) {
+            foreach ($variants as $variant) {
+                if (trim((string) ($variant['supplier_model'] ?? '')) !== ''
+                    || ($variant['product_cost'] !== null && $variant['product_cost'] !== '')) {
+                    $hasSupplierData = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$hasSupplierData && $vendorStock === 0) {
+            return ['label' => 'Not Set', 'class' => 'muted'];
+        }
+        if ($lowStock || ($lowWarning > 0 && $vendorStock <= $lowWarning)) {
+            return ['label' => 'Low', 'class' => 'warn'];
+        }
+        if ($vendorStock === 0) {
+            return ['label' => 'Zero', 'class' => 'info'];
+        }
+
+        return ['label' => 'Healthy', 'class' => 'ok'];
+    }
+
+    private function primaryHealthLabel(bool $missingCost, bool $missingModel, bool $lowStock, bool $needsWork): string
+    {
+        if ($missingCost && $missingModel) {
+            return 'Needs Work';
+        }
+        if ($missingCost) {
+            return 'Needs Cost';
+        }
+        if ($missingModel) {
+            return 'Needs Model';
+        }
+        if ($lowStock) {
+            return 'Low Stock';
+        }
+
+        return 'Complete';
+    }
+
+    private function buildVariantRows(array $variants, array $product, bool $isSupplierView): array
+    {
+        if ($variants === []) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($variants as $variant) {
+            $variantId = (int) ($variant['product_variant_id'] ?? 0);
+            $lineHealth = $this->variantHealth($variant, $product, $isSupplierView);
+            $rows[] = [
+                'product_variant_id' => $variantId,
+                'line_label' => trim((string) ($variant['option_name'] ?? '') . ': ' . (string) ($variant['option_value'] ?? ''), ': '),
+                'option_name' => (string) ($variant['option_name'] ?? ''),
+                'option_value' => (string) ($variant['option_value'] ?? ''),
+                'image_path' => (string) ($variant['option_image_path'] ?? ''),
+                'image_url' => opencart_media_url((string) ($variant['option_image_path'] ?? '')),
+                'source_model' => (string) ($variant['source_model'] ?? ''),
+                'supplier_model' => (string) ($variant['supplier_model'] ?? ''),
+                'supplier_note' => (string) ($variant['supplier_note'] ?? ''),
+                'source_stock' => $variant['source_stock'] ?? null,
+                'source_price' => null,
+                'source_price_label' => 'main price',
+                'product_cost' => $variant['product_cost'] ?? '',
+                'vendor_stock' => (int) ($variant['vendor_stock'] ?? 0),
+                'warning' => $lineHealth['low_stock'] ? 'Low' : '',
+                'health' => $lineHealth['label'],
+                'health_class' => $lineHealth['class'],
+                'status' => (string) ($variant['status'] ?? 'active'),
+            ];
+        }
+
+        return $rows;
     }
 
     private function isSyncedToday(string $lastSynced): bool
@@ -284,7 +391,8 @@ class ProductControlCatalogReadService
         $lowStock = $lowWarning > 0 && $vendorStock <= $lowWarning;
 
         return [
-            'label' => $issues === [] ? 'Ready' : implode(' · ', $issues),
+            'label' => $issues === [] ? 'Complete' : implode(' · ', $issues),
+            'class' => $issues === [] ? 'ok' : 'warn',
             'low_stock' => $lowStock,
         ];
     }

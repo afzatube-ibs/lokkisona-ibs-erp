@@ -3,7 +3,7 @@
 namespace App\Services\ReadOnly;
 
 /**
- * Paginated Product Control catalog (v1.8.0) — filters + 20 rows per page in PHP.
+ * Paginated Product Control catalog (v1.8.0+) — filters + 20 rows per page in PHP.
  */
 class ProductCatalogPageService
 {
@@ -22,8 +22,10 @@ class ProductCatalogPageService
         $built = $this->catalog->build($productRows, $variantRows, $isSupplierView);
         $allRows = $built['rows'] ?? [];
         $workspaces = $built['workspaces'] ?? [];
+        $summaryKpis = $this->catalog->summarizeKpis($allRows);
 
         $filtered = $this->applyFilters($allRows, $filters);
+        $filtered = $this->sortRows($filtered, $this->normalizedFilters($filters)['sort']);
         $total = count($filtered);
         $perPage = self::PER_PAGE;
         $offset = ($page - 1) * $perPage;
@@ -39,12 +41,14 @@ class ProductCatalogPageService
 
         return [
             'kpis' => $this->catalog->summarizeKpis($filtered),
+            'summary_kpis' => $summaryKpis,
             'rows' => $pageRows,
             'workspaces' => $pageWorkspaces,
             'pagination' => [
                 'page' => $page,
                 'per_page' => $perPage,
                 'total' => $total,
+                'total_pages' => $total > 0 ? (int) ceil($total / $perPage) : 1,
                 'has_previous' => $page > 1,
                 'has_next' => ($offset + $perPage) < $total,
             ],
@@ -55,9 +59,16 @@ class ProductCatalogPageService
     public function normalizedFilters(array $filters): array
     {
         $chip = trim((string) ($filters['chip'] ?? 'all'));
+        $type = trim((string) ($filters['type'] ?? 'all'));
+        $sort = trim((string) ($filters['sort'] ?? 'product_id_asc'));
         $allowedChips = [
-            'all', 'variable', 'simple', 'low_stock', 'missing_cost',
-            'missing_model', 'needs_work', 'sync_required', 'synced_today',
+            'all', 'ready', 'low_stock', 'missing_cost',
+            'missing_model', 'needs_work',
+        ];
+        $allowedTypes = ['all', 'simple', 'variable'];
+        $allowedSorts = [
+            'product_id_asc', 'product_id_desc', 'name_asc', 'name_desc',
+            'model_asc', 'synced_desc', 'health',
         ];
 
         return [
@@ -66,6 +77,8 @@ class ProductCatalogPageService
             'product_name' => trim((string) ($filters['product_name'] ?? '')),
             'model' => trim((string) ($filters['model'] ?? '')),
             'supplier_model' => trim((string) ($filters['supplier_model'] ?? '')),
+            'type' => in_array($type, $allowedTypes, true) ? $type : 'all',
+            'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'product_id_asc',
             'chip' => in_array($chip, $allowedChips, true) ? $chip : 'all',
         ];
     }
@@ -74,8 +87,9 @@ class ProductCatalogPageService
     {
         $f = $this->normalizedFilters($filters);
         $chip = $f['chip'];
+        $type = $f['type'];
 
-        return array_values(array_filter($rows, function (array $row) use ($f, $chip): bool {
+        return array_values(array_filter($rows, function (array $row) use ($f, $chip, $type): bool {
             if ($f['q'] !== '') {
                 $blob = (string) ($row['search_blob'] ?? '');
                 if (!str_contains($blob, strtolower($f['q']))) {
@@ -94,20 +108,40 @@ class ProductCatalogPageService
             if ($f['supplier_model'] !== '' && !str_contains(strtolower((string) ($row['supplier_model'] ?? '')), strtolower($f['supplier_model']))) {
                 return false;
             }
+            if ($type === 'simple' && ($row['type'] ?? '') !== 'simple') {
+                return false;
+            }
+            if ($type === 'variable' && ($row['type'] ?? '') !== 'variable') {
+                return false;
+            }
 
             $flags = $row['filter_flags'] ?? [];
 
             return match ($chip) {
-                'variable' => ($row['type'] ?? '') === 'variable',
-                'simple' => ($row['type'] ?? '') === 'simple',
+                'ready' => !empty($flags['ready']),
                 'low_stock' => !empty($flags['low_stock']),
                 'missing_cost' => !empty($flags['missing_cost']),
                 'missing_model' => !empty($flags['missing_model']),
                 'needs_work' => !empty($flags['needs_work']),
-                'sync_required' => !empty($flags['sync_required']),
-                'synced_today' => !empty($flags['synced_today']),
                 default => true,
             };
         }));
+    }
+
+    private function sortRows(array $rows, string $sort): array
+    {
+        usort($rows, function (array $a, array $b) use ($sort): int {
+            return match ($sort) {
+                'product_id_desc' => ((int) ($b['product_id'] ?? 0)) <=> ((int) ($a['product_id'] ?? 0)),
+                'name_asc' => strcasecmp((string) ($a['product_name'] ?? ''), (string) ($b['product_name'] ?? '')),
+                'name_desc' => strcasecmp((string) ($b['product_name'] ?? ''), (string) ($a['product_name'] ?? '')),
+                'model_asc' => strcasecmp((string) ($a['source_model'] ?? ''), (string) ($b['source_model'] ?? '')),
+                'synced_desc' => strcmp((string) ($b['last_synced_at'] ?? ''), (string) ($a['last_synced_at'] ?? '')),
+                'health' => strcasecmp((string) ($a['health_status_display'] ?? ''), (string) ($b['health_status_display'] ?? '')),
+                default => ((int) ($a['product_id'] ?? 0)) <=> ((int) ($b['product_id'] ?? 0)),
+            };
+        });
+
+        return $rows;
     }
 }

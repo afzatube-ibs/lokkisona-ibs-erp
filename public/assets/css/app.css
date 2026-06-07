@@ -3118,6 +3118,298 @@ body.modal-open { overflow: hidden; }
         grid-template-columns: 1fr;
     }
 }
+
+/* v1.8.7.1 Product Control working center finalize */
+.product-control-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.pcc-sync-strip-body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+}
+.pcc-sync-strip-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+.pcc-sync-meta-item strong {
+    color: var(--color-text);
+}
+.pcc-sync-strip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.pcc-sync-action-form {
+    margin: 0;
+}
+.pcc-preview-details {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-subtle);
+}
+.pcc-preview-summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+.pcc-preview-body {
+    margin-top: 0.75rem;
+}
+.pcc-preview-import-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.pcc-toolbar .card-body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+}
+.pcc-toolbar-search {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+.pcc-toolbar-search-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.pcc-field-grow {
+    flex: 1 1 16rem;
+}
+.pcc-chip-scroll {
+    display: grid;
+    gap: 0.5rem;
+}
+.pcc-chip-group {
+    display: grid;
+    gap: 0.35rem;
+}
+.pcc-chip-group-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+.pcc-chip-scroll .workflow-chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+}
+.pcc-product-list {
+    display: grid;
+    gap: 0.875rem;
+}
+.pcc-product-row {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    overflow: hidden;
+}
+.pcc-product-form {
+    display: grid;
+    gap: 0;
+}
+.pcc-product-identity {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.875rem;
+    align-items: start;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-subtle);
+}
+.pcc-product-thumb,
+.pcc-variant-thumb {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    flex-shrink: 0;
+}
+.pcc-product-thumb img,
+.pcc-variant-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.pcc-thumb-placeholder {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+.pcc-product-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    align-items: center;
+}
+.pcc-product-name {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+.pcc-health-badge {
+    font-size: 0.6875rem;
+}
+.pcc-product-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+.pcc-product-zones {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+.pcc-zone {
+    padding: 0.875rem 1rem;
+}
+.pcc-zone-platform {
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg-subtle);
+}
+.pcc-zone-erp {
+    background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+}
+.pcc-zone-label {
+    margin: 0 0 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+.pcc-ro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: 0.5rem 0.75rem;
+    margin: 0;
+}
+.pcc-ro-item {
+    margin: 0;
+}
+.pcc-ro-item dt {
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+.pcc-ro-item dd {
+    margin: 0.15rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+.pcc-erp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 0.65rem;
+}
+.pcc-erp-field {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+.pcc-erp-field .form-input {
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+.pcc-product-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-subtle);
+}
+.pcc-footer-spacer {
+    flex: 1;
+}
+.pcc-variant-expand {
+    flex: 1;
+    min-width: 12rem;
+}
+.pcc-variant-expand-summary {
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+.pcc-variant-expand[open] .pcc-variant-expand-summary {
+    margin-bottom: 0.65rem;
+}
+.pcc-variant-table .pcc-table-input {
+    min-width: 5rem;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.8125rem;
+}
+.pcc-variant-empty-note {
+    padding: 0 0 0.5rem;
+    margin: 0;
+}
+.pcc-save-product-btn {
+    white-space: nowrap;
+    margin-left: auto;
+}
+.pcc-help-note {
+    margin-top: -0.5rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 960px) {
+    .product-control-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .pcc-product-zones {
+        grid-template-columns: 1fr;
+    }
+    .pcc-zone-platform {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+}
+@media (max-width: 640px) {
+    .product-control-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pcc-sync-strip-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .pcc-product-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .pcc-save-product-btn {
+        width: 100%;
+        margin-left: 0;
+    }
+}
 .modal-header {
     display: flex;
     align-items: center;
@@ -3635,5 +3927,346 @@ body.modal-open { overflow: hidden; }
 
     .sync-settings-header-actions {
         width: 100%;
+    }
+}
+
+/* v1.8.7.3 Product Control Old IBS UI Match Repair */
+.product-control-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.pcc-hero-card-body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.pcc-hero-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+.pcc-hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.pcc-filter-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.pcc-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+.pcc-header-sync-form {
+    display: inline;
+}
+.pcc-modal-hero-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+.pcc-main-product-card,
+.pcc-vendor-mapping-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+    padding: 0.65rem 0.75rem;
+}
+.pcc-main-product-card {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 0.65rem;
+    align-items: start;
+}
+.pcc-main-product-thumb {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+}
+.pcc-main-product-thumb .pcc-product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.pcc-main-product-thumb .pcc-image-placeholder {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+.pcc-oc-facts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem 0.75rem;
+    margin: 0;
+    font-size: 0.75rem;
+}
+.pcc-oc-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+.pcc-oc-fact-wide {
+    grid-column: 1 / -1;
+}
+.pcc-oc-fact dt {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+.pcc-oc-fact dd {
+    margin: 0;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pcc-vendor-mapping-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.pcc-vendor-mapping-title {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+.pcc-vendor-mapping-card.is-editing {
+    border-color: var(--color-primary, #2563eb);
+    box-shadow: 0 0 0 1px var(--color-primary, #2563eb);
+}
+.pcc-supplier-field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 0.45rem;
+}
+.pcc-supplier-field-row:last-child {
+    margin-bottom: 0;
+}
+.pcc-field-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+.pcc-field-chip {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.2rem 0.45rem;
+    border-radius: var(--radius);
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pcc-field-chip-muted {
+    background: transparent;
+    border-style: dashed;
+    color: var(--color-text-muted);
+}
+.pcc-field-compact {
+    margin-bottom: 0.45rem;
+    font-size: 0.8125rem;
+}
+.pcc-field-compact .form-input {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8125rem;
+}
+.pcc-variant-lines-table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 52rem;
+}
+.pcc-variant-lines-table th,
+.pcc-variant-lines-table td {
+    font-size: 0.75rem;
+    vertical-align: middle;
+    padding: 0.3rem 0.35rem;
+}
+.pcc-variant-lines-table .form-input {
+    min-width: 0;
+    width: 100%;
+    padding: 0.25rem 0.35rem;
+    font-size: 0.75rem;
+}
+.pcc-variant-thumb {
+    width: 2rem;
+    height: 2rem;
+}
+.pcc-vcol-line { width: 8rem; }
+.pcc-vcol-image { width: 2.5rem; }
+.pcc-vcol-model { width: 7rem; }
+.pcc-vcol-vendor { width: 7rem; }
+.pcc-vcol-price { width: 5rem; }
+.pcc-vcol-cost { width: 5rem; }
+.pcc-vcol-owner { width: 4.5rem; text-align: right; }
+.pcc-vcol-vstock { width: 4.5rem; }
+.pcc-vcol-warn { width: 3.5rem; }
+.pcc-vcol-health { width: 5rem; }
+.pcc-variant-scroll {
+    max-height: 16rem;
+    margin-top: 0.5rem;
+}
+.pcc-variant-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-surface, #fff);
+}
+.pcc-cell-ellipsis {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+.pcc-ro-cell {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+.pcc-save-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+.pcc-modal-footer {
+    padding: 0.75rem 1.25rem 1rem;
+    border-top: 1px solid var(--color-border);
+}
+.pcc-history-btn,
+.pcc-open-btn {
+    white-space: nowrap;
+}
+/* v1.8.7.4 Product Control Center Finalization */
+.product-control-kpis-filter {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.pcc-list-scroll .product-catalog-table-v874-fixed {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 48rem;
+}
+.pcc-table-tight th,
+.pcc-table-tight td {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8125rem;
+}
+.product-catalog-table-v874-fixed th {
+    white-space: nowrap;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.product-catalog-table-v874 .pcc-col-product {
+    width: 22%;
+    max-width: 11rem;
+}
+.product-catalog-table-v874 .pcc-col-variable {
+    width: 5.5rem;
+}
+.product-catalog-table-v874 .pcc-col-vendor-model {
+    width: 12%;
+}
+.product-catalog-table-v874 .pcc-col-numeric {
+    width: 5.5rem;
+    text-align: right;
+}
+.product-catalog-table-v874 .pcc-col-health {
+    width: 6.5rem;
+}
+.product-catalog-table-v874 .pcc-col-actions {
+    width: 8.5rem;
+    white-space: nowrap;
+}
+.pcc-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.pcc-product-cell-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1;
+}
+.pcc-product-cell-model {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.pcc-product-cell-oc {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+.pcc-row-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+.pcc-row-actions .btn-sm {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
+}
+.modal-panel-product-control .pcc-tab-panel[data-pcc-panel="details"] {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem 0;
+    max-height: min(78vh, calc(100vh - 8rem));
+    overflow: hidden;
+}
+.pcc-variant-section {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin-top: 0.25rem;
+}
+.pcc-save-bar-v874 {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+    padding: 0.65rem 0 0.75rem;
+    border-top: 1px solid var(--color-border);
+}
+@media (max-width: 900px) {
+    .product-control-kpis-filter {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pcc-modal-hero-split {
+        grid-template-columns: 1fr;
+    }
+    .pcc-hide-sm {
+        display: none;
     }
 }

@@ -12,9 +12,9 @@ use App\Models\ProductStockHistory;
 use App\Permission;
 use App\SupplierContext;
 use App\Csrf;
+use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\ProductCatalogPageService;
 use App\Services\ReadOnly\ProductReadService;
-use App\Services\ReadOnly\ProductSyncDiagnosticsService;
 use App\Services\ReadOnly\ProductSyncReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\ReadOnly\SupplierProductFilter;
@@ -26,6 +26,7 @@ use App\Services\Write\ProductCostStockWriteService;
 use App\Services\Write\ProductVariantWriteService;
 use App\Services\Write\ProductWorkspaceWriteService;
 use App\Services\Write\ProductWriteService;
+use App\Services\Write\SyncPreviewWriteService;
 
 class ProductControlController extends Controller
 {
@@ -79,12 +80,21 @@ class ProductControlController extends Controller
         }
 
         $isSupplierView = SupplierContext::isSupplier();
+        $canManageSync = Permission::can('sync_preview.manage');
+        $productWriteGate = WriteGate::productSyncImport();
+        $warehousePullAvailable = (new OpenCartReadClient())->warehouseProductPullAvailable();
+        $canRefreshProducts = $canManageSync
+            && !empty($productWriteGate['ready'])
+            && $warehousePullAvailable
+            && !$isSupplierView;
         $catalogFilters = [
             'q' => $_GET['q'] ?? '',
             'product_id' => $_GET['product_id'] ?? '',
             'product_name' => $_GET['product_name'] ?? '',
             'model' => $_GET['model'] ?? '',
             'supplier_model' => $_GET['supplier_model'] ?? '',
+            'type' => $_GET['type'] ?? 'all',
+            'sort' => $_GET['sort'] ?? 'product_id_asc',
             'chip' => $_GET['chip'] ?? 'all',
         ];
         $catalogPage = max(1, (int) ($_GET['page'] ?? 1));
@@ -95,21 +105,10 @@ class ProductControlController extends Controller
             $catalogPage,
             $isSupplierView
         );
+        $lastCatalogSyncAt = $this->latestCatalogSyncTime($productReadInventory['rows'] ?? []);
+        $productSyncStatus = $canManageSync ? (new ProductSyncReadService())->status() : null;
+        $sourceSyncLabel = $this->productSyncSourceLabel($productSyncStatus);
         $productHistoryByProduct = $this->historyRowsByProduct($costStockHistoryDisplay['rows'] ?? []);
-
-        $canViewSync = Permission::can('sync_preview.view');
-        $canManageSync = Permission::can('sync_preview.manage');
-        $productPage = max(1, (int) ($_GET['product_page'] ?? 1));
-        $productSession = $_SESSION['ibs_product_sync_preview'] ?? null;
-        $productPreview = null;
-        if (is_array($productSession) && (int) ($productSession['page'] ?? 0) === $productPage) {
-            $productPreview = $productSession['display'] ?? null;
-        }
-        $productSyncStatus = $canViewSync ? (new ProductSyncReadService())->status() : null;
-        $productSyncDiagnostics = $canViewSync
-            ? (new ProductSyncDiagnosticsService())->analyze($productPreview)
-            : null;
-        $productWriteGate = WriteGate::productSyncImport();
 
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
@@ -119,59 +118,52 @@ class ProductControlController extends Controller
             ],
             'accessMode' => Permission::accessMode(),
             'productReadInventory' => $productReadInventory,
-            'productVariantReadInventory' => $productVariantReadInventory,
-            'productCostHistoryReadInventory' => $productCostHistoryReadInventory,
-            'productStockHistoryReadInventory' => $productStockHistoryReadInventory,
-            'costStockHistoryDisplay' => $costStockHistoryDisplay,
-            'productSelectOptions' => $this->productSelectOptionsFromInventory($productReadInventory),
-            'productDisplay' => $this->buildProductDisplayFromInventory($productReadInventory),
             'productCatalog' => $productCatalog,
+            'summaryKpis' => $productCatalog['summary_kpis'] ?? ($productCatalog['kpis'] ?? []),
+            'lastCatalogSyncAt' => $lastCatalogSyncAt,
+            'sourceSyncLabel' => $sourceSyncLabel,
             'catalogFilters' => $productCatalog['filters'] ?? [],
             'catalogPagination' => $productCatalog['pagination'] ?? [],
+            'catalogWorkspaces' => $productCatalog['workspaces'] ?? [],
             'productHistoryByProduct' => $productHistoryByProduct,
-            'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'canManage' => Permission::can('product_control.manage'),
-            'currentSupplier' => $this->currentSupplier(),
-            'purpose' => $this->purpose(),
-            'futureSyncedStructure' => $this->futureSyncedStructure(),
-            'editableFields' => $this->editableFields(),
-            'readOnlyFields' => $this->readOnlyFields(),
-            'businessRules' => $this->businessRules(),
-            'historyRules' => $this->historyRules(),
-            'lowStockRules' => $this->lowStockRules(),
-            'optionImageRules' => $this->optionImageRules(),
-            'costSnapshotRule' => $this->costSnapshotRule(),
-            'sharedStockRule' => $this->sharedStockRule(),
-            'plannedProductFields' => $this->plannedProductFields(),
-            'plannedVariantFields' => $this->plannedVariantFields(),
+            'canViewHealth' => Permission::can('health.view'),
+            'canViewLogs' => Permission::can('activity_log.view'),
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'writeGateProductCreate' => WriteGate::productCreateForm(),
-            'writeGateProductCreateReady' => WriteGate::productCreateForm()['ready'],
             'writeGateProductEditReady' => WriteGate::productCreateForm()['ready'],
-            'writeGateVariantForm' => WriteGate::productVariantForm(),
-            'writeGateVariantFormReady' => WriteGate::productVariantForm()['ready'],
-            'writeGateCostStock' => WriteGate::productCostStockForm(),
-            'writeGateCostStockReady' => WriteGate::productCostStockForm()['ready'],
             'isSupplierView' => $isSupplierView,
             'boundSupplierId' => $isSupplierView ? SupplierContext::supplierId() : 0,
             'supplierSelectOptions' => $this->supplierSelectOptions(),
             'writeGateSupplierNote' => WriteGate::supplierProductNoteColumn(),
             'writeGateSupplierNoteReady' => WriteGate::supplierProductNoteColumn()['ready'],
-            'canViewSync' => $canViewSync,
-            'canManageSync' => $canManageSync,
-            'productPage' => $productPage,
-            'productPreview' => $productPreview,
-            'productSyncStatus' => $productSyncStatus,
-            'productSyncDiagnostics' => $productSyncDiagnostics,
-            'productWriteGate' => $productWriteGate,
+            'canRefreshProducts' => $canRefreshProducts,
+            'warehouseProductPullAvailable' => $warehousePullAvailable,
             'productWriteGateReady' => $productWriteGate['ready'],
-            'syncPaginationBase' => '/product-control',
-            'syncRedirectTo' => '/product-control',
-            'catalogPage' => $catalogPage,
+            'tableReady' => !empty($productReadInventory['table_exists']),
         ]);
+    }
+
+    public function refreshProducts()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/product-control');
+        }
+
+        if (SupplierContext::isSupplier()) {
+            $this->flash('error', 'Supplier accounts cannot refresh the product catalog.');
+            redirect('/product-control');
+        }
+
+        $this->redirectWithWriteResult(
+            '/product-control',
+            (new SyncPreviewWriteService())->refreshWarehouseProductsFromApi($_POST)
+        );
     }
 
     public function saveWorkspace()
@@ -190,9 +182,11 @@ class ProductControlController extends Controller
         }
 
         $input = $this->applySupplierProductScope($_POST);
-        if (isset($_POST['variants']) && is_string($_POST['variants'])) {
-            $decoded = json_decode($_POST['variants'], true);
+        if (isset($input['variants']) && is_string($input['variants'])) {
+            $decoded = json_decode($input['variants'], true);
             $input['variants'] = is_array($decoded) ? $decoded : [];
+        } elseif (!isset($input['variants']) || !is_array($input['variants'])) {
+            $input['variants'] = [];
         }
 
         $this->redirectWithWriteResult('/product-control', (new ProductWorkspaceWriteService())->save($productId, $input));
@@ -255,6 +249,32 @@ class ProductControlController extends Controller
             $result = $service->updateProductCostStock($productId, $_POST);
         }
         $this->redirectWithWriteResult('/product-control', $result);
+    }
+
+    private function latestCatalogSyncTime(array $rows): string
+    {
+        $latest = '';
+        foreach ($rows as $row) {
+            $synced = trim((string) ($row['last_synced_at'] ?? ''));
+            if ($synced === '') {
+                continue;
+            }
+            if ($latest === '' || strcmp($synced, $latest) > 0) {
+                $latest = $synced;
+            }
+        }
+
+        return $latest;
+    }
+
+    private function productSyncSourceLabel(?array $syncStatus): string
+    {
+        $mode = strtolower((string) ($syncStatus['source_mode'] ?? config('opencart.source_mode', 'demo')));
+        return match ($mode) {
+            'staging' => 'Staging OpenCart read-only',
+            'live' => 'Live OpenCart read-only',
+            default => 'Demo OpenCart read-only',
+        };
     }
 
     private function historyRowsByProduct(array $rows): array

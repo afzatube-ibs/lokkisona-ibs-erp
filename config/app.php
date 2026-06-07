@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.8.6',
-    'release_label' => 'Navigation Reorganization',
+    'version' => '1.8.7.4',
+    'release_label' => 'Product Control Center Finalization',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

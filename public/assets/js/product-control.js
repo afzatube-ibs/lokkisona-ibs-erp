@@ -1,396 +1,401 @@
-(function () {
-    'use strict';
-
-    var payloadEl = document.getElementById('productCatalogPayload');
-    var historyEl = document.getElementById('productHistoryPayload');
-    var configEl = document.getElementById('productControlConfig');
-    if (!payloadEl) {
-        return;
-    }
-
-    var workspaces = {};
-    var historyByProduct = {};
-    var pageConfig = { supplierNoteReady: false, opencartMediaBase: '' };
-    try {
-        workspaces = JSON.parse(payloadEl.textContent || '{}');
-    } catch (e) {
-        workspaces = {};
-    }
-    if (historyEl) {
-        try {
-            historyByProduct = JSON.parse(historyEl.textContent || '{}');
-        } catch (e2) {
-            historyByProduct = {};
-        }
-    }
-    if (configEl) {
-        try {
-            pageConfig = JSON.parse(configEl.textContent || '{}');
-        } catch (e3) {
-            pageConfig = { supplierNoteReady: false, opencartMediaBase: '' };
-        }
-    }
-
-    var modal = document.getElementById('productControlCenterModal');
-    var form = document.getElementById('productControlCenterForm');
-    var tableBody = document.getElementById('productCatalogTableBody');
-
-    function openModal(id) {
-        var target = document.getElementById(id);
-        if (!target) {
-            return;
-        }
-        target.hidden = false;
-        target.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('modal-open');
-    }
-
-    function closeModal(id) {
-        var target = document.getElementById(id);
-        if (!target) {
-            return;
-        }
-        target.hidden = true;
-        target.setAttribute('aria-hidden', 'true');
-        if (!document.querySelector('.modal-overlay:not([hidden])')) {
-            document.body.classList.remove('modal-open');
-        }
-    }
-
-    function setText(id, value) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.textContent = value || '—';
-        }
-    }
-
-    function setInput(id, value) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.value = value === null || value === undefined ? '' : String(value);
-        }
-    }
-
-    function setSelect(id, value) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.value = value === null || value === undefined ? '' : String(value);
-        }
-    }
-
-    function mediaUrl(path) {
-        if (!path) {
-            return '';
-        }
-        if (/^https?:\/\//i.test(path)) {
-            return path;
-        }
-        var base = pageConfig.opencartMediaBase || '';
-        if (!base) {
-            return path;
-        }
-        path = String(path).replace(/^\//, '');
-        if (path.indexOf('image/') === 0) {
-            return base + '/' + path;
-        }
-        return base + '/image/' + path;
-    }
-
-    function renderBadges(containerId, badges) {
-        var container = document.getElementById(containerId);
-        if (!container) {
-            return;
-        }
-        container.innerHTML = '';
-        (badges || []).forEach(function (badge) {
-            var span = document.createElement('span');
-            span.className = 'badge badge-' + (badge.class || 'muted');
-            span.textContent = badge.label || '';
-            container.appendChild(span);
-        });
-    }
-
-    function renderVariantAccordion(variants) {
-        var root = document.getElementById('pccVariantAccordion');
-        if (!root) {
-            return;
-        }
-        root.innerHTML = '';
-        if (!variants.length) {
-            return;
-        }
-
-        var details = document.createElement('details');
-        details.className = 'pcc-variant-accordion';
-        details.open = false;
-
-        var summary = document.createElement('summary');
-        summary.className = 'pcc-variant-accordion-summary';
-        summary.textContent = 'Options (' + variants.length + ') — expand to edit supplier fields';
-        details.appendChild(summary);
-
-        var tableWrap = document.createElement('div');
-        tableWrap.className = 'table-scroll';
-
-        var table = document.createElement('table');
-        table.className = 'data-table pcc-variant-table';
-
-        var noteHeader = pageConfig.supplierNoteReady ? '<th>Supplier note</th>' : '';
-        table.innerHTML =
-            '<thead><tr>' +
-            '<th>Image</th><th>Option</th><th>Value</th><th>OC model</th><th>OC stock</th>' +
-            '<th>Vendor model</th><th>Cost</th><th>Vendor stock</th>' +
-            noteHeader + '<th>Health</th>' +
-            '</tr></thead><tbody id="pccVariantRows"></tbody>';
-
-        tableWrap.appendChild(table);
-        details.appendChild(tableWrap);
-        root.appendChild(details);
-
-        var tbody = table.querySelector('#pccVariantRows');
-        variants.forEach(function (variant, index) {
-            var tr = document.createElement('tr');
-            tr.dataset.variantIndex = String(index);
-            tr.dataset.optionName = variant.option_name || '';
-            tr.dataset.optionValue = variant.option_value || '';
-            tr.dataset.variantId = String(variant.product_variant_id || '');
-
-            var imageSrc = variant.image_url || mediaUrl(variant.image_path);
-            var imageCell = imageSrc
-                ? '<div class="pcc-thumb"><img src="' + escapeAttr(imageSrc) + '" alt="" loading="lazy"></div>'
-                : '<span class="pcc-thumb-empty">—</span>';
-            var noteCell = '';
-            if (pageConfig.supplierNoteReady) {
-                noteCell = '<td><input type="text" class="form-input pcc-inline-input" data-field="supplier_note" value="' + escapeAttr(variant.supplier_note || '') + '"></td>';
-            }
-
-            tr.innerHTML =
-                '<td>' + imageCell + '</td>' +
-                '<td>' + escapeHtml(variant.option_name || '—') + '</td>' +
-                '<td>' + escapeHtml(variant.option_value || '—') + '</td>' +
-                '<td><code>' + escapeHtml(variant.source_model || '—') + '</code></td>' +
-                '<td class="pcc-readonly-cell">' + escapeHtml(variant.source_stock === null || variant.source_stock === '' ? '—' : String(variant.source_stock)) + '</td>' +
-                '<td><input type="text" class="form-input pcc-inline-input" data-field="supplier_model" value="' + escapeAttr(variant.supplier_model || '') + '"></td>' +
-                '<td><input type="number" step="0.01" min="0" class="form-input pcc-inline-input" data-field="product_cost" value="' + escapeAttr(variant.product_cost || '') + '"></td>' +
-                '<td><input type="number" min="0" class="form-input pcc-inline-input" data-field="vendor_stock" value="' + escapeAttr(variant.vendor_stock || 0) + '"></td>' +
-                noteCell +
-                '<td><span class="pcc-health-text">' + escapeHtml(variant.health || '—') + '</span></td>';
-
-            tbody.appendChild(tr);
-        });
-    }
-
-    function renderHistory(productId) {
-        var tbody = document.getElementById('pccHistoryRows');
-        if (!tbody) {
-            return;
-        }
-        var rowsHistory = historyByProduct[String(productId)] || [];
-        if (!rowsHistory.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="page-description">No cost/stock history for this product yet.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = rowsHistory.map(function (row) {
-            var oldCost = row.old_cost !== undefined && row.old_cost !== '' ? row.old_cost : '—';
-            var newCost = row.new_cost !== undefined && row.new_cost !== '' ? row.new_cost : '—';
-            var oldStock = row.old_stock !== undefined && row.old_stock !== '' ? row.old_stock : '—';
-            var newStock = row.new_stock !== undefined && row.new_stock !== '' ? row.new_stock : '—';
-            return '<tr>' +
-                '<td>' + escapeHtml(row.variant_label || 'Product level') + '</td>' +
-                '<td>' + escapeHtml(oldCost + ' → ' + newCost) + '</td>' +
-                '<td>' + escapeHtml(oldStock + ' → ' + newStock) + '</td>' +
-                '<td>' + escapeHtml(row.note || '—') + '</td>' +
-                '<td>' + escapeHtml(row.created_at || '—') + '</td>' +
-                '</tr>';
-        }).join('');
-    }
-
-    function openWorkspace(productId) {
-        var workspace = workspaces[String(productId)];
-        if (!workspace || !form) {
-            return;
-        }
-
-        setInput('pccProductId', workspace.product_id);
-        setInput('pccBusinessSourceId', workspace.business_source_id || '');
-        setInput('pccErpProductIdDisplay', '#' + workspace.product_id);
-        setInput('pccProductNameDisplay', workspace.product_name || '—');
-        setInput('pccSourceModelDisplay', workspace.source_model || '—');
-        setInput('pccOwnerStockReadonlyTop', workspace.source_stock === null || workspace.source_stock === '' ? '—' : workspace.source_stock);
-        setInput('pccSupplierModel', workspace.supplier_model);
-        setInput('pccCategory', workspace.supplier_product_category);
-        setInput('pccSourceProductIdDisplay', workspace.source_product_id || '—');
-        setInput('pccLowWarning', workspace.low_warning_threshold);
-        setSelect('pccStatus', workspace.status || 'active');
-        if (document.getElementById('pccSupplierId')) {
-            setSelect('pccSupplierId', workspace.supplier_id || '');
-        }
-        if (document.getElementById('pccSupplierNote')) {
-            setInput('pccSupplierNote', workspace.supplier_note || '');
-        }
-
-        setText('pccSyncLastSynced', workspace.last_synced_at || '—');
-        setText('pccSyncSourceId', workspace.source_product_id || '—');
-        setText('pccSyncStatus', workspace.sync_status || '—');
-        renderBadges('pccCompletenessBadges', workspace.badges || []);
-
-        setText('pccModalSubtitle', '#' + workspace.product_id + ' • ' + (workspace.completeness === 'ready' ? 'Ready' : 'Needs Work') + ' • controlled product workspace');
-        setText('pccProductTitle', workspace.product_name);
-        var typeLabel = workspace.type === 'variable' ? 'Variable' : 'Simple';
-        if (workspace.no_options_synced) {
-            typeLabel += ' · No option synced';
-        }
-        setText('pccProductMeta', 'Product ID #' + workspace.product_id + ' • ' + typeLabel + ' • OC model ' + (workspace.source_model || '—'));
-
-        var image = document.getElementById('pccProductImage');
-        var placeholder = document.getElementById('pccImagePlaceholder');
-        if (image && placeholder) {
-            var imageSrc = workspace.image_url || mediaUrl(workspace.image_path);
-            if (imageSrc) {
-                image.src = imageSrc;
-                image.hidden = false;
-                placeholder.hidden = true;
-            } else {
-                image.hidden = true;
-                placeholder.hidden = false;
-            }
-        }
-
-        var simpleFields = document.getElementById('pccSimpleProductFields');
-        var variantSection = document.getElementById('pccVariantSection');
-        var noOptionsNotice = document.getElementById('pccNoOptionsNotice');
-
-        if (workspace.type === 'variable') {
-            if (simpleFields) {
-                simpleFields.hidden = true;
-            }
-            if (variantSection) {
-                variantSection.hidden = false;
-            }
-            var hasVariantLines = (workspace.variants || []).length > 0;
-            if (noOptionsNotice) {
-                noOptionsNotice.hidden = !workspace.no_options_synced;
-            }
-            renderVariantAccordion(workspace.variants || []);
-        } else {
-            if (simpleFields) {
-                simpleFields.hidden = false;
-            }
-            if (variantSection) {
-                variantSection.hidden = true;
-            }
-            if (noOptionsNotice) {
-                noOptionsNotice.hidden = true;
-            }
-            setInput('pccProductCost', workspace.product_cost);
-            setInput('pccProductVendorStock', workspace.vendor_stock);
-        }
-
-        renderHistory(workspace.product_id);
-        activateTab('details');
-        openModal('productControlCenterModal');
-    }
-
-    function activateTab(name) {
-        document.querySelectorAll('.pcc-tab').forEach(function (tab) {
-            var active = tab.getAttribute('data-pcc-tab') === name;
-            tab.classList.toggle('is-active', active);
-            tab.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        document.querySelectorAll('.pcc-tab-panel').forEach(function (panel) {
-            var active = panel.getAttribute('data-pcc-panel') === name;
-            panel.classList.toggle('is-active', active);
-            panel.hidden = !active;
-        });
-    }
-
-    function collectVariantsJson() {
-        var tbody = document.getElementById('pccVariantRows');
-        if (!tbody) {
-            return '[]';
-        }
-        var payload = [];
-        tbody.querySelectorAll('tr').forEach(function (tr) {
-            var row = {
-                product_variant_id: parseInt(tr.dataset.variantId || '0', 10),
-                option_name: tr.dataset.optionName || '',
-                option_value: tr.dataset.optionValue || '',
-                supplier_model: (tr.querySelector('[data-field="supplier_model"]') || {}).value || '',
-                product_cost: (tr.querySelector('[data-field="product_cost"]') || {}).value || '',
-                vendor_stock: (tr.querySelector('[data-field="vendor_stock"]') || {}).value || ''
-            };
-            if (pageConfig.supplierNoteReady) {
-                row.supplier_note = (tr.querySelector('[data-field="supplier_note"]') || {}).value || '';
-            }
-            payload.push(row);
-        });
-        return JSON.stringify(payload);
-    }
-
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    function escapeAttr(value) {
-        return escapeHtml(value).replace(/'/g, '&#39;');
-    }
-
-    if (tableBody) {
-        tableBody.addEventListener('click', function (event) {
-            var row = event.target.closest('[data-product-row]');
-            if (!row) {
-                return;
-            }
-            if (event.target.closest('a, button, input, select, textarea, summary')) {
-                return;
-            }
-            openWorkspace(row.getAttribute('data-product-id'));
-        });
-    }
-
-    document.querySelectorAll('.pcc-tab').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-            activateTab(tab.getAttribute('data-pcc-tab'));
-        });
-    });
-
-    if (form) {
-        form.addEventListener('submit', function () {
-            var variantsInput = document.getElementById('pccVariantsJson');
-            if (variantsInput) {
-                variantsInput.value = collectVariantsJson();
-            }
-        });
-    }
-
-    document.querySelectorAll('[data-open-product-workspace]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            openWorkspace(button.getAttribute('data-open-product-workspace'));
-        });
-    });
-
-    document.querySelectorAll('[data-modal-close="productControlCenterModal"]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            closeModal('productControlCenterModal');
-        });
-    });
-
-    if (modal) {
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) {
-                closeModal('productControlCenterModal');
-            }
-        });
-    }
-
-    var openParam = new URLSearchParams(window.location.search).get('open');
-    if (openParam && workspaces[String(openParam)]) {
-        openWorkspace(openParam);
-    }
-
-    window.productControlOpenWorkspace = openWorkspace;
-})();
+(function () {
+    'use strict';
+
+    var payloadEl = document.getElementById('productCatalogPayload');
+    var modal = document.getElementById('productControlCenterModal');
+    if (!payloadEl || !modal) {
+        return;
+    }
+
+    var payload = {};
+    try {
+        payload = JSON.parse(payloadEl.textContent || '{}');
+    } catch (e) {
+        payload = {};
+    }
+
+    var workspaces = payload.workspaces || {};
+    var historyByProduct = payload.historyByProduct || {};
+    var isSupplierView = !!payload.isSupplierView;
+    var costFieldLabel = isSupplierView ? 'Supplier Sale' : 'Supplier Cost';
+    var form = document.getElementById('productControlCenterForm');
+    var variantLinesBody = document.getElementById('pccVariantLinesBody');
+    var variantSection = document.getElementById('pccVariantSection');
+    var noOptionsNotice = document.getElementById('pccNoOptionsNotice');
+    var supplierView = document.getElementById('pccSupplierView');
+    var supplierEdit = document.getElementById('pccSupplierEdit');
+    var supplierEditBtn = document.getElementById('pccSupplierEditBtn');
+    var vendorMappingCard = document.getElementById('pccVendorMappingCard');
+    var supplierCostField = document.getElementById('pccProductCost');
+    var supplierStockField = document.getElementById('pccProductVendorStock');
+    var canEditSupplier = !!document.getElementById('pccSaveBtn');
+    var currentProductId = '';
+    var supplierEditMode = false;
+
+    function esc(text) {
+        var div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
+    function displayValue(value) {
+        return value == null || value === '' ? '—' : String(value);
+    }
+
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.textContent = displayValue(value);
+        }
+    }
+
+    function setInput(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.value = value == null ? '' : String(value);
+        }
+    }
+
+    function setSelect(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.value = value == null || value === '' ? 'active' : String(value);
+        }
+    }
+
+    function setImage(url) {
+        var img = document.getElementById('pccProductImage');
+        var placeholder = document.getElementById('pccImagePlaceholder');
+        if (!img || !placeholder) {
+            return;
+        }
+        if (url) {
+            img.src = url;
+            img.hidden = false;
+            placeholder.hidden = true;
+        } else {
+            img.hidden = true;
+            img.removeAttribute('src');
+            placeholder.hidden = false;
+        }
+    }
+
+    function renderBadges(badges) {
+        var row = document.getElementById('pccCompletenessBadges');
+        if (!row) {
+            return;
+        }
+        row.innerHTML = '';
+        (badges || []).forEach(function (badge) {
+            var span = document.createElement('span');
+            span.className = 'badge badge-' + esc(badge.class || 'muted');
+            span.textContent = badge.label || '';
+            row.appendChild(span);
+        });
+    }
+
+    function activateTab(tab) {
+        document.querySelectorAll('.pcc-tab').forEach(function (btn) {
+            var active = btn.getAttribute('data-pcc-tab') === tab;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.pcc-tab-panel').forEach(function (panel) {
+            var active = panel.getAttribute('data-pcc-panel') === tab;
+            panel.classList.toggle('is-active', active);
+            panel.hidden = !active;
+        });
+    }
+
+    function renderHistory(productId) {
+        var tbody = document.getElementById('pccHistoryRows');
+        if (!tbody) {
+            return;
+        }
+        var rows = historyByProduct[String(productId)] || historyByProduct[productId] || [];
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="page-description">No cost/stock history recorded for this product yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function (row) {
+            var costChange = (row.old_cost !== '' && row.old_cost != null ? row.old_cost : '—')
+                + ' → ' + (row.new_cost !== '' && row.new_cost != null ? row.new_cost : '—');
+            var stockChange = (row.old_stock !== '' && row.old_stock != null ? row.old_stock : '—')
+                + ' → ' + (row.new_stock !== '' && row.new_stock != null ? row.new_stock : '—');
+            return '<tr>'
+                + '<td>' + esc(row.variant_label || 'Product level') + '</td>'
+                + '<td>' + esc(costChange) + '</td>'
+                + '<td>' + esc(stockChange) + '</td>'
+                + '<td>' + esc(row.note || '—') + '</td>'
+                + '<td>' + esc(row.created_at || '—') + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    function renderVariantLinesTable(variants) {
+        if (!variantLinesBody) {
+            return;
+        }
+        variantLinesBody.innerHTML = '';
+        (variants || []).forEach(function (variant, index) {
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-variant-index', String(index));
+            tr.dataset.variantId = String(variant.product_variant_id || '');
+            var imageCell = variant.image_url
+                ? '<div class="pcc-list-thumb pcc-variant-thumb"><img src="' + esc(variant.image_url) + '" alt=""></div>'
+                : '<span class="pcc-list-thumb-empty">—</span>';
+            var healthClass = esc(variant.health_class || 'muted');
+            tr.innerHTML =
+                '<td class="pcc-vcol-line"><span class="pcc-cell-ellipsis" title="' + esc(variant.line_label || '') + '">' + esc(variant.line_label || variant.option_name || 'Option') + '</span></td>'
+                + '<td class="pcc-vcol-image">' + imageCell + '</td>'
+                + '<td class="pcc-vcol-model"><code class="pcc-cell-ellipsis" title="' + esc(variant.source_model || '') + '">' + esc(variant.source_model || '—') + '</code></td>'
+                + '<td class="pcc-vcol-vendor"><input type="text" class="form-input pcc-variant-input" data-field="supplier_model" value="' + esc(variant.supplier_model || '') + '"></td>'
+                + '<td class="pcc-vcol-price pcc-ro-cell">' + esc(variant.source_price_label || 'Not stored in ERP') + '</td>'
+                + '<td class="pcc-vcol-cost"><input type="number" step="0.01" min="0" class="form-input pcc-variant-input" data-field="product_cost" value="' + esc(variant.product_cost ?? '') + '"></td>'
+                + '<td class="pcc-vcol-owner pcc-ro-cell">' + esc(variant.source_stock ?? '—') + '</td>'
+                + '<td class="pcc-vcol-vstock"><input type="number" min="0" class="form-input pcc-variant-input" data-field="vendor_stock" value="' + esc(variant.vendor_stock ?? 0) + '"></td>'
+                + '<td class="pcc-vcol-warn pcc-ro-cell">' + esc(variant.warning || '—') + '</td>'
+                + '<td class="pcc-vcol-health"><span class="badge badge-' + healthClass + '">' + esc(variant.health || '—') + '</span></td>';
+            variantLinesBody.appendChild(tr);
+        });
+    }
+
+    function collectVariants() {
+        if (!variantLinesBody) {
+            return [];
+        }
+        var workspace = workspaces[String(currentProductId)] || {};
+        var sourceVariants = workspace.variants || [];
+        var collected = [];
+        variantLinesBody.querySelectorAll('tr[data-variant-index]').forEach(function (row) {
+            var index = parseInt(row.getAttribute('data-variant-index') || '0', 10);
+            var source = sourceVariants[index] || {};
+            var item = {
+                product_variant_id: source.product_variant_id || row.dataset.variantId || 0,
+                supplier_model: '',
+                product_cost: '',
+                vendor_stock: 0,
+                status: source.status || 'active'
+            };
+            row.querySelectorAll('.pcc-variant-input').forEach(function (input) {
+                var field = input.getAttribute('data-field');
+                if (field) {
+                    item[field] = input.value;
+                }
+            });
+            collected.push(item);
+        });
+        return collected;
+    }
+
+    function toggleSimpleSupplierFields(isVariable) {
+        var simpleViewRows = document.querySelectorAll('.pcc-simple-supplier-view');
+        var simpleEditWraps = document.querySelectorAll('.pcc-simple-supplier-edit');
+        simpleViewRows.forEach(function (row) {
+            row.hidden = isVariable;
+        });
+        simpleEditWraps.forEach(function (wrap) {
+            wrap.hidden = isVariable;
+        });
+        [supplierCostField, supplierStockField].forEach(function (field) {
+            if (!field) {
+                return;
+            }
+            field.disabled = isVariable;
+        });
+    }
+
+    function renderSupplierFieldViews(workspace) {
+        var productName = workspace.product_name || '';
+        setText('pccSupplierProductNameView', productName);
+        setText('pccSupplierProductNameEdit', productName);
+        setText('pccSupplierModelView', workspace.supplier_model || '');
+        setText('pccLowWarningView', workspace.low_warning_threshold ?? '');
+        setText('pccProductCostView', workspace.product_cost ?? '');
+        setText('pccProductVendorStockView', workspace.vendor_stock ?? '');
+    }
+
+    function supplierHasSavedData(workspace) {
+        return trimVal(workspace.supplier_model) !== ''
+            || trimVal(workspace.low_warning_threshold) !== ''
+            || trimVal(workspace.product_cost) !== ''
+            || trimVal(workspace.vendor_stock) !== ''
+            || trimVal(workspace.supplier_note) !== '';
+    }
+
+    function trimVal(value) {
+        return value == null ? '' : String(value).trim();
+    }
+
+    function setSupplierPanelMode(mode) {
+        supplierEditMode = mode === 'edit';
+        if (supplierView) {
+            supplierView.hidden = supplierEditMode;
+        }
+        if (supplierEdit) {
+            supplierEdit.hidden = !supplierEditMode;
+        }
+        if (vendorMappingCard) {
+            vendorMappingCard.classList.toggle('is-editing', supplierEditMode);
+        }
+        if (supplierEditBtn) {
+            supplierEditBtn.textContent = supplierEditMode ? 'View' : 'Edit';
+        }
+    }
+
+    function openProductModal(productId, options) {
+        options = options || {};
+        var workspace = workspaces[String(productId)];
+        if (!workspace) {
+            return;
+        }
+
+        currentProductId = String(productId);
+        setInput('pccProductId', productId);
+        setInput('pccBusinessSourceId', workspace.business_source_id || '1');
+        setInput('pccCategory', workspace.supplier_product_category || '');
+        setText('pccModalSubtitle', '#' + (workspace.source_product_id || productId)
+            + ' • ' + (workspace.source_model || '—')
+            + ' • Product Control Center');
+
+        renderBadges(workspace.badges || []);
+        setImage(workspace.image_url || '');
+        setText('pccOcProductId', workspace.source_product_id || '—');
+        setText('pccOcModel', workspace.source_model || '—');
+        setText('pccOcStock', workspace.source_stock ?? '—');
+        setText('pccOcPrice', 'Not stored in ERP');
+        setText('pccLastSynced', workspace.last_synced_at || '—');
+
+        setInput('pccSupplierModel', workspace.supplier_model || '');
+        setInput('pccLowWarning', workspace.low_warning_threshold ?? '');
+        setSelect('pccStatus', workspace.status || 'active');
+        setInput('pccSupplierNote', workspace.supplier_note || '');
+        var supplierIdEl = document.getElementById('pccSupplierId');
+        if (supplierIdEl) {
+            setInput('pccSupplierId', workspace.supplier_id || supplierIdEl.value || '1');
+        }
+
+        renderSupplierFieldViews(workspace);
+
+        var isVariable = workspace.type === 'variable';
+        toggleSimpleSupplierFields(isVariable);
+        if (variantSection) {
+            variantSection.hidden = !isVariable;
+        }
+        if (noOptionsNotice) {
+            noOptionsNotice.hidden = !(isVariable && workspace.no_options_synced);
+        }
+
+        if (!isVariable) {
+            setInput('pccProductCost', workspace.product_cost ?? '');
+            setInput('pccProductVendorStock', workspace.vendor_stock ?? 0);
+            renderVariantLinesTable([]);
+        } else {
+            setInput('pccProductCost', '');
+            setInput('pccProductVendorStock', '');
+            renderVariantLinesTable(workspace.variants || []);
+        }
+
+        if (canEditSupplier) {
+            setSupplierPanelMode(supplierHasSavedData(workspace) ? 'view' : 'edit');
+        } else {
+            setSupplierPanelMode('view');
+        }
+
+        renderHistory(productId);
+        activateTab(options.tab || 'details');
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        setSupplierPanelMode('view');
+    }
+
+    document.querySelectorAll('.product-catalog-row').forEach(function (row) {
+        row.addEventListener('click', function (event) {
+            if (event.target.closest('.pcc-history-btn, .pcc-open-btn, button, a, input')) {
+                return;
+            }
+            openProductModal(row.getAttribute('data-product-id'), { tab: 'details' });
+        });
+        row.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openProductModal(row.getAttribute('data-product-id'), { tab: 'details' });
+            }
+        });
+    });
+
+    document.querySelectorAll('.pcc-open-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            event.stopPropagation();
+            openProductModal(btn.getAttribute('data-product-id'), { tab: 'details' });
+        });
+    });
+
+    document.querySelectorAll('.pcc-history-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            event.stopPropagation();
+            openProductModal(btn.getAttribute('data-product-id'), { tab: 'history' });
+        });
+    });
+
+    document.querySelectorAll('.pcc-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            activateTab(btn.getAttribute('data-pcc-tab') || 'details');
+        });
+    });
+
+    document.querySelectorAll('[data-modal-close="productControlCenterModal"]').forEach(function (btn) {
+        btn.addEventListener('click', closeModal);
+    });
+
+    if (supplierEditBtn) {
+        supplierEditBtn.addEventListener('click', function () {
+            setSupplierPanelMode(supplierEditMode ? 'view' : 'edit');
+        });
+    }
+
+    if (vendorMappingCard && canEditSupplier) {
+        vendorMappingCard.addEventListener('dblclick', function (event) {
+            if (event.target.closest('input, select, textarea, button')) {
+                return;
+            }
+            setSupplierPanelMode('edit');
+        });
+    }
+
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) {
+            if (supplierEditMode && canEditSupplier) {
+                setSupplierPanelMode('view');
+                return;
+            }
+            closeModal();
+        }
+    });
+
+    if (form) {
+        form.addEventListener('submit', function () {
+            var variantsJson = document.getElementById('pccVariantsJson');
+            if (variantsJson) {
+                variantsJson.value = JSON.stringify(collectVariants());
+            }
+            var saveBtn = document.getElementById('pccSaveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving…';
+            }
+        });
+    }
+})();
+
