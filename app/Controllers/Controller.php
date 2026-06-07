@@ -23,6 +23,12 @@ class Controller
         $data['navNavigation'] = Permission::menuNavigation();
         $data['appEnv'] = config('app.env', 'local');
         $data['currentPath'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $queryString = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY) ?? '';
+        $currentQuery = [];
+        if ($queryString !== '') {
+            parse_str($queryString, $currentQuery);
+        }
+        $data['currentQuery'] = $currentQuery;
         $data['canUseCalculator'] = Permission::can('supplier_calculator.view');
         $data['canUseQuickInvoice'] = Permission::can('supplier_quick_invoice.manage');
         $quickInvoiceGate = WriteGate::supplierQuickInvoice();

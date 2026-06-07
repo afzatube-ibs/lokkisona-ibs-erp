@@ -30,6 +30,7 @@ $showDevBanner = in_array($appEnv ?? 'local', ['local', 'staging'], true);
             <?php view('partials.sidebar-nav', [
                 'navNavigation' => $navNavigation ?? [],
                 'currentPath' => $currentPath ?? '',
+                'currentQuery' => $currentQuery ?? [],
                 'appEnv' => $appEnv ?? 'local',
             ]); ?>
         </nav>

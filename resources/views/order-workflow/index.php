@@ -310,7 +310,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a> and <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a>.</p>
+            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>. Order sync import will be embedded on this page in a future release.</p>
         </div>
     </div>
 </div>

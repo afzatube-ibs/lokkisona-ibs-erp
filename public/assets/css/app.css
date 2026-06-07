@@ -737,6 +737,35 @@ select.form-input,
     gap: 0.625rem;
 }
 
+.nav-item-button {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nav-item-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.nav-soon-badge {
+    margin-left: auto;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.product-sync-collapsible .planning-collapsible-summary {
+    font-weight: 600;
+}
+
 .sidebar-tier {
     margin-top: 0.25rem;
 }

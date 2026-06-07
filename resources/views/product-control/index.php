@@ -16,17 +16,33 @@ $currentPage = max(1, (int) ($pagination['page'] ?? 1));
                 ? 'Synced supplier catalog from the live site — click any row to set vendor model, ' . strtolower($costTerm) . ', stock, and warnings in the Product Control Center.'
                 : 'Read-only vendor inventory from live site sync — click any row to map model, cost, stock, and warnings. Catalog rows are not created manually here. v' . e($appVersion) . '.' ?></p>
         </div>
-        <div class="product-control-header-actions">
-            <?php if (empty($isSupplierView) && !empty($canManage)): ?>
-            <a href="<?= e(url('/sync-preview')) ?>" class="btn btn-primary btn-sm">Sync Products</a>
-            <?php elseif (empty($isSupplierView)): ?>
-            <a href="<?= e(url('/sync-preview')) ?>" class="btn btn-secondary btn-sm">Sync Preview</a>
-            <?php endif; ?>
-        </div>
     </div>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+
+<?php if (!empty($canViewSync) && empty($isSupplierView)): ?>
+<details class="planning-collapsible product-sync-collapsible mb-15"<?= !empty($productPreview) || !empty($_GET['product_page']) ? ' open' : '' ?>>
+    <summary class="planning-collapsible-summary">Product Sync / Import</summary>
+    <div class="planning-collapsible-body">
+        <?php view('partials.product-control-sync-panel', [
+            'productSyncStatus' => $productSyncStatus ?? null,
+            'productSyncDiagnostics' => $productSyncDiagnostics ?? null,
+            'canManageSync' => $canManageSync ?? false,
+            'productWriteGateReady' => $productWriteGateReady ?? false,
+            'productWriteGate' => $productWriteGate ?? [],
+            'productPreview' => $productPreview ?? null,
+            'productPage' => $productPage ?? 1,
+            'defaultBusinessSourceId' => $defaultBusinessSourceId ?? 1,
+            'csrfField' => $csrfField ?? '',
+            'syncPaginationBase' => $syncPaginationBase ?? '/product-control',
+            'syncRedirectTo' => $syncRedirectTo ?? '/product-control',
+            'catalogPage' => $catalogPage ?? 1,
+            'catalogFilters' => $catalogFilters ?? [],
+        ]); ?>
+    </div>
+</details>
+<?php endif; ?>
 
 <?php if (!empty($tableReady) && empty($writeGateSupplierNoteReady)): ?>
 <?php view('partials.column-gate-note', [
@@ -95,7 +111,7 @@ $currentPage = max(1, (int) ($pagination['page'] ?? 1));
         <?php if (!$tableReady): ?>
         <p class="page-description"><?= e($productReadInventory['status_message'] ?? 'Product table unavailable.') ?></p>
         <?php elseif ($totalFiltered === 0): ?>
-        <p class="page-description">No products match the current filters.<?php if (empty($productReadInventory['rows'])): ?><?php if (empty($isSupplierView)): ?> Owner: open <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a> and import warehouse products.<?php else: ?> Ask the owner to run product import from Sync Preview.<?php endif; ?><?php endif; ?></p>
+        <p class="page-description">No products match the current filters.<?php if (empty($productReadInventory['rows'])): ?><?php if (empty($isSupplierView)): ?> Owner: expand <strong>Product Sync / Import</strong> above and import warehouse products.<?php else: ?> Ask the owner to run product import from Product Control.<?php endif; ?><?php endif; ?></p>
         <?php else: ?>
         <?php
         $pageQuery = array_filter([

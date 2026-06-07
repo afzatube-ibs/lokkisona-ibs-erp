@@ -14,6 +14,8 @@ use App\SupplierContext;
 use App\Csrf;
 use App\Services\ReadOnly\ProductCatalogPageService;
 use App\Services\ReadOnly\ProductReadService;
+use App\Services\ReadOnly\ProductSyncDiagnosticsService;
+use App\Services\ReadOnly\ProductSyncReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\ReadOnly\SupplierProductFilter;
 use App\Services\ReadOnly\SupplierReadService;
@@ -95,6 +97,20 @@ class ProductControlController extends Controller
         );
         $productHistoryByProduct = $this->historyRowsByProduct($costStockHistoryDisplay['rows'] ?? []);
 
+        $canViewSync = Permission::can('sync_preview.view');
+        $canManageSync = Permission::can('sync_preview.manage');
+        $productPage = max(1, (int) ($_GET['product_page'] ?? 1));
+        $productSession = $_SESSION['ibs_product_sync_preview'] ?? null;
+        $productPreview = null;
+        if (is_array($productSession) && (int) ($productSession['page'] ?? 0) === $productPage) {
+            $productPreview = $productSession['display'] ?? null;
+        }
+        $productSyncStatus = $canViewSync ? (new ProductSyncReadService())->status() : null;
+        $productSyncDiagnostics = $canViewSync
+            ? (new ProductSyncDiagnosticsService())->analyze($productPreview)
+            : null;
+        $productWriteGate = WriteGate::productSyncImport();
+
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
             'breadcrumbs' => [
@@ -144,6 +160,17 @@ class ProductControlController extends Controller
             'supplierSelectOptions' => $this->supplierSelectOptions(),
             'writeGateSupplierNote' => WriteGate::supplierProductNoteColumn(),
             'writeGateSupplierNoteReady' => WriteGate::supplierProductNoteColumn()['ready'],
+            'canViewSync' => $canViewSync,
+            'canManageSync' => $canManageSync,
+            'productPage' => $productPage,
+            'productPreview' => $productPreview,
+            'productSyncStatus' => $productSyncStatus,
+            'productSyncDiagnostics' => $productSyncDiagnostics,
+            'productWriteGate' => $productWriteGate,
+            'productWriteGateReady' => $productWriteGate['ready'],
+            'syncPaginationBase' => '/product-control',
+            'syncRedirectTo' => '/product-control',
+            'catalogPage' => $catalogPage,
         ]);
     }
 

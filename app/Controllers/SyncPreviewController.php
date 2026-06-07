@@ -602,11 +602,11 @@ class SyncPreviewController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
-            redirect('/sync-preview');
+            redirect('/product-control');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $result = (new SyncPreviewWriteService())->previewProducts($_POST);
-        $this->redirectWithWriteResult('/sync-preview?product_page=' . $page, $result);
+        $this->redirectWithWriteResult('/product-control?product_page=' . $page, $result);
     }
 
     public function importProducts()
@@ -615,11 +615,11 @@ class SyncPreviewController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
-            redirect('/sync-preview');
+            redirect('/product-control');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $result = (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
-        $this->redirectWithWriteResult('/sync-preview?product_page=' . $page, $result);
+        $this->redirectWithWriteResult('/product-control?product_page=' . $page, $result);
     }
 
     public function resetProductSync()
@@ -628,12 +628,12 @@ class SyncPreviewController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
-            redirect('/sync-preview');
+            redirect('/product-control');
         }
 
-        $redirect = trim((string) ($_POST['redirect_to'] ?? '/sync-preview'));
-        if (!in_array($redirect, ['/sync-preview', '/sync-api-settings'], true)) {
-            $redirect = '/sync-preview';
+        $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
+        if (!in_array($redirect, ['/sync-preview', '/product-control', '/sync-api-settings'], true)) {
+            $redirect = '/product-control';
         }
 
         $this->redirectWithWriteResult($redirect, (new ProductSyncResetWriteService())->reset($_POST));
@@ -645,9 +645,9 @@ class SyncPreviewController extends Controller
         $this->requirePost();
         if (!$this->validateCsrf()) {
             $this->flash('error', 'Invalid security token.');
-            redirect('/sync-preview');
+            redirect('/product-control');
         }
-        $this->redirectWithWriteResult('/sync-preview', (new SyncPreviewWriteService())->pullWarehouseProducts($_POST));
+        $this->redirectWithWriteResult('/product-control', (new SyncPreviewWriteService())->pullWarehouseProducts($_POST));
     }
 
     public function import()
