@@ -17,9 +17,6 @@ class ProductControlCatalogReadService
 
         $catalogRows = [];
         $workspaces = [];
-        $readyCount = 0;
-        $needsWorkCount = 0;
-        $variantLineCount = 0;
 
         foreach ($productRows as $product) {
             $productId = (int) ($product['product_id'] ?? 0);
@@ -28,27 +25,38 @@ class ProductControlCatalogReadService
             }
 
             $variants = $variantsByProduct[$productId] ?? [];
-            $variantLineCount += count($variants);
             $summary = $this->summarizeProduct($product, $variants, $isSupplierView);
-            if ($summary['is_ready']) {
-                $readyCount++;
-            } else {
-                $needsWorkCount++;
-            }
-
             $catalogRows[] = $summary['catalog'];
             $workspaces[(string) $productId] = $summary['workspace'];
         }
 
         return [
-            'kpis' => [
-                'total_products' => count($catalogRows),
-                'ready' => $readyCount,
-                'variants' => $variantLineCount,
-                'needs_work' => $needsWorkCount,
-            ],
+            'kpis' => $this->summarizeKpis($catalogRows),
             'rows' => $catalogRows,
             'workspaces' => $workspaces,
+        ];
+    }
+
+    public function summarizeKpis(array $catalogRows): array
+    {
+        $readyCount = 0;
+        $needsWorkCount = 0;
+        $variantLineCount = 0;
+
+        foreach ($catalogRows as $row) {
+            if (($row['completeness'] ?? '') === 'ready') {
+                $readyCount++;
+            } else {
+                $needsWorkCount++;
+            }
+            $variantLineCount += (int) ($row['variant_count'] ?? 0);
+        }
+
+        return [
+            'total_products' => count($catalogRows),
+            'ready' => $readyCount,
+            'variants' => $variantLineCount,
+            'needs_work' => $needsWorkCount,
         ];
     }
 
@@ -66,6 +74,7 @@ class ProductControlCatalogReadService
         $ownerStock = $hasVariants
             ? $this->sumField($variants, 'source_stock')
             : (int) ($product['source_stock'] ?? 0);
+        $syncStatus = $this->syncStatusLabel($product, $noOptionsSynced);
 
         $workspaceVariants = [];
         if ($hasVariants) {
@@ -95,7 +104,6 @@ class ProductControlCatalogReadService
         $lastSyncedDisplay = $lastSynced !== '' ? $lastSynced : '—';
 
         return [
-            'is_ready' => $health['is_ready'],
             'catalog' => [
                 'product_id' => $productId,
                 'source_product_id' => (string) ($product['source_product_id'] ?? ''),
@@ -110,11 +118,16 @@ class ProductControlCatalogReadService
                 'vendor_stock' => $vendorStock,
                 'low_warning_threshold' => $product['low_warning_threshold'] ?? null,
                 'low_warning' => $health['low_stock'],
-                'health_label' => $health['label'],
+                'badges' => $health['badges'],
+                'completeness' => $health['completeness'],
+                'health_label' => $health['primary_label'],
                 'health_class' => $health['class'],
+                'sync_status' => $syncStatus,
+                'filter_flags' => $health['filter_flags'],
                 'supplier_product_category' => (string) ($product['supplier_product_category'] ?? ''),
                 'last_synced_at' => $lastSyncedDisplay,
                 'status' => (string) ($product['status'] ?? 'active'),
+                'variant_count' => count($variants),
                 'search_blob' => strtolower(implode(' ', array_filter([
                     (string) ($product['product_name'] ?? ''),
                     (string) ($product['supplier_model'] ?? ''),
@@ -135,6 +148,9 @@ class ProductControlCatalogReadService
                 'source_model' => (string) ($product['source_model'] ?? ''),
                 'source_stock' => $product['source_stock'] ?? null,
                 'last_synced_at' => $lastSynced,
+                'sync_status' => $syncStatus,
+                'completeness' => $health['completeness'],
+                'badges' => $health['badges'],
                 'low_warning_threshold' => $product['low_warning_threshold'] ?? '',
                 'image_path' => (string) ($product['image_path'] ?? ''),
                 'type' => $isVariable ? 'variable' : 'simple',
@@ -151,70 +167,96 @@ class ProductControlCatalogReadService
 
     private function healthStatus(array $product, array $variants, bool $isSupplierView, bool $noOptionsSynced = false): array
     {
-        $issues = [];
+        $missingModel = false;
+        $missingCost = false;
         $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
         $vendorStock = $this->vendorStockTotal($product, $variants);
         $lowStock = $lowWarning > 0 && $vendorStock <= $lowWarning;
-
-        if ($noOptionsSynced) {
-            $issues[] = 'No option synced';
-        }
+        $syncRequired = $noOptionsSynced || trim((string) ($product['last_synced_at'] ?? '')) === '';
 
         if ($variants === []) {
-            if (trim((string) ($product['supplier_model'] ?? '')) === '') {
-                $issues[] = 'Missing Model';
-            }
-            if ($product['product_cost'] === null || $product['product_cost'] === '') {
-                $issues[] = $isSupplierView ? 'Missing Sale' : 'Missing Rate';
-            }
+            $missingModel = trim((string) ($product['supplier_model'] ?? '')) === '';
+            $missingCost = $product['product_cost'] === null || $product['product_cost'] === '';
         } else {
-            $missingModel = 0;
-            $missingRate = 0;
             foreach ($variants as $variant) {
                 if (trim((string) ($variant['supplier_model'] ?? '')) === '') {
-                    $missingModel++;
+                    $missingModel = true;
                 }
                 if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
-                    $missingRate++;
+                    $missingCost = true;
                 }
             }
-            if ($missingModel > 0) {
-                $issues[] = $missingModel . '/' . count($variants) . ' Missing Model';
-            }
-            if ($missingRate > 0) {
-                $issues[] = $missingRate . '/' . count($variants) . ($isSupplierView ? ' Missing Sale' : ' Missing Rate');
-            }
         }
 
+        $needsWork = $missingModel || $missingCost;
+        $isReady = !$needsWork;
+
+        $badges = [];
+        if ($isReady) {
+            $badges[] = ['label' => 'Ready', 'class' => 'ok'];
+        } else {
+            $badges[] = ['label' => 'Needs Work', 'class' => 'warn'];
+        }
         if ($lowStock) {
-            $issues[] = 'Low Stock';
+            $badges[] = ['label' => 'Low Stock', 'class' => 'warn'];
         }
-
-        if ($issues === []) {
-            return [
-                'label' => 'OK',
-                'class' => 'ok',
-                'is_ready' => true,
-                'low_stock' => false,
-            ];
+        if ($missingCost) {
+            $badges[] = ['label' => 'Missing Cost', 'class' => 'warn'];
+        }
+        if ($missingModel) {
+            $badges[] = ['label' => 'Missing Supplier Model', 'class' => 'warn'];
+        }
+        if ($syncRequired) {
+            $badges[] = ['label' => 'Sync Required', 'class' => 'info'];
         }
 
         return [
-            'label' => implode(' · ', $issues),
-            'class' => 'warn',
-            'is_ready' => false,
+            'badges' => $badges,
+            'completeness' => $isReady ? 'ready' : 'needs_work',
+            'primary_label' => $isReady ? 'Ready' : 'Needs Work',
+            'class' => $isReady ? 'ok' : 'warn',
+            'is_ready' => $isReady,
             'low_stock' => $lowStock,
+            'filter_flags' => [
+                'low_stock' => $lowStock,
+                'missing_cost' => $missingCost,
+                'missing_model' => $missingModel,
+                'needs_work' => $needsWork,
+                'sync_required' => $syncRequired,
+            ],
         ];
+    }
+
+    private function syncStatusLabel(array $product, bool $noOptionsSynced): string
+    {
+        if ($noOptionsSynced) {
+            return 'Sync required — options missing';
+        }
+
+        $lastSynced = trim((string) ($product['last_synced_at'] ?? ''));
+        if ($lastSynced === '') {
+            return 'Never synced';
+        }
+
+        $state = (string) ($product['sync_options_state'] ?? '');
+        if ($state === 'has_options') {
+            return 'Synced with options';
+        }
+        if ($state === 'simple') {
+            return 'Synced — simple product';
+        }
+
+        return 'Synced';
     }
 
     private function variantHealth(array $variant, array $product, bool $isSupplierView): array
     {
         $issues = [];
         if (trim((string) ($variant['supplier_model'] ?? '')) === '') {
-            $issues[] = 'Missing Model';
+            $issues[] = 'Missing Supplier Model';
         }
         if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
-            $issues[] = $isSupplierView ? 'Missing Sale' : 'Missing Rate';
+            $issues[] = $isSupplierView ? 'Missing Sale' : 'Missing Cost';
         }
 
         $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
@@ -222,7 +264,7 @@ class ProductControlCatalogReadService
         $lowStock = $lowWarning > 0 && $vendorStock <= $lowWarning;
 
         return [
-            'label' => $issues === [] ? 'OK' : implode(' · ', $issues),
+            'label' => $issues === [] ? 'Ready' : implode(' · ', $issues),
             'low_stock' => $lowStock,
         ];
     }

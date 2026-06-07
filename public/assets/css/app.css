@@ -3020,6 +3020,63 @@ body.modal-open { overflow: hidden; }
     padding: 0.75rem 1.25rem 1rem;
     border-top: 1px solid var(--color-border);
 }
+.product-control-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.product-control-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+.product-control-chip-row {
+    margin-top: 0.25rem;
+}
+.product-control-chip-row .workflow-chip {
+    text-decoration: none;
+}
+.product-catalog-table-compact th,
+.product-catalog-table-compact td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+}
+.pcc-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.pcc-badge-row .badge {
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+.pcc-sync-info-card {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface-muted, #f8fafc);
+}
+.pcc-sync-info-list {
+    margin: 0;
+}
+.pcc-variant-accordion {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+}
+.pcc-variant-accordion-summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.35rem 0;
+}
+.pcc-variant-accordion .table-scroll {
+    margin-top: 0.75rem;
+}
 @media (max-width: 900px) {
     .pcc-main-card {
         grid-template-columns: 1fr;

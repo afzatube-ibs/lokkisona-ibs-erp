@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.7.1',
-    'release_label' => 'Live Product + Order Sync Connection Test',
+    'version' => '1.8.0',
+    'release_label' => 'Product Control Center Complete Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

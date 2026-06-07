@@ -34,10 +34,6 @@
     var modal = document.getElementById('productControlCenterModal');
     var form = document.getElementById('productControlCenterForm');
     var tableBody = document.getElementById('productCatalogTableBody');
-    var searchInput = document.getElementById('productCatalogSearch');
-    var filterButtons = document.querySelectorAll('[data-catalog-filter]');
-    var rows = tableBody ? Array.prototype.slice.call(tableBody.querySelectorAll('[data-product-row]')) : [];
-    var activeFilter = 'all';
 
     function openModal(id) {
         var target = document.getElementById(id);
@@ -82,33 +78,85 @@
         }
     }
 
-    function renderVariantRows(variants) {
-        var tbody = document.getElementById('pccVariantRows');
-        if (!tbody) {
+    function renderBadges(containerId, badges) {
+        var container = document.getElementById(containerId);
+        if (!container) {
             return;
         }
-        tbody.innerHTML = '';
+        container.innerHTML = '';
+        (badges || []).forEach(function (badge) {
+            var span = document.createElement('span');
+            span.className = 'badge badge-' + (badge.class || 'muted');
+            span.textContent = badge.label || '';
+            container.appendChild(span);
+        });
+    }
+
+    function renderVariantAccordion(variants) {
+        var root = document.getElementById('pccVariantAccordion');
+        if (!root) {
+            return;
+        }
+        root.innerHTML = '';
+        if (!variants.length) {
+            return;
+        }
+
+        var details = document.createElement('details');
+        details.className = 'pcc-variant-accordion';
+        details.open = false;
+
+        var summary = document.createElement('summary');
+        summary.className = 'pcc-variant-accordion-summary';
+        summary.textContent = 'Options (' + variants.length + ') — expand to edit supplier fields';
+        details.appendChild(summary);
+
+        var tableWrap = document.createElement('div');
+        tableWrap.className = 'table-scroll';
+
+        var table = document.createElement('table');
+        table.className = 'data-table pcc-variant-table';
+
+        var noteHeader = pageConfig.supplierNoteReady ? '<th>Supplier note</th>' : '';
+        table.innerHTML =
+            '<thead><tr>' +
+            '<th>Image</th><th>Option</th><th>Value</th><th>OC model</th><th>OC stock</th>' +
+            '<th>Vendor model</th><th>Cost</th><th>Vendor stock</th>' +
+            noteHeader + '<th>Health</th>' +
+            '</tr></thead><tbody id="pccVariantRows"></tbody>';
+
+        tableWrap.appendChild(table);
+        details.appendChild(tableWrap);
+        root.appendChild(details);
+
+        var tbody = table.querySelector('#pccVariantRows');
         variants.forEach(function (variant, index) {
             var tr = document.createElement('tr');
             tr.dataset.variantIndex = String(index);
+            tr.dataset.optionName = variant.option_name || '';
+            tr.dataset.optionValue = variant.option_value || '';
+            tr.dataset.variantId = String(variant.product_variant_id || '');
+
+            var imageCell = variant.image_path
+                ? '<div class="pcc-thumb"><img src="' + escapeAttr(variant.image_path) + '" alt=""></div>'
+                : '<span class="pcc-thumb-empty">—</span>';
             var noteCell = '';
             if (pageConfig.supplierNoteReady) {
                 noteCell = '<td><input type="text" class="form-input pcc-inline-input" data-field="supplier_note" value="' + escapeAttr(variant.supplier_note || '') + '"></td>';
             }
+
             tr.innerHTML =
-                '<td><strong>' + escapeHtml(variant.line_label || 'Option line') + '</strong></td>' +
-                '<td><div class="pcc-thumb">' + (variant.image_path ? '<img src="' + escapeAttr(variant.image_path) + '" alt="">' : '<span class="pcc-thumb-empty">—</span>') + '</div></td>' +
+                '<td>' + imageCell + '</td>' +
+                '<td>' + escapeHtml(variant.option_name || '—') + '</td>' +
+                '<td>' + escapeHtml(variant.option_value || '—') + '</td>' +
                 '<td><code>' + escapeHtml(variant.source_model || '—') + '</code></td>' +
-                '<td><input type="text" class="form-input pcc-inline-input" data-field="supplier_model" value="' + escapeAttr(variant.supplier_model || '') + '"></td>' +
                 '<td class="pcc-readonly-cell">' + escapeHtml(variant.source_stock === null || variant.source_stock === '' ? '—' : String(variant.source_stock)) + '</td>' +
+                '<td><input type="text" class="form-input pcc-inline-input" data-field="supplier_model" value="' + escapeAttr(variant.supplier_model || '') + '"></td>' +
                 '<td><input type="number" step="0.01" min="0" class="form-input pcc-inline-input" data-field="product_cost" value="' + escapeAttr(variant.product_cost || '') + '"></td>' +
                 '<td><input type="number" min="0" class="form-input pcc-inline-input" data-field="vendor_stock" value="' + escapeAttr(variant.vendor_stock || 0) + '"></td>' +
                 noteCell +
-                '<td>' + (variant.warning ? '<span class="badge badge-warn">Low</span>' : '—') + '</td>' +
                 '<td><span class="pcc-health-text">' + escapeHtml(variant.health || '—') + '</span></td>';
-            tr.dataset.optionName = variant.option_name || '';
-            tr.dataset.optionValue = variant.option_value || '';
-            tr.dataset.variantId = String(variant.product_variant_id || '');
+
             tbody.appendChild(tr);
         });
     }
@@ -146,8 +194,10 @@
 
         setInput('pccProductId', workspace.product_id);
         setInput('pccBusinessSourceId', workspace.business_source_id || '');
+        setInput('pccErpProductIdDisplay', '#' + workspace.product_id);
         setInput('pccProductNameDisplay', workspace.product_name || '—');
         setInput('pccSourceModelDisplay', workspace.source_model || '—');
+        setInput('pccOwnerStockReadonlyTop', workspace.source_stock === null || workspace.source_stock === '' ? '—' : workspace.source_stock);
         setInput('pccSupplierModel', workspace.supplier_model);
         setInput('pccCategory', workspace.supplier_product_category);
         setInput('pccSourceProductIdDisplay', workspace.source_product_id || '—');
@@ -160,7 +210,12 @@
             setInput('pccSupplierNote', workspace.supplier_note || '');
         }
 
-        setText('pccModalSubtitle', '#' + workspace.product_id + ' • Main model ' + (workspace.supplier_model || workspace.source_model || '—') + ' • controlled product workspace');
+        setText('pccSyncLastSynced', workspace.last_synced_at || '—');
+        setText('pccSyncSourceId', workspace.source_product_id || '—');
+        setText('pccSyncStatus', workspace.sync_status || '—');
+        renderBadges('pccCompletenessBadges', workspace.badges || []);
+
+        setText('pccModalSubtitle', '#' + workspace.product_id + ' • ' + (workspace.completeness === 'ready' ? 'Ready' : 'Needs Work') + ' • controlled product workspace');
         setText('pccProductTitle', workspace.product_name);
         var typeLabel = workspace.type === 'variable' ? 'Variable' : 'Simple';
         if (workspace.no_options_synced) {
@@ -184,7 +239,6 @@
         var simpleFields = document.getElementById('pccSimpleProductFields');
         var variantSection = document.getElementById('pccVariantSection');
         var noOptionsNotice = document.getElementById('pccNoOptionsNotice');
-        var variantTable = variantSection ? variantSection.querySelector('.table-scroll') : null;
 
         if (workspace.type === 'variable') {
             if (simpleFields) {
@@ -197,10 +251,7 @@
             if (noOptionsNotice) {
                 noOptionsNotice.hidden = !workspace.no_options_synced;
             }
-            if (variantTable) {
-                variantTable.hidden = !hasVariantLines;
-            }
-            renderVariantRows(workspace.variants || []);
+            renderVariantAccordion(workspace.variants || []);
         } else {
             if (simpleFields) {
                 simpleFields.hidden = false;
@@ -213,15 +264,6 @@
             }
             setInput('pccProductCost', workspace.product_cost);
             setInput('pccProductVendorStock', workspace.vendor_stock);
-            setInput('pccOwnerStockReadonly', workspace.source_stock === null || workspace.source_stock === '' ? '—' : workspace.source_stock);
-        }
-
-        var platform = document.getElementById('pccPlatformReadonly');
-        if (platform) {
-            var showPlatform = workspace.source_model || workspace.last_synced_at;
-            platform.hidden = !showPlatform;
-            setText('pccPlatformModel', workspace.source_model ? 'OC model: ' + workspace.source_model : '');
-            setText('pccPlatformSynced', workspace.last_synced_at ? 'Last synced: ' + workspace.last_synced_at : '');
         }
 
         renderHistory(workspace.product_id);
@@ -265,38 +307,6 @@
         return JSON.stringify(payload);
     }
 
-    function applyFilters() {
-        var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        rows.forEach(function (row) {
-            var blob = row.getAttribute('data-search') || '';
-            var health = row.getAttribute('data-health') || '';
-            var type = row.getAttribute('data-type') || '';
-            var low = row.getAttribute('data-low') === '1';
-            var matchesQuery = !query || blob.indexOf(query) !== -1;
-            var matchesFilter = true;
-            if (activeFilter === 'variable') {
-                matchesFilter = type === 'variable';
-            } else if (activeFilter === 'simple') {
-                matchesFilter = type === 'simple';
-            } else if (activeFilter === 'low_stock') {
-                matchesFilter = low;
-            } else if (activeFilter === 'needs_work') {
-                matchesFilter = health !== 'ok';
-            }
-            row.hidden = !(matchesQuery && matchesFilter);
-        });
-        updateVisibleCount();
-    }
-
-    function updateVisibleCount() {
-        var countEl = document.getElementById('productCatalogVisibleCount');
-        if (!countEl) {
-            return;
-        }
-        var visible = rows.filter(function (row) { return !row.hidden; }).length;
-        countEl.textContent = String(visible);
-    }
-
     function escapeHtml(value) {
         return String(value)
             .replace(/&/g, '&amp;')
@@ -337,20 +347,6 @@
         });
     }
 
-    if (searchInput) {
-        searchInput.addEventListener('input', applyFilters);
-    }
-
-    filterButtons.forEach(function (button) {
-        button.addEventListener('click', function () {
-            activeFilter = button.getAttribute('data-catalog-filter') || 'all';
-            filterButtons.forEach(function (btn) {
-                btn.classList.toggle('is-active', btn === button);
-            });
-            applyFilters();
-        });
-    });
-
     document.querySelectorAll('[data-open-product-workspace]').forEach(function (button) {
         button.addEventListener('click', function () {
             openWorkspace(button.getAttribute('data-open-product-workspace'));
@@ -371,6 +367,10 @@
         });
     }
 
+    var openParam = new URLSearchParams(window.location.search).get('open');
+    if (openParam && workspaces[String(openParam)]) {
+        openWorkspace(openParam);
+    }
+
     window.productControlOpenWorkspace = openWorkspace;
-    applyFilters();
 })();

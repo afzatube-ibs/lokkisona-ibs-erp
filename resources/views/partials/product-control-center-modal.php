@@ -8,6 +8,7 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
             <div>
                 <h2 class="pcc-modal-title" id="pccModalTitle">Product Control Center</h2>
                 <p class="pcc-modal-subtitle" id="pccModalSubtitle">Controlled product workspace</p>
+                <div class="pcc-badge-row" id="pccCompletenessBadges"></div>
             </div>
             <button type="button" class="modal-close" data-modal-close="productControlCenterModal" aria-label="Close product workspace">&times;</button>
         </div>
@@ -39,15 +40,41 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                     </div>
                     <div class="pcc-main-fields">
                         <p class="pcc-section-label">OpenCart / platform (read-only)</p>
+                        <label class="pcc-field">ERP Product ID
+                            <input type="text" id="pccErpProductIdDisplay" class="form-input" readonly>
+                        </label>
                         <label class="pcc-field">OpenCart product name
                             <input type="text" id="pccProductNameDisplay" class="form-input" readonly>
                         </label>
                         <label class="pcc-field">OpenCart model
                             <input type="text" id="pccSourceModelDisplay" class="form-input" readonly>
                         </label>
+                        <label class="pcc-field">OpenCart stock
+                            <input type="text" id="pccOwnerStockReadonlyTop" class="form-input" readonly>
+                        </label>
                         <label class="pcc-field">OpenCart source product ID
                             <input type="text" id="pccSourceProductIdDisplay" class="form-input" readonly>
                         </label>
+                        <label class="pcc-field">OpenCart product status
+                            <input type="text" id="pccOcStatusDisplay" class="form-input" readonly value="Not stored in ERP">
+                        </label>
+                        <div class="pcc-sync-info-card">
+                            <p class="pcc-section-label">Sync information</p>
+                            <dl class="info-list pcc-sync-info-list">
+                                <div class="info-row">
+                                    <dt>Last synced</dt>
+                                    <dd id="pccSyncLastSynced">—</dd>
+                                </div>
+                                <div class="info-row">
+                                    <dt>Source product ID</dt>
+                                    <dd id="pccSyncSourceId">—</dd>
+                                </div>
+                                <div class="info-row">
+                                    <dt>Source sync status</dt>
+                                    <dd id="pccSyncStatus">—</dd>
+                                </div>
+                            </dl>
+                        </div>
                         <p class="pcc-section-label">Supplier / ERP fields (editable)</p>
                         <label class="pcc-field">Main vendor model
                             <input type="text" name="supplier_model" id="pccSupplierModel" class="form-input">
@@ -58,7 +85,7 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                         <label class="pcc-field">Low warning
                             <input type="number" name="low_warning_threshold" id="pccLowWarning" min="0" class="form-input">
                         </label>
-                        <label class="pcc-field">ERP status
+                        <label class="pcc-field">Supplier active/inactive
                             <select name="status" id="pccStatus" class="form-input">
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -93,41 +120,12 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                         <label>Vendor stock
                             <input type="number" name="vendor_stock" id="pccProductVendorStock" min="0" class="form-input">
                         </label>
-                        <label class="pcc-readonly-field">Owner stock (read-only)
-                            <input type="text" id="pccOwnerStockReadonly" class="form-input" readonly>
-                        </label>
                     </div>
                 </div>
 
                 <div class="pcc-variant-section" id="pccVariantSection" hidden>
                     <p class="page-description pcc-no-options-notice" id="pccNoOptionsNotice" hidden>No option synced from Lokkisona for this variable product. Parent row is kept; option lines will appear after the next warehouse pull returns options.</p>
-                    <div class="table-scroll">
-                        <table class="data-table pcc-variant-table">
-                            <thead>
-                                <tr>
-                                    <th>Line</th>
-                                    <th>Image</th>
-                                    <th>Model</th>
-                                    <th>Vendor model</th>
-                                    <th>OC stock</th>
-                                    <th><?= e($avgLabel) ?></th>
-                                    <th>Vendor stock</th>
-                                    <?php if (!empty($writeGateSupplierNoteReady)): ?>
-                                    <th>Supplier note</th>
-                                    <?php endif; ?>
-                                    <th>Warning</th>
-                                    <th>Health</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pccVariantRows"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="pcc-platform-readonly" id="pccPlatformReadonly" hidden>
-                    <p class="page-description"><strong>Platform read-only</strong> — updated by warehouse pull or future sync</p>
-                    <span id="pccPlatformModel"></span>
-                    <span id="pccPlatformSynced"></span>
+                    <div id="pccVariantAccordion"></div>
                 </div>
 
                 <?php if (!empty($canManage) && !empty($writeGateProductEditReady)): ?>

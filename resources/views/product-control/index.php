@@ -1,10 +1,12 @@
 <?php
 $costTerm = !empty($isSupplierView) ? 'Sale' : 'Cost';
-$avgCostLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
 $catalog = $productCatalog ?? ['kpis' => [], 'rows' => [], 'workspaces' => []];
 $kpis = $catalog['kpis'] ?? [];
 $catalogRows = $catalog['rows'] ?? [];
+$pagination = $catalogPagination ?? ($catalog['pagination'] ?? []);
 $tableReady = !empty($productReadInventory['table_exists']);
+$totalFiltered = (int) ($pagination['total'] ?? count($catalogRows));
+$currentPage = max(1, (int) ($pagination['page'] ?? 1));
 ?>
 <div class="page-header page-header-compact product-control-header">
     <div class="product-control-header-main">
@@ -49,7 +51,7 @@ $tableReady = !empty($productReadInventory['table_exists']);
     <div class="card-header product-control-status-header">
         <div>
             <h2 class="card-title">Inventory Control Status</h2>
-            <p class="page-description mb-0">Synced catalog from live site. New rows come from <strong>Pull warehouse products</strong> on Sync Preview — not manual add.</p>
+            <p class="page-description mb-0">Synced catalog from live site. New rows come from Sync Preview import — not manual add.</p>
         </div>
         <div class="product-control-status-pills">
             <span class="workflow-chip">Sync-only catalog</span>
@@ -61,7 +63,7 @@ $tableReady = !empty($productReadInventory['table_exists']);
             <div class="kpi-card kpi-accent-primary">
                 <span class="kpi-label">Total Products</span>
                 <span class="kpi-value"><?= e((string) ($kpis['total_products'] ?? 0)) ?></span>
-                <span class="kpi-sub">warehouse catalog</span>
+                <span class="kpi-sub">filtered catalog</span>
             </div>
             <div class="kpi-card kpi-accent-success">
                 <span class="kpi-label">Ready</span>
@@ -82,54 +84,49 @@ $tableReady = !empty($productReadInventory['table_exists']);
     </div>
 </div>
 
-<div class="card mb-15">
-    <div class="card-header"><h2 class="card-title">Search &amp; Filter</h2></div>
-    <div class="card-body">
-        <div class="product-control-filters">
-            <input type="search" id="productCatalogSearch" class="form-input" placeholder="Search product, model, OC ID, or category">
-            <div class="workflow-chip-row">
-                <button type="button" class="workflow-chip is-active" data-catalog-filter="all">All</button>
-                <button type="button" class="workflow-chip" data-catalog-filter="variable">Variable</button>
-                <button type="button" class="workflow-chip" data-catalog-filter="simple">Simple</button>
-                <button type="button" class="workflow-chip" data-catalog-filter="needs_work">Needs Work</button>
-                <button type="button" class="workflow-chip" data-catalog-filter="low_stock">Low Stock</button>
-            </div>
-        </div>
-    </div>
-</div>
+<?php view('partials.product-control-filters', ['catalogFilters' => $catalogFilters ?? []]); ?>
 
 <div class="card mb-15">
     <div class="card-header product-control-table-header">
         <h2 class="card-title">Inventory Products</h2>
-        <p class="page-description mb-0">Showing <strong id="productCatalogVisibleCount"><?= e((string) count($catalogRows)) ?></strong> of <?= e((string) count($catalogRows)) ?> records</p>
+        <p class="page-description mb-0">Page <?= e((string) $currentPage) ?> · <?= e((string) count($catalogRows)) ?> of <?= e((string) $totalFiltered) ?> filtered · 20 rows per page</p>
     </div>
     <div class="card-body">
         <?php if (!$tableReady): ?>
         <p class="page-description"><?= e($productReadInventory['status_message'] ?? 'Product table unavailable.') ?></p>
-        <?php elseif ($catalogRows === []): ?>
-        <p class="page-description">No synced products yet.<?php if (empty($isSupplierView)): ?> Owner: open <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a> and run <strong>Pull warehouse products</strong> (live site, From Warehouse = Yes only).<?php else: ?> Ask the owner to run warehouse product pull from the live site.<?php endif; ?></p>
-        <?php if (empty($isSupplierView) && empty($warehouseProductPullAvailable)): ?>
-        <p class="page-description">Set <code>product_api_route</code> in <code>config/opencart.php</code> to your live OpenCart product API route before pulling.</p>
-        <?php endif; ?>
+        <?php elseif ($totalFiltered === 0): ?>
+        <p class="page-description">No products match the current filters.<?php if (empty($productReadInventory['rows'])): ?><?php if (empty($isSupplierView)): ?> Owner: open <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a> and import warehouse products.<?php else: ?> Ask the owner to run product import from Sync Preview.<?php endif; ?><?php endif; ?></p>
         <?php else: ?>
+        <?php
+        $pageQuery = array_filter([
+            'q' => $catalogFilters['q'] ?? '',
+            'product_id' => $catalogFilters['product_id'] ?? '',
+            'product_name' => $catalogFilters['product_name'] ?? '',
+            'model' => $catalogFilters['model'] ?? '',
+            'supplier_model' => $catalogFilters['supplier_model'] ?? '',
+            'chip' => $catalogFilters['chip'] ?? 'all',
+        ], static fn ($value) => $value !== '' && $value !== null && $value !== 'all');
+        view('partials.sync-pagination', [
+            'page' => $currentPage,
+            'pageParam' => 'page',
+            'baseUrl' => url('/product-control'),
+            'otherPageQuery' => $pageQuery,
+            'pagination' => $pagination,
+        ]);
+        ?>
         <div class="table-scroll">
-            <table class="data-table product-catalog-table">
+            <table class="data-table product-catalog-table product-catalog-table-compact">
                 <thead>
                     <tr>
-                        <th>Product ID</th>
+                        <th>Thumb</th>
+                        <th>ID</th>
                         <th>Product Name</th>
+                        <th>Type</th>
                         <th>OC ID</th>
-                        <th>Image</th>
-                        <th>Variable</th>
-                        <th>Model</th>
                         <th>Vendor Model</th>
-                        <th>Category</th>
-                        <th><?= e($avgCostLabel) ?></th>
-                        <th>Owner Stock</th>
                         <th>Vendor Stock</th>
                         <th>Last Synced</th>
-                        <th>Low Warning</th>
-                        <th>Health Status</th>
+                        <th>Health</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -138,16 +135,9 @@ $tableReady = !empty($productReadInventory['table_exists']);
                     <tr class="product-catalog-row"
                         data-product-row
                         data-product-id="<?= e((string) $row['product_id']) ?>"
-                        data-search="<?= e($row['search_blob'] ?? '') ?>"
-                        data-health="<?= e($row['health_class'] ?? 'warn') ?>"
-                        data-type="<?= e($row['type'] ?? 'simple') ?>"
-                        data-low="<?= !empty($row['low_warning']) ? '1' : '0' ?>"
                         tabindex="0"
                         role="button"
                         aria-label="Open product #<?= e((string) $row['product_id']) ?>">
-                        <td><code>#<?= e((string) $row['product_id']) ?></code></td>
-                        <td><strong><?= e($row['product_name'] !== '' ? $row['product_name'] : '—') ?></strong></td>
-                        <td><code><?= e($row['source_product_id'] !== '' ? $row['source_product_id'] : '—') ?></code></td>
                         <td>
                             <div class="pcc-list-thumb">
                                 <?php if (!empty($row['image_path'])): ?>
@@ -157,23 +147,24 @@ $tableReady = !empty($productReadInventory['table_exists']);
                                 <?php endif; ?>
                             </div>
                         </td>
+                        <td><code>#<?= e((string) $row['product_id']) ?></code></td>
+                        <td><strong><?= e($row['product_name'] !== '' ? $row['product_name'] : '—') ?></strong></td>
                         <td>
                             <span class="badge <?= ($row['type'] ?? '') === 'variable' ? 'badge-info' : 'badge-ok' ?>">
                                 <?= ($row['type'] ?? '') === 'variable' ? 'Variable' : 'Simple' ?>
                             </span>
-                            <?php if (!empty($row['no_options_synced'])): ?>
-                            <span class="badge badge-warn">No option synced</span>
-                            <?php endif; ?>
                         </td>
-                        <td><code><?= e($row['source_model'] !== '' ? $row['source_model'] : '—') ?></code></td>
+                        <td><code><?= e($row['source_product_id'] !== '' ? $row['source_product_id'] : '—') ?></code></td>
                         <td><?= e($row['supplier_model'] !== '' ? $row['supplier_model'] : '—') ?></td>
-                        <td><?= e($row['supplier_product_category'] !== '' ? $row['supplier_product_category'] : '—') ?></td>
-                        <td><?= e((string) ($row['average_cost'] ?? '—')) ?></td>
-                        <td><?= e((string) ($row['owner_stock'] ?? 0)) ?></td>
                         <td><strong><?= e((string) ($row['vendor_stock'] ?? 0)) ?></strong></td>
                         <td><?= e((string) ($row['last_synced_at'] ?? '—')) ?></td>
-                        <td><?= !empty($row['low_warning']) ? '<span class="badge badge-warn">Low</span>' : '—' ?></td>
-                        <td><span class="badge <?= ($row['health_class'] ?? '') === 'ok' ? 'badge-ok' : 'badge-warn' ?>"><?= e($row['health_label'] ?? '—') ?></span></td>
+                        <td>
+                            <div class="pcc-badge-row">
+                                <?php foreach (($row['badges'] ?? []) as $badge): ?>
+                                <span class="badge badge-<?= e($badge['class'] ?? 'muted') ?>"><?= e($badge['label'] ?? '') ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        </td>
                         <td>
                             <button type="button" class="btn btn-secondary btn-sm" data-open-product-workspace="<?= e((string) $row['product_id']) ?>">Open</button>
                         </td>
@@ -182,7 +173,16 @@ $tableReady = !empty($productReadInventory['table_exists']);
                 </tbody>
             </table>
         </div>
-        <p class="page-description mt-1">Click any row to add supplier vendor model, <?= strtolower($costTerm) ?>, and stock. OpenCart name, model, and platform stock stay read-only.</p>
+        <?php
+        view('partials.sync-pagination', [
+            'page' => $currentPage,
+            'pageParam' => 'page',
+            'baseUrl' => url('/product-control'),
+            'otherPageQuery' => $pageQuery,
+            'pagination' => $pagination,
+        ]);
+        ?>
+        <p class="page-description mt-1">Click any row to edit supplier fields. OpenCart name, model, stock, and image stay read-only.</p>
         <?php endif; ?>
     </div>
 </div>

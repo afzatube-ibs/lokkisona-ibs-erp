@@ -13,7 +13,7 @@ use App\Permission;
 use App\SupplierContext;
 use App\Csrf;
 use App\Services\Read\OpenCartReadClient;
-use App\Services\ReadOnly\ProductControlCatalogReadService;
+use App\Services\ReadOnly\ProductCatalogPageService;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\ReadOnly\SupplierReadService;
@@ -61,9 +61,20 @@ class ProductControlController extends Controller
         }
 
         $isSupplierView = SupplierContext::isSupplier();
-        $productCatalog = (new ProductControlCatalogReadService())->build(
+        $catalogFilters = [
+            'q' => $_GET['q'] ?? '',
+            'product_id' => $_GET['product_id'] ?? '',
+            'product_name' => $_GET['product_name'] ?? '',
+            'model' => $_GET['model'] ?? '',
+            'supplier_model' => $_GET['supplier_model'] ?? '',
+            'chip' => $_GET['chip'] ?? 'all',
+        ];
+        $catalogPage = max(1, (int) ($_GET['page'] ?? 1));
+        $productCatalog = (new ProductCatalogPageService())->page(
             $productReadInventory['rows'] ?? [],
             $productVariantReadInventory['rows'] ?? [],
+            $catalogFilters,
+            $catalogPage,
             $isSupplierView
         );
         $productHistoryByProduct = $this->historyRowsByProduct($costStockHistoryDisplay['rows'] ?? []);
@@ -83,6 +94,8 @@ class ProductControlController extends Controller
             'productSelectOptions' => $this->productSelectOptionsFromInventory($productReadInventory),
             'productDisplay' => $this->buildProductDisplayFromInventory($productReadInventory),
             'productCatalog' => $productCatalog,
+            'catalogFilters' => $productCatalog['filters'] ?? [],
+            'catalogPagination' => $productCatalog['pagination'] ?? [],
             'productHistoryByProduct' => $productHistoryByProduct,
             'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
