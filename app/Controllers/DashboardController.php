@@ -5,8 +5,8 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Auth;
 use App\SupplierContext;
-use App\Services\ReadOnly\BusinessDashboardAnalyticsService;
 use App\Services\ReadOnly\DashboardReadService;
+use App\Services\ReadOnly\SupplierIntelligenceDashboardService;
 
 class DashboardController extends Controller
 {
@@ -16,21 +16,22 @@ class DashboardController extends Controller
         ActivityLog::record('dashboard_access', 'Dashboard viewed');
 
         $role = Auth::role();
-        $isSupplier = $role === 'supplier';
-        $supplierId = $isSupplier ? SupplierContext::supplierId() : 0;
+        $isSupplier = SupplierContext::isSupplier();
+        $supplierId = $isSupplier ? SupplierContext::supplierId() : (int) config('auth.supplier_id', 1);
         $showRetailAmounts = !$isSupplier;
 
         $this->render('dashboard.index', [
-            'pageTitle' => 'Dashboard',
+            'pageTitle' => 'Supplier Intelligence',
             'breadcrumbs' => [
                 ['label' => 'Dashboard', 'active' => true],
             ],
             'isSupplierView' => $isSupplier,
             'showRetailAmounts' => $showRetailAmounts,
-            'dashboardAnalytics' => (new BusinessDashboardAnalyticsService())->build($supplierId, $showRetailAmounts),
+            'supplierIntelligence' => (new SupplierIntelligenceDashboardService())->build($supplierId, $showRetailAmounts),
+            'supplierDisplayName' => 'Iqbal & Brothers (IBS)',
+            'businessSourceLabel' => 'Lokkisona.com',
             'recentNotes' => (new DashboardReadService())->recentNotes(),
             'currentRole' => $role,
-            'welcomeDate' => date('l, d F Y'),
         ]);
     }
 }

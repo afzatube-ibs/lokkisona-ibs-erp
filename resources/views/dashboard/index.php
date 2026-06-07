@@ -1,7 +1,8 @@
-<?php view('dashboard.overview', [
-    'dashboardAnalytics' => $dashboardAnalytics ?? [],
+<?php view('dashboard.intelligence', [
+    'supplierIntelligence' => $supplierIntelligence ?? [],
     'showRetailAmounts' => $showRetailAmounts ?? false,
     'isSupplierView' => $isSupplierView ?? false,
-    'welcomeDate' => $welcomeDate ?? date('l, d F Y'),
+    'supplierDisplayName' => $supplierDisplayName ?? 'Iqbal & Brothers (IBS)',
+    'businessSourceLabel' => $businessSourceLabel ?? 'Lokkisona.com',
     'recentNotes' => $recentNotes ?? [],
 ]); ?>

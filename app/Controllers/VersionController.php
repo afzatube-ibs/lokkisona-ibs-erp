@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-07',
+            'release_date' => '2026-06-08',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,8 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.9.1 Product Control Performance: SQL-paginated listing (20 rows per page from local ERP snapshot only — no 200/500 row preload); KPI summary via aggregate SQL with 60s file cache; lazy AJAX modal via GET /product-control/workspace and GET /product-control/history; snapshot freshness strip with 24h stale warning; no OpenCart API on page load; dev-only timing diagnostics; migration 0013 optional list indexes — sync import and supplier field preservation unchanged',
+                'v1.9.0 Supplier Intelligence Dashboard Revamp: /dashboard becomes read-only IQBAL & BROTHERS (IBS) Supplier Intelligence & Fulfillment Command Center — compact IBS header (no logo image), insight strip, 8 KPI cards with sparklines, weighted IBS Performance Score, Dispatch SLA from Order Received → Created Report (12h target, not courier delivery), payable command center, trend chart, top products/categories, catalog health, return intelligence, priority action cards; SupplierIntelligenceDashboardService composes existing analytics with safe empty fallbacks; owner and supplier both scoped to config auth.supplier_id (IBS) — no workflow writes, no migrations',
                 'v1.8.7.4 Product Control Center Finalization: compact listing with OC model bold + OC ID (name searchable only); tight fixed-width table; 5 KPI filters; Catalog Health / Refresh Products / Sync Log header; modal hero split with compact OC facts + Iqbal & Brothers (IBS) supplier card in view/edit chip mode (Edit / double-click, Save All Changes); flat variant lines table (Line, Image, Model, Vendor Model, cost/stock, Warning, Health); supplier fields preserved on re-sync — no manual create, no product removal, no OpenCart write',
                 'v1.8.7.3 Product Control Old IBS UI Match Repair: list page restored to read-only Inventory Products table (parent rows only, row-click popup); hero card + 4 KPIs with subtexts; Search & Filter card with type/sort and Order Received chips; Product Control Center modal with Main Product + Vendor Mapping cards and flat variant lines table; Sync Products header POST refresh from Lokkisona API (from_warehouse=1); preview/import/testing UI removed from Product Control (Sync Preview only); supplier fields preserved on re-sync — no OpenCart write, no migration',
                 'v1.8.7.1 Product Control Working Center Finalize: compact sync strip with single checkbox-confirmed import; preview collapsed when catalog populated; migration 0012 notice collapsed; 6-col clickable KPI row; toolbar filters with scrollable chip groups; product rows with platform RO dl zone + ERP editable zone + footer save; variant compact table in details; fixed empty states and pagination placement — no sync logic, route, or migration changes',

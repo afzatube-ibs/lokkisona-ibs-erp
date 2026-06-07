@@ -85,6 +85,14 @@ class ProductControlCatalogReadService
         ];
     }
 
+    /**
+     * @return array{catalog: array<string, mixed>, workspace: array<string, mixed>}
+     */
+    public function buildProductViews(array $product, array $variants, bool $isSupplierView = false): array
+    {
+        return $this->summarizeProduct($product, $variants, $isSupplierView);
+    }
+
     private function summarizeProduct(array $product, array $variants, bool $isSupplierView): array
     {
         $productId = (int) ($product['product_id'] ?? 0);

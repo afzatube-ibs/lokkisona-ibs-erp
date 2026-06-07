@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.8.7.4',
-    'release_label' => 'Product Control Center Finalization',
+    'version' => '1.9.1',
+    'release_label' => 'Product Control Performance',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

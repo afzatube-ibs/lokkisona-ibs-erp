@@ -44,6 +44,8 @@ $router->get('/business-sources', 'BusinessSourcesController@index');
 $router->post('/business-sources/create', 'BusinessSourcesController@create');
 $router->post('/business-sources/edit', 'BusinessSourcesController@edit');
 $router->get('/product-control', 'ProductControlController@index');
+$router->get('/product-control/workspace', 'ProductControlController@workspaceJson');
+$router->get('/product-control/history', 'ProductControlController@historyJson');
 $router->post('/product-control/product/create', 'ProductControlController@createProduct');
 $router->post('/product-control/product/edit', 'ProductControlController@editProduct');
 $router->post('/product-control/workspace/save', 'ProductControlController@saveWorkspace');

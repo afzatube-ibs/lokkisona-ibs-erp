@@ -1,22 +1,25 @@
 (function () {
     'use strict';
 
-    var payloadEl = document.getElementById('productCatalogPayload');
+    var bootstrapEl = document.getElementById('productCatalogBootstrap');
     var modal = document.getElementById('productControlCenterModal');
-    if (!payloadEl || !modal) {
+    if (!bootstrapEl || !modal) {
         return;
     }
 
-    var payload = {};
+    var bootstrap = {};
     try {
-        payload = JSON.parse(payloadEl.textContent || '{}');
+        bootstrap = JSON.parse(bootstrapEl.textContent || '{}');
     } catch (e) {
-        payload = {};
+        bootstrap = {};
     }
 
-    var workspaces = payload.workspaces || {};
-    var historyByProduct = payload.historyByProduct || {};
-    var isSupplierView = !!payload.isSupplierView;
+    var workspaceUrl = bootstrap.workspaceUrl || '/product-control/workspace';
+    var historyUrl = bootstrap.historyUrl || '/product-control/history';
+    var workspaces = {};
+    var historyByProduct = {};
+    var historyLoading = {};
+    var isSupplierView = !!bootstrap.isSupplierView;
     var costFieldLabel = isSupplierView ? 'Supplier Sale' : 'Supplier Cost';
     var form = document.getElementById('productControlCenterForm');
     var variantLinesBody = document.getElementById('pccVariantLinesBody');
@@ -31,6 +34,8 @@
     var canEditSupplier = !!document.getElementById('pccSaveBtn');
     var currentProductId = '';
     var supplierEditMode = false;
+    var modalLoadingEl = document.getElementById('pccModalLoading');
+    var modalErrorEl = document.getElementById('pccModalError');
 
     function esc(text) {
         var div = document.createElement('div');
@@ -71,12 +76,26 @@
         }
         if (url) {
             img.src = url;
+            img.loading = 'lazy';
             img.hidden = false;
             placeholder.hidden = true;
         } else {
             img.hidden = true;
             img.removeAttribute('src');
             placeholder.hidden = false;
+        }
+    }
+
+    function showModalLoading(show) {
+        if (modalLoadingEl) {
+            modalLoadingEl.hidden = !show;
+        }
+    }
+
+    function showModalError(message) {
+        if (modalErrorEl) {
+            modalErrorEl.textContent = message || '';
+            modalErrorEl.hidden = !message;
         }
     }
 
@@ -105,6 +124,9 @@
             panel.classList.toggle('is-active', active);
             panel.hidden = !active;
         });
+        if (tab === 'history' && currentProductId) {
+            loadHistory(currentProductId);
+        }
     }
 
     function renderHistory(productId) {
@@ -132,6 +154,43 @@
         }).join('');
     }
 
+    function loadHistory(productId) {
+        if (historyByProduct[String(productId)]) {
+            renderHistory(productId);
+            return;
+        }
+        if (historyLoading[String(productId)]) {
+            return;
+        }
+        historyLoading[String(productId)] = true;
+        var tbody = document.getElementById('pccHistoryRows');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="page-description">Loading history…</td></tr>';
+        }
+        fetch(historyUrl + '?id=' + encodeURIComponent(productId), {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                historyLoading[String(productId)] = false;
+                if (!data || !data.ok) {
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="page-description">Could not load history.</td></tr>';
+                    }
+                    return;
+                }
+                historyByProduct[String(productId)] = data.rows || [];
+                renderHistory(productId);
+            })
+            .catch(function () {
+                historyLoading[String(productId)] = false;
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="page-description">Could not load history.</td></tr>';
+                }
+            });
+    }
+
     function renderVariantLinesTable(variants) {
         if (!variantLinesBody) {
             return;
@@ -142,7 +201,7 @@
             tr.setAttribute('data-variant-index', String(index));
             tr.dataset.variantId = String(variant.product_variant_id || '');
             var imageCell = variant.image_url
-                ? '<div class="pcc-list-thumb pcc-variant-thumb"><img src="' + esc(variant.image_url) + '" alt=""></div>'
+                ? '<div class="pcc-list-thumb pcc-variant-thumb"><img src="' + esc(variant.image_url) + '" alt="" loading="lazy"></div>'
                 : '<span class="pcc-list-thumb-empty">—</span>';
             var healthClass = esc(variant.health_class || 'muted');
             tr.innerHTML =
@@ -243,13 +302,8 @@
         }
     }
 
-    function openProductModal(productId, options) {
+    function populateModal(workspace, productId, options) {
         options = options || {};
-        var workspace = workspaces[String(productId)];
-        if (!workspace) {
-            return;
-        }
-
         currentProductId = String(productId);
         setInput('pccProductId', productId);
         setInput('pccBusinessSourceId', workspace.business_source_id || '1');
@@ -302,16 +356,55 @@
             setSupplierPanelMode('view');
         }
 
-        renderHistory(productId);
+        if (options.tab === 'history') {
+            loadHistory(productId);
+        } else {
+            renderHistory(productId);
+        }
         activateTab(options.tab || 'details');
         modal.hidden = false;
         modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function openProductModal(productId, options) {
+        options = options || {};
+        showModalError('');
+        var cached = workspaces[String(productId)];
+        if (cached) {
+            populateModal(cached, productId, options);
+            return;
+        }
+
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        showModalLoading(true);
+
+        fetch(workspaceUrl + '?id=' + encodeURIComponent(productId), {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                showModalLoading(false);
+                if (!data || !data.ok || !data.workspace) {
+                    showModalError((data && data.message) ? data.message : 'Could not load product workspace.');
+                    return;
+                }
+                workspaces[String(productId)] = data.workspace;
+                populateModal(data.workspace, productId, options);
+            })
+            .catch(function () {
+                showModalLoading(false);
+                showModalError('Could not load product workspace.');
+            });
     }
 
     function closeModal() {
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
         setSupplierPanelMode('view');
+        showModalLoading(false);
+        showModalError('');
     }
 
     document.querySelectorAll('.product-catalog-row').forEach(function (row) {
@@ -398,4 +491,3 @@
         });
     }
 })();
-

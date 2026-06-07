@@ -7,6 +7,8 @@ $pagination = $catalogPagination ?? ($productCatalog['pagination'] ?? []);
 $tableReady = !empty($tableReady);
 $catalogTotal = (int) ($summary['total_products'] ?? 0);
 $filters = $catalogFilters ?? [];
+$lastSync = trim((string) ($lastCatalogSyncAt ?? ''));
+$snapshotStale = !empty($snapshotIsStale);
 $chipUrl = static function (string $chipKey) use ($filters): string {
     $query = array_filter([
         'q' => $filters['q'] ?? '',
@@ -19,17 +21,12 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
 
     return url('/product-control') . '?' . http_build_query($query);
 };
-$catalogPayload = json_encode([
-    'workspaces' => $catalogWorkspaces ?? ($productCatalog['workspaces'] ?? []),
-    'historyByProduct' => $productHistoryByProduct ?? [],
-    'isSupplierView' => !empty($isSupplierView),
-], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 ?>
 <div class="page-header page-header-compact product-control-header">
     <div class="product-control-header-main">
         <div>
             <h1 class="page-title">Product Control</h1>
-            <p class="ops-page-subtitle">Read-only vendor inventory monitor. Products refresh automatically from Dispatch Location (from_warehouse = 1). Click any row to manage model, <?= strtolower($costTerm) ?>, stock, warnings and history in Product Control Center.</p>
+            <p class="ops-page-subtitle">Local ERP product snapshot — loaded from the database only. Click <strong>Refresh Products</strong> when you need the latest Lokkisona warehouse catalog.</p>
         </div>
         <div class="product-control-header-actions">
             <?php if (!empty($canViewHealth)): ?>
@@ -53,15 +50,30 @@ $catalogPayload = json_encode([
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
+<div class="card mb-15 pcc-snapshot-bar <?= $snapshotStale ? 'pcc-snapshot-bar-stale' : '' ?>">
+    <div class="card-body pcc-snapshot-bar-body">
+        <div>
+            <strong>Snapshot last refreshed:</strong>
+            <?= $lastSync !== '' ? e($lastSync) : '—' ?>
+            <?php if (!empty($sourceSyncLabel)): ?>
+            <span class="pcc-snapshot-source">· <?= e((string) $sourceSyncLabel) ?></span>
+            <?php endif; ?>
+        </div>
+        <?php if ($snapshotStale): ?>
+        <p class="page-description mb-0 pcc-snapshot-warn">Catalog snapshot is older than 24 hours. Refresh when needed.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
 <div class="card mb-15 pcc-hero-card">
     <div class="card-body pcc-hero-card-body">
         <div class="pcc-hero-main">
             <h2 class="pcc-hero-title">Product Control</h2>
-            <p class="page-description mb-0">Clean vendor inventory monitor — the list stays read-only; all edits, stock changes, price changes and history live inside the product popup. Use <strong>Refresh Products</strong> to pull the latest Dispatch Location catalog.</p>
+            <p class="page-description mb-0">Saved ERP catalog snapshot — the list is read-only; edits live inside Product Control Center when you click Manage. No automatic API refresh on page load.</p>
         </div>
         <div class="pcc-hero-pills">
-            <span class="workflow-chip">Safe mapping edits only</span>
-            <span class="workflow-chip is-active">Live inventory view</span>
+            <span class="workflow-chip">Supplier fields preserved on re-sync</span>
+            <span class="workflow-chip is-active">Local snapshot view</span>
         </div>
     </div>
 </div>
@@ -122,5 +134,18 @@ $catalogPayload = json_encode([
     'writeGateSupplierNote' => $writeGateSupplierNote ?? [],
 ]); ?>
 
-<script type="application/json" id="productCatalogPayload"><?= $catalogPayload ?></script>
+<script type="application/json" id="productCatalogBootstrap"><?= json_encode([
+    'isSupplierView' => !empty($isSupplierView),
+    'workspaceUrl' => url('/product-control/workspace'),
+    'historyUrl' => url('/product-control/history'),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>
 <script src="<?= e(asset('js/product-control.js')) ?>"></script>
+<?php if (!empty($timingDiagnostics)): ?>
+<p class="page-description pcc-timing-diagnostics mb-15">Timing (local): <?php
+    $parts = [];
+    foreach ($timingDiagnostics as $label => $ms) {
+        $parts[] = e((string) $label) . ' ' . e((string) $ms) . 'ms';
+    }
+    echo implode(' · ', $parts);
+?></p>
+<?php endif; ?>

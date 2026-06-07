@@ -3,30 +3,32 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
+use App\Csrf;
 use App\Database;
 use App\Database\TableName;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\ProductCostHistory;
 use App\Models\ProductStockHistory;
+use App\Models\ProductVariant;
 use App\Permission;
-use App\SupplierContext;
-use App\Csrf;
+use App\ReadFoundation\WriteGate;
 use App\Services\Read\OpenCartReadClient;
-use App\Services\ReadOnly\ProductCatalogPageService;
+use App\Services\ReadOnly\ProductControlCatalogReadService;
+use App\Services\ReadOnly\ProductControlHistoryReadService;
+use App\Services\ReadOnly\ProductControlListReadService;
+use App\Services\ReadOnly\ProductCostHistoryReadService;
 use App\Services\ReadOnly\ProductReadService;
-use App\Services\ReadOnly\ProductSyncReadService;
+use App\Services\ReadOnly\ProductStockHistoryReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
 use App\Services\ReadOnly\SupplierProductFilter;
 use App\Services\ReadOnly\SupplierReadService;
-use App\Services\ReadOnly\ProductCostHistoryReadService;
-use App\Services\ReadOnly\ProductStockHistoryReadService;
-use App\ReadFoundation\WriteGate;
 use App\Services\Write\ProductCostStockWriteService;
-use App\Services\Write\ProductVariantWriteService;
 use App\Services\Write\ProductWorkspaceWriteService;
 use App\Services\Write\ProductWriteService;
 use App\Services\Write\SyncPreviewWriteService;
+use App\SupplierContext;
+use App\Support\RequestTimer;
+use App\Repositories\ProductVariantRepository;
 
 class ProductControlController extends Controller
 {
@@ -35,51 +37,12 @@ class ProductControlController extends Controller
         $this->authorize('product_control.view');
         ActivityLog::record('product_control_access', 'Product Control read foundation page viewed');
 
-        $productReadInventory = $this->buildProductReadInventory();
-        $productVariantReadInventory = $this->buildProductVariantReadInventory();
-        $productCostHistoryReadInventory = $this->buildProductCostHistoryReadInventory();
-        $productStockHistoryReadInventory = $this->buildProductStockHistoryReadInventory();
-
-        $supplierFilter = new SupplierProductFilter();
-        $productReadInventory = $supplierFilter->filterProductInventory($productReadInventory);
-        $productVariantReadInventory = $supplierFilter->filterVariantInventory(
-            $productVariantReadInventory,
-            $productReadInventory
-        );
-        $productCostHistoryReadInventory = $supplierFilter->filterHistoryInventory(
-            $productCostHistoryReadInventory,
-            $productReadInventory
-        );
-        $productStockHistoryReadInventory = $supplierFilter->filterHistoryInventory(
-            $productStockHistoryReadInventory,
-            $productReadInventory
-        );
-
-        $costStockHistoryDisplay = $this->buildCostStockHistoryDisplay(
-            $productReadInventory,
-            $productVariantReadInventory,
-            $productCostHistoryReadInventory,
-            $productStockHistoryReadInventory
-        );
-
-        if (SupplierContext::isSupplier()) {
-            $supplierId = SupplierContext::supplierId();
-            $productReadInventory = $this->filterRowsBySupplierId($productReadInventory, $supplierId);
-            $productVariantReadInventory = $this->filterVariantRowsForSupplierProducts(
-                $productVariantReadInventory,
-                $productReadInventory
-            );
-            $productCostHistoryReadInventory = $this->filterRowsBySupplierId($productCostHistoryReadInventory, $supplierId);
-            $productStockHistoryReadInventory = $this->filterRowsBySupplierId($productStockHistoryReadInventory, $supplierId);
-            $costStockHistoryDisplay = $this->buildCostStockHistoryDisplay(
-                $productReadInventory,
-                $productVariantReadInventory,
-                $productCostHistoryReadInventory,
-                $productStockHistoryReadInventory
-            );
-        }
-
+        $timer = new RequestTimer();
         $isSupplierView = SupplierContext::isSupplier();
+        $supplierId = $isSupplierView ? SupplierContext::supplierId() : 0;
+        $listService = new ProductControlListReadService();
+        $tableReady = $listService->tableExists();
+
         $canManageSync = Permission::can('sync_preview.manage');
         $productWriteGate = WriteGate::productSyncImport();
         $warehousePullAvailable = (new OpenCartReadClient())->warehouseProductPullAvailable();
@@ -87,6 +50,7 @@ class ProductControlController extends Controller
             && !empty($productWriteGate['ready'])
             && $warehousePullAvailable
             && !$isSupplierView;
+
         $catalogFilters = [
             'q' => $_GET['q'] ?? '',
             'product_id' => $_GET['product_id'] ?? '',
@@ -98,17 +62,20 @@ class ProductControlController extends Controller
             'chip' => $_GET['chip'] ?? 'all',
         ];
         $catalogPage = max(1, (int) ($_GET['page'] ?? 1));
-        $productCatalog = (new ProductCatalogPageService())->page(
-            $productReadInventory['rows'] ?? [],
-            $productVariantReadInventory['rows'] ?? [],
-            $catalogFilters,
-            $catalogPage,
-            $isSupplierView
-        );
-        $lastCatalogSyncAt = $this->latestCatalogSyncTime($productReadInventory['rows'] ?? []);
-        $productSyncStatus = $canManageSync ? (new ProductSyncReadService())->status() : null;
-        $sourceSyncLabel = $this->productSyncSourceLabel($productSyncStatus);
-        $productHistoryByProduct = $this->historyRowsByProduct($costStockHistoryDisplay['rows'] ?? []);
+
+        $productCatalog = $listService->listPage($catalogFilters, $catalogPage, $supplierId, $isSupplierView, $timer);
+        $summaryKpis = $productCatalog['summary_kpis'] ?? [];
+        $freshness = $listService->snapshotFreshness($supplierId);
+        $timer->lap('total');
+        $timer->log('product-control index');
+
+        $productReadInventory = [
+            'table_exists' => $tableReady,
+            'status' => $tableReady ? 'ok' : 'table_missing',
+            'status_message' => $tableReady
+                ? 'Local ERP product snapshot ready.'
+                : 'Table `' . TableName::forModel(Product::class) . '` not available — migration `0003_business_sources_suppliers_products.sql` not applied yet.',
+        ];
 
         $this->render('product-control.index', [
             'pageTitle' => 'Product Control',
@@ -119,13 +86,12 @@ class ProductControlController extends Controller
             'accessMode' => Permission::accessMode(),
             'productReadInventory' => $productReadInventory,
             'productCatalog' => $productCatalog,
-            'summaryKpis' => $productCatalog['summary_kpis'] ?? ($productCatalog['kpis'] ?? []),
-            'lastCatalogSyncAt' => $lastCatalogSyncAt,
-            'sourceSyncLabel' => $sourceSyncLabel,
+            'summaryKpis' => $summaryKpis,
+            'lastCatalogSyncAt' => $freshness['last_synced_at'] ?? '',
+            'snapshotIsStale' => !empty($freshness['is_stale']),
+            'sourceSyncLabel' => $this->productSyncSourceLabelConfigOnly(),
             'catalogFilters' => $productCatalog['filters'] ?? [],
             'catalogPagination' => $productCatalog['pagination'] ?? [],
-            'catalogWorkspaces' => $productCatalog['workspaces'] ?? [],
-            'productHistoryByProduct' => $productHistoryByProduct,
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'canManage' => Permission::can('product_control.manage'),
             'canViewHealth' => Permission::can('health.view'),
@@ -142,7 +108,57 @@ class ProductControlController extends Controller
             'canRefreshProducts' => $canRefreshProducts,
             'warehouseProductPullAvailable' => $warehousePullAvailable,
             'productWriteGateReady' => $productWriteGate['ready'],
-            'tableReady' => !empty($productReadInventory['table_exists']),
+            'tableReady' => $tableReady,
+            'timingDiagnostics' => $timer->isEnabled() ? $timer->laps() : null,
+        ]);
+    }
+
+    public function workspaceJson()
+    {
+        $this->authorize('product_control.view');
+        $timer = new RequestTimer();
+        $productId = (int) ($_GET['id'] ?? 0);
+        if ($productId <= 0 || !$this->assertProductOwnedBySupplier($productId)) {
+            $this->jsonResponse(['ok' => false, 'message' => 'Product not found.'], 404);
+        }
+
+        $product = (new ProductReadService())->findById($productId);
+        if ($product === null || !$this->isSyncedCatalogProduct($product)) {
+            $this->jsonResponse(['ok' => false, 'message' => 'Product not in supplier catalog snapshot.'], 404);
+        }
+
+        $isSupplierView = SupplierContext::isSupplier();
+        $variants = (new ProductVariantRepository())->findByProductId($productId);
+        $views = (new ProductControlCatalogReadService())->buildProductViews($product, $variants, $isSupplierView);
+        $timer->lap('workspace');
+        $timer->log('product-control workspace id=' . $productId);
+
+        $this->jsonResponse([
+            'ok' => true,
+            'workspace' => $views['workspace'] ?? [],
+            'isSupplierView' => $isSupplierView,
+            'timing_ms' => $timer->isEnabled() ? $timer->laps() : null,
+        ]);
+    }
+
+    public function historyJson()
+    {
+        $this->authorize('product_control.view');
+        $timer = new RequestTimer();
+        $productId = (int) ($_GET['id'] ?? 0);
+        $limit = max(1, min(100, (int) ($_GET['limit'] ?? 50)));
+        if ($productId <= 0 || !$this->assertProductOwnedBySupplier($productId)) {
+            $this->jsonResponse(['ok' => false, 'message' => 'Product not found.'], 404);
+        }
+
+        $rows = (new ProductControlHistoryReadService())->forProduct($productId, $limit);
+        $timer->lap('history');
+        $timer->log('product-control history id=' . $productId);
+
+        $this->jsonResponse([
+            'ok' => true,
+            'rows' => $rows,
+            'timing_ms' => $timer->isEnabled() ? $timer->laps() : null,
         ]);
     }
 
@@ -160,10 +176,11 @@ class ProductControlController extends Controller
             redirect('/product-control');
         }
 
-        $this->redirectWithWriteResult(
-            '/product-control',
-            (new SyncPreviewWriteService())->refreshWarehouseProductsFromApi($_POST)
-        );
+        $result = (new SyncPreviewWriteService())->refreshWarehouseProductsFromApi($_POST);
+        if ($result->success) {
+            ProductControlListReadService::invalidateCache();
+        }
+        $this->redirectWithWriteResult('/product-control', $result);
     }
 
     public function saveWorkspace()
@@ -189,7 +206,11 @@ class ProductControlController extends Controller
             $input['variants'] = [];
         }
 
-        $this->redirectWithWriteResult('/product-control', (new ProductWorkspaceWriteService())->save($productId, $input));
+        $result = (new ProductWorkspaceWriteService())->save($productId, $input);
+        if ($result->success) {
+            ProductControlListReadService::invalidateCache();
+        }
+        $this->redirectWithWriteResult('/product-control', $result);
     }
 
     public function createProduct()
@@ -248,7 +269,45 @@ class ProductControlController extends Controller
         } else {
             $result = $service->updateProductCostStock($productId, $_POST);
         }
+        if (!empty($_POST['product_variant_id'])) {
+            $result = $service->updateVariantCostStock((int) $_POST['product_variant_id'], $_POST);
+        } else {
+            $result = $service->updateProductCostStock($productId, $_POST);
+        }
+        if ($result->success) {
+            ProductControlListReadService::invalidateCache();
+        }
         $this->redirectWithWriteResult('/product-control', $result);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function jsonResponse(array $payload, int $status = 200): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private function productSyncSourceLabelConfigOnly(): string
+    {
+        $mode = strtolower((string) config('opencart.source_mode', 'demo'));
+
+        return match ($mode) {
+            'staging' => 'Staging OpenCart read-only',
+            'live' => 'Live OpenCart read-only',
+            default => 'Demo OpenCart read-only',
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $product
+     */
+    private function isSyncedCatalogProduct(array $product): bool
+    {
+        return (new SupplierProductFilter())->isSupplierSyncedProduct($product);
     }
 
     private function latestCatalogSyncTime(array $rows): string
