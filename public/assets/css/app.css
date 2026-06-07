@@ -4860,3 +4860,257 @@ body.modal-open { overflow: hidden; }
     color: var(--color-text-muted);
     opacity: 0.85;
 }
+
+/* ── v1.9.2 Vendor Fulfillment table ── */
+.vf-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+}
+
+.vf-filter-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-end;
+}
+
+.vf-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 9rem;
+    font-size: 0.8125rem;
+}
+
+.vf-filter-field span {
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.vf-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.vf-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.vf-range-label {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.vf-bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+}
+
+.vf-fulfillment-table {
+    font-size: 0.8125rem;
+}
+
+.vf-fulfillment-table th,
+.vf-fulfillment-table td {
+    vertical-align: top;
+    padding: 0.5rem 0.625rem;
+}
+
+.vf-col-check {
+    width: 2rem;
+}
+
+.vf-col-product {
+    min-width: 14rem;
+    max-width: 18rem;
+}
+
+.vf-col-actions {
+    min-width: 9rem;
+    white-space: nowrap;
+}
+
+.vf-order-no {
+    color: var(--color-primary-light);
+}
+
+.vf-batch-ref {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+
+.vf-customer-name {
+    display: block;
+    font-weight: 600;
+}
+
+.vf-customer-phone {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.vf-product-card {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+}
+
+.vf-product-card:last-child {
+    margin-bottom: 0;
+}
+
+.vf-product-thumb {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vf-product-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vf-product-thumb-empty {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+
+.vf-product-model {
+    display: block;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+}
+
+.vf-product-cost-line {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.vf-option-chip {
+    display: inline-block;
+    margin-top: 0.125rem;
+    margin-right: 0.25rem;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 999px;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    font-size: 0.6875rem;
+}
+
+.vf-qty-pill {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-light);
+    font-weight: 700;
+    text-align: center;
+}
+
+.vf-status-badge {
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+
+.vf-oc-badge {
+    display: inline-block;
+    margin-bottom: 0.125rem;
+}
+
+.vf-oc-origin {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+
+.vf-row-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.vf-action-menu {
+    position: relative;
+}
+
+.vf-action-menu-toggle {
+    min-width: 2rem;
+    padding-inline: 0.375rem;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.vf-action-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.25rem);
+    z-index: 20;
+    min-width: 11rem;
+    padding: 0.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.vf-action-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    border: none;
+    background: transparent;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.vf-action-menu-item:hover {
+    background: var(--color-bg-subtle);
+}
+
+.vf-hidden-form {
+    display: none;
+}
+
+.vf-action-modal {
+    max-width: 28rem;
+}
+
+.vf-timing-footer {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 960px) {
+    .vf-hide-md {
+        display: none;
+    }
+}

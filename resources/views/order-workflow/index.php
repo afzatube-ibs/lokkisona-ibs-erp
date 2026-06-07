@@ -6,10 +6,12 @@ $displayActionNote = static function (?string $note): string {
 };
 $statusFilter = $statusFilter ?? null;
 $recentWorkflowHistory = $recentWorkflowHistory ?? [];
+$appVersion = $appVersion ?? config('app.version');
+$releaseLabel = $releaseLabel ?? config('app.release_label');
 ?>
 <div class="page-header page-header-compact">
-    <h1 class="page-title">Order Workflow</h1>
-    <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? '<strong>Operations work queue</strong> — receive, pack, and ship Lokkisona online orders here. Charts and business summary are on <a href="' . e(url('/dashboard')) . '">Dashboard</a>. Offline sales: <a href="' . e(url('/supplier-tools')) . '">Offline Invoices</a>.' : 'Filter by stage, create manual orders in-page, and advance through allowed actions. Created Report batches on <a href="' . e(url('/dispatch-reports')) . '">Dispatch Reports</a>.' ?></p>
+    <h1 class="page-title">Vendor Fulfillment</h1>
+    <p class="ops-page-subtitle">v<?= e((string) $appVersion) ?> — <?= e((string) $releaseLabel) ?> · Showing product cost only. Selling amount stays hidden.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -20,48 +22,31 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
     'statusFilter' => $statusFilter,
 ]); ?>
 
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header workflow-orders-header">
-        <h2 class="card-title">Vendor Fulfillment Orders</h2>
-        <?php if (!empty($canCreateOrders)): ?>
-        <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
-        <?php endif; ?>
-    </div>
-    <div class="card-body">
-        <?php if (empty($workflowBoard)): ?>
-            <p class="page-description">
-                <?php if ($statusFilter !== null): ?>
-                    No orders in this stage yet.
-                <?php else: ?>
-                    <?php if (!empty($isSupplierView)): ?>
-                    No Lokkisona online orders in workflow yet. Owner creates and syncs online orders.
-                    <?php else: ?>
-                    No orders in workflow yet. Use <strong>Create New Order</strong> above or enter orders on <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>.
-                    <?php endif; ?>
-                <?php endif; ?>
-            </p>
-        <?php else: ?>
-            <?php foreach ($workflowBoard as $group): ?>
-            <div class="workflow-group<?= ($group['code'] ?? '') === 'dispatch_report_created' ? ' workflow-group-created-report' : '' ?>">
-                <h3 class="section-heading" style="margin: 0 0 0.75rem;"><?= e($group['label']) ?> <span class="badge"><?= count($group['orders']) ?></span></h3>
-                <?php if (!empty($group['info_note'])): ?>
-                <p class="workflow-info-banner" style="margin-bottom: 0.75rem;"><?= e($group['info_note']) ?></p>
-                <?php endif; ?>
-                <?php foreach ($group['orders'] as $order): ?>
-                <?php view('partials.workflow-order-card', [
-                    'order' => $order,
-                    'csrfField' => $csrfField ?? '',
-                    'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
-                    'displayActionNote' => $displayActionNote,
-                    'statusFilter' => $statusFilter,
-                    'isSupplierView' => !empty($isSupplierView),
-                ]); ?>
-                <?php endforeach; ?>
-            </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
+<?php view('partials.vendor-fulfillment-filters', [
+    'fulfillmentFilters' => $fulfillmentFilters ?? [],
+    'statusFilter' => $statusFilter,
+    'supplierOptions' => $supplierOptions ?? [],
+    'isSupplierView' => !empty($isSupplierView),
+]); ?>
+
+<div class="vf-toolbar">
+    <?php if (!empty($canCreateOrders)): ?>
+    <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
+    <?php endif; ?>
 </div>
+
+<?php view('partials.vendor-fulfillment-table', [
+    'fulfillmentRows' => $fulfillmentRows ?? [],
+    'fulfillmentPagination' => $fulfillmentPagination ?? [],
+    'fulfillmentFilters' => $fulfillmentFilters ?? [],
+    'tableReady' => $tableReady ?? false,
+    'canManageWorkflow' => $canManageWorkflow ?? false,
+    'dispatchGateReady' => $dispatchGateReady ?? false,
+    'statusFilter' => $statusFilter,
+    'csrfField' => $csrfField ?? '',
+    'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
+    'isSupplierView' => !empty($isSupplierView),
+]); ?>
 
 <?php if (!empty($recentWorkflowHistory)): ?>
 <div class="card" style="margin-bottom: 1.5rem;">
@@ -108,6 +93,16 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
     'variantOptionsByProduct' => $variantOptionsByProduct ?? [],
     'productCostById' => $productCostById ?? [],
 ]); ?>
+<?php endif; ?>
+
+<?php if (!empty($requestTiming)): ?>
+<p class="page-description vf-timing-footer">Page timing (local): <?php
+    $parts = [];
+    foreach ($requestTiming as $label => $ms) {
+        $parts[] = e((string) $label) . '=' . e((string) $ms) . 'ms';
+    }
+    echo implode(' · ', $parts);
+?></p>
 <?php endif; ?>
 
 <?php else: ?>
@@ -164,138 +159,29 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Main Workflow Path</h2>
+        <h2 class="card-title"><?= e($fulfillmentTableColumns['title'] ?? 'Vendor Fulfillment Table') ?></h2>
     </div>
     <div class="card-body">
-        <p class="page-description">
-            <?php foreach ($mainFlowPath as $i => $stage): ?>
-                <strong><?= e($stage) ?></strong><?= $i < count($mainFlowPath) - 1 ? ' &rarr; ' : '' ?>
+        <ul class="feature-list">
+            <?php foreach ($fulfillmentTableColumns['columns'] ?? [] as $column): ?>
+                <li><?= e($column) ?></li>
             <?php endforeach; ?>
-        </p>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Main Workflow Stages</h2>
-    </div>
-    <div class="card-body card-body-flush">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Label</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($mainStages as $stage): ?>
-                <tr>
-                    <td class="cell-name"><code><?= e($stage['code']) ?></code></td>
-                    <td><?= e($stage['label']) ?></td>
-                    <td class="cell-detail"><?= e($stage['description']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Exception Stages</h2>
-    </div>
-    <div class="card-body card-body-flush">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Label</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($exceptionStages as $stage): ?>
-                <tr>
-                    <td class="cell-name"><code><?= e($stage['code']) ?></code></td>
-                    <td><?= e($stage['label']) ?></td>
-                    <td class="cell-detail"><?= e($stage['description']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Allowed Transition Matrix</h2>
-    </div>
-    <div class="card-body card-body-flush">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>From</th>
-                    <th>Allowed To</th>
-                    <th>Note</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($transitionMatrix as $row): ?>
-                <tr>
-                    <td class="cell-name"><?= e($row['from']) ?></td>
-                    <td><?= e($row['to']) ?></td>
-                    <td class="cell-detail"><?= e($row['note']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        </ul>
+        <p class="page-description"><?= e($fulfillmentTableColumns['note'] ?? '') ?></p>
     </div>
 </div>
 
 <div class="card-grid">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><?= e($dispatchGate['title']) ?></h2>
+            <h2 class="card-title">Performance Rules</h2>
         </div>
         <div class="card-body">
-            <p><?= e($dispatchGate['summary']) ?></p>
             <ul class="feature-list">
-                <?php foreach ($dispatchGate['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
+                <?php foreach ($performanceRules as $rule): ?>
+                    <li><?= e($rule) ?></li>
                 <?php endforeach; ?>
             </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($costSnapshotRule['title']) ?></h2>
-        </div>
-        <div class="card-body">
-            <p><?= e($costSnapshotRule['summary']) ?></p>
-            <ul class="feature-list">
-                <?php foreach ($costSnapshotRule['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($mappingRule['title']) ?></h2>
-        </div>
-        <div class="card-body">
-            <p><?= e($mappingRule['summary']) ?></p>
-            <ul class="feature-list">
-                <?php foreach ($mappingRule['points'] as $point): ?>
-                    <li><?= e($point) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <p class="page-description">Source status mapping is used only at import/sync time. IBS workflow remains independent after sync. See <a href="<?= e(url('/status-mapping')) ?>">Status Mapping planning foundation</a>.</p>
         </div>
     </div>
 
@@ -310,109 +196,11 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
                     <li><?= e($point) ?></li>
                 <?php endforeach; ?>
             </ul>
-            <p class="page-description">Manual/external orders enter IBS workflow after confirmation and must not bypass workflow rules. See <a href="<?= e(url('/manual-orders')) ?>">Manual Orders</a>. Order sync import will be embedded on this page in a future release.</p>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Action Confirmation &amp; Activity Log Rules</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($actionLogRule as $rule): ?>
-                    <li><?= e($rule) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Performance Rules</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($performanceRules as $rule): ?>
-                    <li><?= e($rule) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($vendorReturnFuture['title'] ?? 'Vendor Return Future Rules') ?></h2>
-        </div>
-        <div class="card-body">
-            <p><?= e($vendorReturnFuture['summary'] ?? '') ?></p>
-            <ul class="feature-list">
-                <?php foreach ($vendorReturnFuture['types'] ?? [] as $type): ?>
-                    <li><?= e($type) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <p class="page-description"><strong>Return received condition (later):</strong></p>
-            <ul class="feature-list">
-                <?php foreach ($vendorReturnFuture['conditions'] ?? [] as $condition): ?>
-                    <li><?= e($condition) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <p class="page-description"><?= e($vendorReturnFuture['note'] ?? '') ?></p>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title"><?= e($fulfillmentTableColumns['title'] ?? 'Future Vendor Fulfillment Table') ?></h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($fulfillmentTableColumns['columns'] ?? [] as $column): ?>
-                    <li><?= e($column) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <p class="page-description"><?= e($fulfillmentTableColumns['note'] ?? '') ?></p>
-        </div>
-    </div>
-</div>
-
-<div class="card-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Future Sync Safety Rules</h2>
-        </div>
-        <div class="card-body">
-            <ul class="feature-list">
-                <?php foreach ($futureSyncSafety as $rule): ?>
-                    <li><?= e($rule) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Current Access Mode</h2>
-        </div>
-        <div class="card-body">
-            <dl class="info-list">
-                <div class="info-row">
-                    <dt>Mode</dt>
-                    <dd><?= e($accessMode['mode']) ?></dd>
-                </div>
-                <div class="info-row">
-                    <dt>Current Role</dt>
-                    <dd><?= e($accessMode['role']) ?></dd>
-                </div>
-            </dl>
-            <p class="page-description">Owner, admin, and supplier can manage workflow actions when permitted. Staff can view the board.</p>
         </div>
     </div>
 </div>
 
     </div>
 </details>
+
+<script src="<?= e(asset('js/order-workflow.js')) ?>"></script>

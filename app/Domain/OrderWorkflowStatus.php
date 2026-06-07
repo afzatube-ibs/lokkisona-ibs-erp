@@ -21,14 +21,14 @@ class OrderWorkflowStatus
         'order_received' => 'Order Received',
         'packaging' => 'Packaging',
         'shipped' => 'Shipped',
-        'dispatch_report_created' => 'Dispatch Report Created',
+        'dispatch_report_created' => 'Created Report',
         'out_for_delivery' => 'Out For Delivery',
         'delivered' => 'Delivered',
         'hold' => 'Hold',
         'cancelled' => 'Cancelled',
         'delivery_stop' => 'Delivery Stop',
         'hub_return' => 'Hub Return',
-        'order_returning' => 'Customer Return / Order Returning',
+        'order_returning' => 'Order Returning',
     ];
 
     /** Supplier manual actions only. Courier/PIT stages have no supplier buttons in v0.4.4.0. */
@@ -39,18 +39,18 @@ class OrderWorkflowStatus
         'hold' => ['cancelled'],
         'shipped' => ['dispatch_report_created', 'delivery_stop'],
         'dispatch_report_created' => [],
-        'out_for_delivery' => [],
+        'out_for_delivery' => ['delivery_stop'],
         'delivery_stop' => ['hub_return'],
         'hub_return' => [],
     ];
 
     private const ACTION_LABELS = [
         'new_order|order_received' => 'Receive Order',
-        'order_received|packaging' => 'Start Packaging / Print & Move to Packaging',
-        'packaging|shipped' => 'Mark as Shipped',
-        'shipped|dispatch_report_created' => 'Create Dispatch Report',
+        'order_received|packaging' => 'Print & Start Packaging',
+        'packaging|shipped' => 'Mark Shipped',
+        'shipped|dispatch_report_created' => 'Create Dispatch Batch',
         'shipped|delivery_stop' => 'Delivery Stop',
-        'delivery_stop|hub_return' => 'Return Received',
+        'delivery_stop|hub_return' => 'Confirm Hub Return',
         'hold|cancelled' => 'Cancelled',
         'new_order|hold' => 'Hold',
         'order_received|hold' => 'Hold',
@@ -62,7 +62,7 @@ class OrderWorkflowStatus
 
     private const CHECKBOX_LABELS = [
         'order_received|packaging' => 'I confirm product checked before packaging.',
-        'packaging|shipped' => 'I confirm parcel packed and handed/shipped.',
+        'packaging|shipped' => 'I confirm parcel packed and ready to ship.',
     ];
 
     private const LEGACY_ALIASES = [
@@ -302,7 +302,7 @@ class OrderWorkflowStatus
             ['code' => 'cancelled', 'label' => 'Cancelled', 'description' => 'Allowed before completion from New Order, Order Received, Packaging, or Hold. Terminal.'],
             ['code' => 'delivery_stop', 'label' => 'Delivery Stop', 'description' => 'Manual ERP action after Shipped when customer asks to stop delivery. Requires note and confirmation.'],
             ['code' => 'hub_return', 'label' => 'Hub Return', 'description' => 'Shipped → Delivery Stop → Hub Return. Supplier marks Return Received. Vendor Returns module later.'],
-            ['code' => 'order_returning', 'label' => 'Customer Return / Order Returning', 'description' => 'From PIT/OpenCart return status mapping. Not a normal supplier manual action in v0.4.4.0.'],
+            ['code' => 'order_returning', 'label' => 'Order Returning', 'description' => 'From PIT/OpenCart return status mapping. Not a normal supplier manual action in v0.4.4.0.'],
         ];
     }
 

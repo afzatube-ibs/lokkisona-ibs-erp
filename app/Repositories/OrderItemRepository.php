@@ -15,6 +15,38 @@ class OrderItemRepository extends BaseReadOnlyRepository
         return OrderItem::class;
     }
 
+    /**
+     * @param array<int, int> $orderIds
+     * @return array<int, array<int, array<string, mixed>>>
+     */
+    public function groupedByOrderIds(array $orderIds): array
+    {
+        $orderIds = array_values(array_filter(array_map('intval', $orderIds), static fn (int $id): bool => $id > 0));
+        if (!$this->tableExists() || $orderIds === []) {
+            return [];
+        }
+
+        try {
+            $table = TableName::forModel($this->modelClass());
+            $placeholders = implode(', ', array_fill(0, count($orderIds), '?'));
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` WHERE order_id IN (' . $placeholders . ') ORDER BY order_id ASC, order_item_id ASC';
+            QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute($orderIds);
+            $grouped = [];
+            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $oid = (int) ($row['order_id'] ?? 0);
+                if ($oid > 0) {
+                    $grouped[$oid][] = $row;
+                }
+            }
+
+            return $grouped;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function findByOrderId(int $orderId): array
     {
         if (!$this->tableExists() || $orderId <= 0) {

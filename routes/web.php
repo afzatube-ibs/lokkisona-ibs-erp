@@ -54,6 +54,7 @@ $router->post('/product-control/variant/create', 'ProductControlController@creat
 $router->post('/product-control/cost-stock', 'ProductControlController@updateCostStock');
 $router->get('/order-workflow', 'OrderWorkflowController@index');
 $router->post('/order-workflow/action', 'OrderWorkflowController@action');
+$router->post('/order-workflow/bulk-action', 'OrderWorkflowController@bulkAction');
 $router->post('/order-workflow/create', 'OrderWorkflowController@create');
 $router->get('/dispatch-reports', 'DispatchReportsController@index');
 $router->post('/dispatch-reports/create', 'DispatchReportsController@create');

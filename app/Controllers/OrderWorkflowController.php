@@ -21,7 +21,10 @@ use App\Services\ReadOnly\OrderWorkflowHistoryReadService;
 use App\ReadFoundation\WriteGate;
 use App\Services\Write\ManualOrderWriteService;
 use App\Services\Write\OrderWorkflowWriteService;
+use App\Services\ReadOnly\OrderWorkflowListReadService;
+use App\Services\Write\OrderWorkflowBulkWriteService;
 use App\Support\ManualOrderFormOptions;
+use App\Support\RequestTimer;
 
 class OrderWorkflowController extends Controller
 {
@@ -33,12 +36,28 @@ class OrderWorkflowController extends Controller
         $statusFilter = $this->resolveStatusFilter($_GET['status'] ?? null);
         $manualOrderForm = ManualOrderFormOptions::forCreateForm();
         $manualOrderWriteGate = WriteGate::manualOrderCreateForm();
+        $supplierId = SupplierContext::enforceSupplierId((int) ($_GET['supplier_id'] ?? 0));
+        $timer = config('app.env') === 'local' ? new RequestTimer() : null;
+        $listService = new OrderWorkflowListReadService();
+
+        $filters = [
+            'status' => $statusFilter ?? '',
+            'supplier_id' => $supplierId,
+            'courier_status' => $_GET['courier_status'] ?? '',
+            'date_from' => $_GET['date_from'] ?? '',
+            'date_to' => $_GET['date_to'] ?? '',
+            'q' => $_GET['q'] ?? '',
+            'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $fulfillmentList = $listService->listPage($filters, $page, $supplierId, $timer);
+        $stageCounts = $fulfillmentList['stage_counts'] ?? [];
 
         $this->render('order-workflow.index', [
-            'pageTitle' => 'Order Workflow',
+            'pageTitle' => 'Vendor Fulfillment',
             'breadcrumbs' => [
                 ['label' => 'Operations', 'active' => false],
-                ['label' => 'Order Workflow', 'active' => true],
+                ['label' => 'Vendor Fulfillment', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
             'orderReadInventory' => $this->buildOrderReadInventory(),
@@ -62,6 +81,7 @@ class OrderWorkflowController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::orderWorkflow(),
             'writeGateReady' => WriteGate::orderWorkflow()['ready'],
+            'dispatchGateReady' => WriteGate::dispatchReports()['ready'] ?? false,
             'manualOrderWriteGate' => $manualOrderWriteGate,
             'manualOrderGateReady' => $manualOrderWriteGate['ready'],
             'manualOrderGateMessage' => $manualOrderWriteGate['message'] ?? WriteGate::WARNING_MESSAGE,
@@ -74,14 +94,21 @@ class OrderWorkflowController extends Controller
             'canCreateOrders' => Permission::can('manual_orders.manage') && !SupplierContext::isSupplier(),
             'isSupplierView' => SupplierContext::isSupplier(),
             'statusFilter' => $statusFilter,
-            'workflowBoard' => $this->buildWorkflowBoard($statusFilter),
-            'workflowStageNav' => $this->buildWorkflowStageNav($statusFilter),
+            'fulfillmentList' => $fulfillmentList,
+            'fulfillmentFilters' => $fulfillmentList['filters'] ?? $filters,
+            'fulfillmentPagination' => $fulfillmentList['pagination'] ?? [],
+            'fulfillmentRows' => $fulfillmentList['rows'] ?? [],
+            'tableReady' => $listService->tableExists(),
+            'workflowStageNav' => $this->buildWorkflowStageNavFromCounts($statusFilter, $stageCounts),
             'recentWorkflowHistory' => $this->buildRecentWorkflowHistory(),
             'deliveryStopReasonOptions' => DeliveryStopReason::options(),
             'dispatchDevNote' => OrderWorkflowStatus::DISPATCH_DEV_NOTE,
             'syncImportRuleNote' => OrderWorkflowStatus::SYNC_IMPORT_RULE_NOTE,
             'vendorReturnFuture' => $this->vendorReturnFuture(),
             'fulfillmentTableColumns' => $this->fulfillmentTableColumns(),
+            'requestTiming' => $timer !== null ? $timer->laps() : null,
+            'appVersion' => config('app.version'),
+            'releaseLabel' => config('app.release_label'),
         ]);
     }
 
@@ -129,9 +156,38 @@ class OrderWorkflowController extends Controller
         }
         $staffConfirmed = !empty($_POST['staff_confirmation']);
         $actionConfirmed = !empty($_POST['action_confirmed']);
+        $result = (new OrderWorkflowWriteService())->transition($orderId, $toStatus, $note, $staffConfirmed, $actionConfirmed);
+        if ($result->success) {
+            (new OrderWorkflowListReadService())->invalidateCache();
+        }
         $this->redirectWithWriteResult(
             $this->workflowRedirectPath(),
-            (new OrderWorkflowWriteService())->transition($orderId, $toStatus, $note, $staffConfirmed, $actionConfirmed)
+            $result
+        );
+    }
+
+    public function bulkAction()
+    {
+        $this->authorize('order_workflow.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect($this->workflowRedirectPath());
+        }
+
+        $action = trim((string) ($_POST['bulk_action'] ?? ''));
+        $orderIds = $_POST['order_ids'] ?? [];
+        if (!is_array($orderIds)) {
+            $orderIds = [];
+        }
+
+        $result = (new OrderWorkflowBulkWriteService())->execute($action, $orderIds, $_POST);
+        if ($result->success) {
+            (new OrderWorkflowListReadService())->invalidateCache();
+        }
+        $this->redirectWithWriteResult(
+            $this->workflowRedirectPath(),
+            $result
         );
     }
 
@@ -253,6 +309,43 @@ class OrderWorkflowController extends Controller
         }
 
         return $ordered;
+    }
+
+    /**
+     * @param array<string, int> $counts
+     */
+    private function buildWorkflowStageNavFromCounts(?string $activeStatus, array $counts): array
+    {
+        $mainStages = [];
+        foreach (OrderWorkflowStatus::mainStages() as $stage) {
+            $code = $stage['code'];
+            $mainStages[] = [
+                'code' => $code,
+                'label' => $code === 'dispatch_report_created' ? 'Created Report' : $stage['label'],
+                'count' => $counts[$code] ?? 0,
+                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'active' => $activeStatus === $code,
+            ];
+        }
+
+        $exceptionStages = [];
+        foreach (OrderWorkflowStatus::exceptionStages() as $stage) {
+            $code = $stage['code'];
+            $exceptionStages[] = [
+                'code' => $code,
+                'label' => $stage['label'],
+                'count' => $counts[$code] ?? 0,
+                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'active' => $activeStatus === $code,
+            ];
+        }
+
+        return [
+            'all_url' => '/order-workflow',
+            'all_active' => $activeStatus === null,
+            'main' => $mainStages,
+            'exceptions' => $exceptionStages,
+        ];
     }
 
     private function buildWorkflowStageNav(?string $activeStatus = null): array
@@ -778,8 +871,9 @@ class OrderWorkflowController extends Controller
     private function fulfillmentTableColumns()
     {
         return [
-            'title' => 'Future Vendor Fulfillment Table (reference)',
+            'title' => 'Vendor Fulfillment Table',
             'columns' => [
+                'Checkbox',
                 'Order No',
                 'Customer',
                 'Product Card',
@@ -789,9 +883,9 @@ class OrderWorkflowController extends Controller
                 'Courier Status',
                 'Consignment ID',
                 'OC Order Status',
-                'Actions',
+                'Action',
             ],
-            'note' => 'Do not show SL No. Max 50 orders per load. One order-list request at a time.',
+            'note' => 'Cost snapshot only — selling amount hidden. Max 50 rows per page. One list request at a time.',
         ];
     }
 

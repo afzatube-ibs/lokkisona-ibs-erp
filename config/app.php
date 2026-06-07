@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.9.1',
-    'release_label' => 'Product Control Performance',
+    'version' => '1.9.2',
+    'release_label' => 'Vendor Fulfillment Workflow Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
