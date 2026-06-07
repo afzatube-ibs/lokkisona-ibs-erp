@@ -3,7 +3,7 @@
 namespace App\Services\Read;
 
 /**
- * Read-only OpenCart/PIT client (v0.5.7, v1.7.0 product sync, v1.7.1 paginated live test).
+ * Read-only OpenCart/PIT client (v0.5.7, v1.7.0 product sync, v1.7.1 paginated live test, v1.8.4 real API repair).
  */
 class OpenCartReadClient
 {
@@ -40,21 +40,21 @@ class OpenCartReadClient
             ];
         }
 
-        $page = $this->fetchWarehouseProductsPage(1);
-        if (!($page['bridge_available'] ?? false)) {
+        $probe = $this->fetchConnectionTest();
+        if (!($probe['ok'] ?? false)) {
             return [
                 'ok' => false,
-                'mode' => 'live',
-                'message' => (string) ($page['bridge_warning'] ?? self::BRIDGE_WARNING),
-                'bridge_available' => false,
+                'mode' => $this->resolvedSourceMode(),
+                'message' => (string) ($probe['message'] ?? 'Connection test failed.'),
+                'bridge_available' => $probe['bridge_available'] ?? null,
             ];
         }
 
         return [
             'ok' => true,
             'mode' => $this->resolvedSourceMode(),
-            'message' => ucfirst($this->resolvedSourceMode()) . ' OpenCart read connection OK. Dispatch Location bridge reported.',
-            'bridge_available' => true,
+            'message' => (string) ($probe['message'] ?? ucfirst($this->resolvedSourceMode()) . ' OpenCart read connection OK.'),
+            'bridge_available' => $probe['bridge_available'] ?? null,
         ];
     }
 
@@ -134,12 +134,6 @@ class OpenCartReadClient
         $test = $this->testConnection();
         $productRoute = trim((string) config('opencart.product_api_route', ''));
         $productPull = $this->warehouseProductPullAvailable();
-        $warehouseCount = 0;
-
-        if ($productPull && ($test['bridge_available'] ?? null) !== false) {
-            $preview = $this->fetchWarehouseProductsPage(1);
-            $warehouseCount = count($preview['rows'] ?? []);
-        }
 
         return [
             'status' => ($test['ok'] ?? false) ? ($test['mode'] === 'demo' ? 'demo' : 'connected') : 'not_connected',
@@ -147,7 +141,7 @@ class OpenCartReadClient
             'mode' => (string) ($test['mode'] ?? 'off'),
             'product_route_configured' => $productRoute !== '',
             'product_pull_available' => $productPull,
-            'warehouse_product_count' => $warehouseCount,
+            'warehouse_product_count' => 0,
             'bridge_available' => $test['bridge_available'] ?? null,
         ];
     }
@@ -188,9 +182,8 @@ class OpenCartReadClient
 
         $pageParam = (string) config('opencart.api_page_param', 'page');
         $limitParam = (string) config('opencart.api_limit_param', 'limit');
-        $separator = str_contains($route, '?') ? '&' : '?';
         $url = $baseUrl . '/index.php?route=' . ltrim($route, '=')
-            . $separator . 'api_token=' . rawurlencode($apiKey)
+            . '&api_token=' . rawurlencode($apiKey)
             . '&' . rawurlencode($pageParam) . '=' . $page
             . '&' . rawurlencode($limitParam) . '=' . $limit;
 
@@ -201,35 +194,130 @@ class OpenCartReadClient
 
         $decoded = json_decode($response, true);
         if (!is_array($decoded)) {
-            return $this->emptyProductPage($page, $limit, false, 'Product API returned invalid JSON.');
+            return $this->emptyProductPage($page, $limit, null, 'Product API returned invalid JSON.');
         }
 
-        $bridgeAvailable = $this->resolveBridgeAvailable($decoded);
-        $bridgeRequired = (bool) config('opencart.dispatch_bridge_required', true);
-        if (!$bridgeAvailable && $bridgeRequired) {
-            return $this->emptyProductPage($page, $limit, false, self::BRIDGE_WARNING);
+        if ($this->isExplicitApiFailure($decoded)) {
+            $message = $this->extractApiMessage($decoded);
+
+            return $this->emptyProductPage(
+                $page,
+                $limit,
+                $this->messageIndicatesBridgeProblem($message) ? false : null,
+                $this->messageIndicatesBridgeProblem($message) ? ($message !== '' ? $message : self::BRIDGE_WARNING) : ($message !== '' ? $message : 'Product API returned an error.')
+            );
         }
 
-        $products = $decoded['products'] ?? $decoded['data'] ?? $decoded;
+        $products = $decoded['products'] ?? $decoded['data'] ?? null;
         if (!is_array($products)) {
-            return $this->emptyProductPage($page, $limit, true, null);
+            if ($this->isApiResponseOk($decoded)) {
+                return [
+                    'bridge_available' => $this->resolveBridgeAvailable($decoded),
+                    'bridge_warning' => null,
+                    'rows' => [],
+                    'page' => $page,
+                    'per_page' => $limit,
+                    'has_previous' => $page > 1,
+                    'has_next' => false,
+                    'message' => null,
+                ];
+            }
+
+            return $this->emptyProductPage($page, $limit, null, 'Product API returned an unexpected response shape.');
         }
 
-        $rows = $this->applyBridgeFilter($this->normalizeWarehouseProducts($products), true);
-        $hasNext = (bool) ($decoded['has_next'] ?? null);
-        if ($hasNext === false && count($rows) >= $limit) {
+        $rows = $this->filterWarehouseRows($this->normalizeWarehouseProducts($products));
+        $bridgeAvailable = $this->resolveBridgeAvailable($decoded);
+        if (!$bridgeAvailable && $rows !== []) {
+            $bridgeAvailable = true;
+        }
+
+        $hasNext = (bool) ($decoded['has_next'] ?? false);
+        if (!$hasNext && count($rows) >= $limit) {
             $hasNext = true;
         }
 
         return [
-            'bridge_available' => true,
+            'bridge_available' => $bridgeAvailable,
             'bridge_warning' => null,
             'rows' => array_slice($rows, 0, $limit),
             'page' => $page,
             'per_page' => $limit,
             'has_previous' => $page > 1,
-            'has_next' => $hasNext || count($rows) >= $limit,
+            'has_next' => $hasNext,
             'message' => null,
+        ];
+    }
+
+    private function fetchConnectionTest(): array
+    {
+        $baseUrl = rtrim((string) config('opencart.api_base_url', ''), '/');
+        $apiKey = (string) config('opencart.api_key', '');
+        if ($baseUrl === '' || $apiKey === '') {
+            return [
+                'ok' => false,
+                'message' => 'Missing api_base_url or api_key.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $route = trim((string) config('opencart.connection_test_api_route', 'api/ibs/connection_test'));
+        if ($route === '') {
+            return [
+                'ok' => false,
+                'message' => 'Connection test route is not configured.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $url = $baseUrl . '/index.php?route=' . ltrim($route, '=')
+            . '&api_token=' . rawurlencode($apiKey);
+
+        $response = $this->httpGet($url);
+        if ($response === null) {
+            return [
+                'ok' => false,
+                'message' => 'Connection test request failed or timed out.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            return [
+                'ok' => false,
+                'message' => 'Connection test returned invalid JSON.',
+                'bridge_available' => null,
+            ];
+        }
+
+        if (!$this->isApiResponseOk($decoded)) {
+            $message = $this->extractApiMessage($decoded);
+
+            return [
+                'ok' => false,
+                'message' => $message !== '' ? $message : 'Connection test reported failure.',
+                'bridge_available' => $decoded['bridge_available'] ?? null,
+            ];
+        }
+
+        if (!$this->isReadOnlyApiResponse($decoded)) {
+            return [
+                'ok' => false,
+                'message' => 'Connection test did not confirm read_only=true.',
+                'bridge_available' => $decoded['bridge_available'] ?? null,
+            ];
+        }
+
+        $message = trim((string) ($decoded['message'] ?? ''));
+        if ($message === '') {
+            $message = ucfirst($this->resolvedSourceMode()) . ' OpenCart read connection OK.';
+        }
+
+        return [
+            'ok' => true,
+            'message' => $message,
+            'bridge_available' => $decoded['bridge_available'] ?? null,
         ];
     }
 
@@ -403,7 +491,70 @@ class OpenCartReadClient
             return [];
         }
 
-        return array_values(array_filter($products, static fn (array $row): bool => (int) ($row['from_warehouse'] ?? 0) === 1));
+        return $this->filterWarehouseRows($products);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $products
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterWarehouseRows(array $products): array
+    {
+        return array_values(array_filter(
+            $products,
+            static fn (array $row): bool => (int) ($row['from_warehouse'] ?? 0) === 1
+        ));
+    }
+
+    private function isApiResponseOk(array $decoded): bool
+    {
+        if (($decoded['success'] ?? null) === true) {
+            return true;
+        }
+
+        if (($decoded['ok'] ?? null) === true) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isReadOnlyApiResponse(array $decoded): bool
+    {
+        return ($decoded['read_only'] ?? false) === true;
+    }
+
+    private function isExplicitApiFailure(array $decoded): bool
+    {
+        if (($decoded['success'] ?? null) === false) {
+            return true;
+        }
+
+        if (($decoded['ok'] ?? null) === false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function extractApiMessage(array $decoded): string
+    {
+        $message = trim((string) ($decoded['error'] ?? $decoded['message'] ?? ''));
+
+        return $message;
+    }
+
+    private function messageIndicatesBridgeProblem(string $message): bool
+    {
+        if ($message === '') {
+            return false;
+        }
+
+        $lower = strtolower($message);
+
+        return str_contains($lower, 'bridge')
+            || str_contains($lower, 'dispatch')
+            || str_contains($lower, 'from_warehouse');
     }
 
     private function resolveBridgeAvailable(array $decoded): bool

@@ -20,9 +20,10 @@ return [
     'max_rows_per_page' => 20,
     'max_orders_per_request' => 20,
     'max_products_per_request' => 20,
-    'order_api_route' => 'api/order',
-    // Must join oc_dispatch_location_product (from_warehouse=1) on the OpenCart side.
-    'product_api_route' => 'REPLACE_WITH_OC_WAREHOUSE_PRODUCT_ROUTE',
+    'order_api_route' => 'api/ibs/orders',
+    'connection_test_api_route' => 'api/ibs/connection_test',
+    // OpenCart IBS read-only connector (v1.8.3 package): api/ibs/products
+    'product_api_route' => 'api/ibs/products',
     'api_page_param' => 'page',
     'api_limit_param' => 'limit',
     'dispatch_location_bridge_table' => 'dispatch_location_product',

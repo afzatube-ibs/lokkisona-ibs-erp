@@ -3397,43 +3397,66 @@ body.modal-open { overflow: hidden; }
     margin-bottom: 0;
 }
 
-/* Sync/API Settings (v1.8.2.1) */
+/* Sync/API Settings (v1.8.2.2) */
+.sync-settings-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .sync-settings-header-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.sync-settings-title-row {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
 }
 
+.sync-settings-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .sync-settings-mode-badge {
     font-size: 0.8125rem;
 }
 
-.sync-settings-kv-grid {
+.sync-settings-kpi-row .kpi-value-sm {
+    font-size: 1.05rem;
+}
+
+.sync-settings-layout {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 1.25rem;
+    align-items: start;
 }
 
-.sync-settings-kv {
+.sync-settings-status-header {
     display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.sync-settings-kv-label {
-    font-size: 0.8125rem;
-    color: var(--color-muted);
-    font-weight: 600;
+.sync-settings-chip-row {
+    margin-top: 0;
 }
 
-.sync-settings-kv-value {
+.sync-settings-info-list .info-row dd {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    min-width: 0;
 }
 
 .sync-settings-kv-meta {
@@ -3454,13 +3477,17 @@ body.modal-open { overflow: hidden; }
     margin-top: 0.35rem;
 }
 
-.sync-settings-security-card .card-body {
-    padding-top: 0.85rem;
-    padding-bottom: 0.85rem;
+.sync-settings-section-label {
+    margin: 1.25rem 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted);
 }
 
-.sync-settings-security-list li {
-    color: var(--color-muted);
+.sync-settings-section-label:first-of-type {
+    margin-top: 0;
 }
 
 .sync-settings-form-grid {
@@ -3508,6 +3535,13 @@ body.modal-open { overflow: hidden; }
     margin: 0 0 0.45rem;
 }
 
+.sync-settings-manual-inline {
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--color-warn);
+}
+
 .sync-settings-actions {
     display: flex;
     flex-wrap: wrap;
@@ -3519,11 +3553,23 @@ body.modal-open { overflow: hidden; }
     margin-top: 0.65rem;
 }
 
+.sync-settings-security-inline {
+    margin-top: 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+}
+
 .sync-diagnostics-card .sync-diagnostics-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .sync-diagnostics-fix {
@@ -3536,13 +3582,22 @@ body.modal-open { overflow: hidden; }
     margin-top: 1rem;
 }
 
+@media (max-width: 992px) {
+    .sync-settings-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
-    .sync-settings-kv-grid,
     .sync-settings-form-grid {
         grid-template-columns: 1fr;
     }
 
     .sync-settings-form-span-2 {
         grid-column: auto;
+    }
+
+    .sync-settings-header-actions {
+        width: 100%;
     }
 }

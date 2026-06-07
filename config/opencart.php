@@ -22,6 +22,7 @@ return [
     'max_orders_per_request' => 20,
     'max_products_per_request' => 20,
     'order_api_route' => 'api/order',
+    'connection_test_api_route' => 'api/ibs/connection_test',
     'product_api_route' => 'demo/warehouse_product',
     'api_page_param' => 'page',
     'api_limit_param' => 'limit',

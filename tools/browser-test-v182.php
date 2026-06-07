@@ -50,7 +50,7 @@ function assertContains(string $haystack, string $needle, string $label): void
     echo 'OK: ' . $label . PHP_EOL;
 }
 
-echo "Browser test v1.8.2 — {$base}\n";
+echo "Browser test v1.8.2.2 — {$base}\n";
 
 $login = req('POST', $base . '/login', http_build_query([
     'username' => 'admin',
@@ -69,7 +69,14 @@ $settingsGet = req('GET', $base . '/sync-api-settings', null, $cookie);
 $settingsHtml = bodyOnly($settingsGet);
 assertContains($settingsHtml, 'Sync/API Settings', 'settings page title');
 assertContains($settingsHtml, 'Connect Lokkisona product/order sync in read-only mode.', 'settings subtitle');
+assertContains($settingsHtml, 'Read-only OpenCart sync only', 'ops safety strip');
+assertContains($settingsHtml, 'Open Sync Preview', 'header action sync preview');
+assertContains($settingsHtml, 'Product Control', 'header action product control');
+assertContains($settingsHtml, 'sync-settings-kpi-row', 'kpi status row');
+assertContains($settingsHtml, 'sync-settings-layout', 'two column layout');
 assertContains($settingsHtml, 'Demo Mode', 'header demo badge');
+assertContains($settingsHtml, 'Read-only sync', 'workflow chip');
+assertContains($settingsHtml, 'form-input', 'form input styling');
 assertContains($settingsHtml, 'Read-Only Lock', 'read-only lock label');
 assertContains($settingsHtml, 'Test Connection', 'test connection button');
 assertContains($settingsHtml, 'read-only — no product or order import', 'test connection help');

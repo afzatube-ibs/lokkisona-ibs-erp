@@ -5,12 +5,13 @@ $ready = !empty($productSyncDiagnostics['ready']);
 ?>
 <div class="card mb-15 sync-diagnostics-card <?= $ready ? '' : 'card-warn-border' ?>">
     <div class="card-header sync-diagnostics-header">
-        <h2 class="card-title">Product Sync Help</h2>
+        <div>
+            <h2 class="card-title">Product Sync Help</h2>
+            <p class="page-description mb-0"><?= $ready ? 'All checks passed for preview and import.' : 'Fix the items below, then reload product preview.' ?></p>
+        </div>
         <span class="badge <?= $ready ? 'badge-ok' : 'badge-warn' ?>"><?= $ready ? 'Ready' : 'Needs attention' ?></span>
     </div>
     <div class="card-body">
-        <p class="page-description"><?= $ready ? 'Product sync prerequisites look good for preview and import.' : 'Resolve the items below, then reload product preview on Sync Preview.' ?></p>
-
         <?php if ($rows !== []): ?>
         <div class="table-scroll">
             <table class="data-table data-table-compact sync-diagnostics-table">

@@ -7,7 +7,7 @@ use App\Services\Read\OpenCartReadClient;
 use App\Services\Read\OpenCartSchemaProbe;
 
 /**
- * Paginated read-only product sync preview (v1.7.1).
+ * Paginated read-only product sync preview (v1.7.1, v1.8.4 real API integration).
  */
 class ProductSyncPreviewService
 {
@@ -26,23 +26,26 @@ class ProductSyncPreviewService
         $sourceId = max(1, $businessSourceId);
         $fetch = $this->client->fetchWarehouseProductsPage($page);
         $probe = (new OpenCartSchemaProbe())->probeExtensions();
+        $message = trim((string) ($fetch['message'] ?? ''));
+        $importRows = is_array($fetch['rows'] ?? null) ? $fetch['rows'] : [];
 
-        if (($fetch['bridge_available'] ?? false) !== true) {
+        if ($importRows === [] && $message !== '') {
             return [
                 'rows' => [],
+                'import_rows' => [],
                 'page' => $page,
                 'per_page' => (int) ($fetch['per_page'] ?? 20),
                 'has_previous' => $page > 1,
                 'has_next' => false,
-                'bridge_available' => false,
-                'bridge_warning' => (string) ($fetch['bridge_warning'] ?? OpenCartReadClient::BRIDGE_WARNING),
-                'message' => (string) ($fetch['message'] ?? $fetch['bridge_warning'] ?? OpenCartReadClient::BRIDGE_WARNING),
+                'bridge_available' => $fetch['bridge_available'] ?? null,
+                'bridge_warning' => (string) ($fetch['bridge_warning'] ?? $message),
+                'message' => $message,
                 'extensions' => $probe,
             ];
         }
 
         $rows = [];
-        foreach ($fetch['rows'] ?? [] as $product) {
+        foreach ($importRows as $product) {
             if (!is_array($product)) {
                 continue;
             }
@@ -93,13 +96,14 @@ class ProductSyncPreviewService
 
         return [
             'rows' => $rows,
+            'import_rows' => $importRows,
             'page' => (int) ($fetch['page'] ?? $page),
             'per_page' => (int) ($fetch['per_page'] ?? 20),
             'has_previous' => (bool) ($fetch['has_previous'] ?? false),
             'has_next' => (bool) ($fetch['has_next'] ?? false),
-            'bridge_available' => true,
-            'bridge_warning' => null,
-            'message' => (string) ($fetch['message'] ?? ''),
+            'bridge_available' => $fetch['bridge_available'] ?? null,
+            'bridge_warning' => $fetch['bridge_warning'] ?? null,
+            'message' => $message,
             'extensions' => $probe,
         ];
     }

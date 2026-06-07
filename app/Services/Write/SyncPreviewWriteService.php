@@ -50,13 +50,18 @@ class SyncPreviewWriteService
         $page = max(1, (int) ($input['page'] ?? 1));
         $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
         $preview = (new ProductSyncPreviewService())->previewPage($page, $sourceId);
+        $previewMessage = trim((string) ($preview['message'] ?? ''));
+        $displayRows = $preview['rows'] ?? [];
+        $importRows = $this->bridgeImportRows($preview['import_rows'] ?? []);
 
-        if (($preview['bridge_available'] ?? false) !== true) {
-            return WriteResult::fail((string) ($preview['bridge_warning'] ?? OpenCartReadClient::BRIDGE_WARNING));
+        if ($displayRows === [] && $previewMessage !== '') {
+            return WriteResult::fail($previewMessage);
         }
 
-        $rawFetch = $this->client->fetchWarehouseProductsPage($page);
-        $importRows = $this->bridgeImportRows($rawFetch['rows'] ?? []);
+        if ($importRows === [] && $displayRows === []) {
+            return WriteResult::ok('Product preview loaded: 0 warehouse product(s) on page ' . $page . '.', $page);
+        }
+
         $_SESSION['ibs_product_sync_preview'] = [
             'page' => $page,
             'business_source_id' => $sourceId,
@@ -73,12 +78,12 @@ class SyncPreviewWriteService
 
         ActivityLog::record('product_sync_preview', 'Product sync preview loaded (read-only)', [
             'page' => $page,
-            'row_count' => count($preview['rows'] ?? []),
+            'row_count' => count($displayRows),
         ]);
 
-        $count = count($preview['rows'] ?? []);
+        $count = count($displayRows);
 
-        return WriteResult::ok('Product preview loaded: ' . $count . ' warehouse product(s) on page ' . $page . '. Confirm import to update ERP.', $page);
+        return WriteResult::ok('Product preview loaded: ' . $count . ' warehouse product(s) on page ' . $page . '. Confirm import to sync ERP.', $page);
     }
 
     public function importProductsFromPreview(array $input = []): WriteResult
