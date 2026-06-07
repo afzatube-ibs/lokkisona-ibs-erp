@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.8.4',
-    'release_label' => 'Sync Performance and Real API Product Integration Repair',
+    'version' => '1.8.5',
+    'release_label' => 'Supplier Product Control Completion',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -21,4 +21,20 @@ class ProductStockHistoryWriteRepository extends BaseWriteRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+
+    /**
+     * @param array<int, int> $productIds
+     */
+    public function deleteForProductIds(array $productIds): int
+    {
+        if (!$this->tableExists() || $productIds === []) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $sql = 'DELETE FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE product_id IN (' . $placeholders . ')';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute($productIds) ? $statement->rowCount() : 0;
+    }
 }

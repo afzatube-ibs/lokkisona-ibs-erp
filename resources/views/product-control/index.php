@@ -54,8 +54,8 @@ $currentPage = max(1, (int) ($pagination['page'] ?? 1));
             <p class="page-description mb-0">Synced catalog from live site. New rows come from Sync Preview import — not manual add.</p>
         </div>
         <div class="product-control-status-pills">
+            <span class="workflow-chip is-active">Supplier synced only</span>
             <span class="workflow-chip">Sync-only catalog</span>
-            <span class="workflow-chip is-active">Supplier/ERP edits only</span>
         </div>
     </div>
     <div class="card-body">
@@ -140,8 +140,8 @@ $currentPage = max(1, (int) ($pagination['page'] ?? 1));
                         aria-label="Open product #<?= e((string) $row['product_id']) ?>">
                         <td>
                             <div class="pcc-list-thumb">
-                                <?php if (!empty($row['image_path'])): ?>
-                                <img src="<?= e($row['image_path']) ?>" alt="">
+                                <?php if (!empty($row['image_url'])): ?>
+                                <img src="<?= e($row['image_url']) ?>" alt="" loading="lazy">
                                 <?php else: ?>
                                 <span class="pcc-list-thumb-empty">—</span>
                                 <?php endif; ?>
@@ -189,7 +189,10 @@ $currentPage = max(1, (int) ($pagination['page'] ?? 1));
 
 <script type="application/json" id="productCatalogPayload"><?= e(json_encode($catalog['workspaces'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
 <script type="application/json" id="productHistoryPayload"><?= e(json_encode($productHistoryByProduct ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
-<script type="application/json" id="productControlConfig"><?= e(json_encode(['supplierNoteReady' => !empty($writeGateSupplierNoteReady)], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
+<script type="application/json" id="productControlConfig"><?= e(json_encode([
+    'supplierNoteReady' => !empty($writeGateSupplierNoteReady),
+    'opencartMediaBase' => rtrim((string) config('opencart.api_base_url', ''), '/'),
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
 
 <?php view('partials.product-control-center-modal', [
     'csrfField' => $csrfField ?? '',

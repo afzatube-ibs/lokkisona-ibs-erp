@@ -10,6 +10,7 @@ use App\Services\ReadOnly\ProductSyncReadService;
 use App\Services\ReadOnly\ProductSyncDiagnosticsService;
 use App\Services\ReadOnly\TestSyncPreviewService;
 use App\Services\Read\OpenCartReadClient;
+use App\Services\Write\ProductSyncResetWriteService;
 use App\Services\Write\SyncImportWriteService;
 use App\Services\Write\SyncPreviewWriteService;
 
@@ -619,6 +620,23 @@ class SyncPreviewController extends Controller
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $result = (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
         $this->redirectWithWriteResult('/sync-preview?product_page=' . $page, $result);
+    }
+
+    public function resetProductSync()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+
+        $redirect = trim((string) ($_POST['redirect_to'] ?? '/sync-preview'));
+        if (!in_array($redirect, ['/sync-preview', '/sync-api-settings'], true)) {
+            $redirect = '/sync-preview';
+        }
+
+        $this->redirectWithWriteResult($redirect, (new ProductSyncResetWriteService())->reset($_POST));
     }
 
     public function pullWarehouseProducts()

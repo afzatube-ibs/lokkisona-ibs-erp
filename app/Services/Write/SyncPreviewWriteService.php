@@ -59,7 +59,14 @@ class SyncPreviewWriteService
         }
 
         if ($importRows === [] && $displayRows === []) {
-            return WriteResult::ok('Product preview loaded: 0 warehouse product(s) on page ' . $page . '.', $page);
+            $skipStats = is_array($preview['skip_stats'] ?? null)
+                ? $preview['skip_stats']
+                : OpenCartReadClient::emptySkipStats();
+
+            return WriteResult::ok(
+                OpenCartReadClient::formatSupplierSkipMessage($skipStats, 0) . ' Page ' . $page . '.',
+                $page
+            );
         }
 
         $_SESSION['ibs_product_sync_preview'] = [
@@ -67,6 +74,7 @@ class SyncPreviewWriteService
             'business_source_id' => $sourceId,
             'fetched_at' => time(),
             'products' => $importRows,
+            'skip_stats' => $preview['skip_stats'] ?? OpenCartReadClient::emptySkipStats(),
             'pagination' => [
                 'page' => $preview['page'],
                 'per_page' => $preview['per_page'],
@@ -79,11 +87,18 @@ class SyncPreviewWriteService
         ActivityLog::record('product_sync_preview', 'Product sync preview loaded (read-only)', [
             'page' => $page,
             'row_count' => count($displayRows),
+            'skip_stats' => $preview['skip_stats'] ?? [],
         ]);
 
-        $count = count($displayRows);
+        $skipStats = is_array($preview['skip_stats'] ?? null)
+            ? $preview['skip_stats']
+            : OpenCartReadClient::emptySkipStats();
+        $message = OpenCartReadClient::formatSupplierSkipMessage($skipStats, count($displayRows));
+        if ($displayRows !== []) {
+            $message .= ' Confirm import to sync ERP.';
+        }
 
-        return WriteResult::ok('Product preview loaded: ' . $count . ' warehouse product(s) on page ' . $page . '. Confirm import to sync ERP.', $page);
+        return WriteResult::ok($message, $page);
     }
 
     public function importProductsFromPreview(array $input = []): WriteResult
@@ -116,10 +131,23 @@ class SyncPreviewWriteService
         $products = array_slice($products, 0, $this->productImportLimit());
 
         if ($products === []) {
-            return WriteResult::fail('No Dispatch Location bridge products (from_warehouse = 1) in preview session.');
+            return WriteResult::fail('No supplier products (from_warehouse = 1) in preview session.');
         }
 
-        return (new ProductWriteService())->upsertWarehouseProducts($sourceId, $products);
+        $result = (new ProductWriteService())->upsertWarehouseProducts($sourceId, $products);
+        if ($result->success) {
+            $skipStats = is_array($session['skip_stats'] ?? null) ? $session['skip_stats'] : OpenCartReadClient::emptySkipStats();
+            $skippedNonSupplier = (int) ($skipStats['skipped_not_supplier'] ?? 0)
+                + (int) ($skipStats['skipped_missing_from_warehouse'] ?? 0);
+            if ($skippedNonSupplier > 0) {
+                $result = WriteResult::ok(
+                    $result->message . ' Non-supplier rows skipped at preview: ' . $skippedNonSupplier . '.',
+                    $result->id
+                );
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -133,7 +161,7 @@ class SyncPreviewWriteService
             if (!is_array($row)) {
                 continue;
             }
-            if ((int) ($row['from_warehouse'] ?? 0) !== 1) {
+            if (!OpenCartReadClient::isStrictSupplierProduct($row)) {
                 continue;
             }
             $filtered[] = $row;

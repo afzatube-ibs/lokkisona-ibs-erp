@@ -203,4 +203,47 @@ class ProductWriteRepository extends BaseWriteRepository
             return false;
         }
     }
+
+    /**
+     * @return array<int, int>
+     */
+    public function listSyncedProductIds(): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        $sql = 'SELECT product_id FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE source_product_id IS NOT NULL AND TRIM(source_product_id) <> \'\'';
+        $statement = $this->pdo->query($sql);
+        if ($statement === false) {
+            return [];
+        }
+
+        $ids = [];
+        while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+            $id = (int) ($row['product_id'] ?? 0);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, int> $ids
+     */
+    public function deleteByIds(array $ids): int
+    {
+        if (!$this->tableExists() || $ids === []) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = 'DELETE FROM `' . $this->escapeIdentifier($this->table()) . '` WHERE product_id IN (' . $placeholders . ')';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute($ids) ? $statement->rowCount() : 0;
+    }
 }

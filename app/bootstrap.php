@@ -120,6 +120,37 @@ function e($value)
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Resolve OpenCart catalog image path to a full read-only URL for Product Control display.
+ */
+function opencart_media_url($path): string
+{
+    $path = trim((string) $path);
+    if ($path === '') {
+        return '';
+    }
+
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+
+    if (str_starts_with($path, '//')) {
+        return 'https:' . $path;
+    }
+
+    $base = rtrim((string) config('opencart.api_base_url', ''), '/');
+    if ($base === '') {
+        return $path;
+    }
+
+    $path = ltrim($path, '/');
+    if (str_starts_with($path, 'image/')) {
+        return $base . '/' . $path;
+    }
+
+    return $base . '/image/' . $path;
+}
+
 function app_log($message, $level = 'info')
 {
     $dir = IBS_STORAGE . '/logs';

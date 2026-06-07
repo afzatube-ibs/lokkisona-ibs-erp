@@ -12,10 +12,10 @@ use App\Models\ProductStockHistory;
 use App\Permission;
 use App\SupplierContext;
 use App\Csrf;
-use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\ProductCatalogPageService;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
+use App\Services\ReadOnly\SupplierProductFilter;
 use App\Services\ReadOnly\SupplierReadService;
 use App\Services\ReadOnly\ProductCostHistoryReadService;
 use App\Services\ReadOnly\ProductStockHistoryReadService;
@@ -36,6 +36,22 @@ class ProductControlController extends Controller
         $productVariantReadInventory = $this->buildProductVariantReadInventory();
         $productCostHistoryReadInventory = $this->buildProductCostHistoryReadInventory();
         $productStockHistoryReadInventory = $this->buildProductStockHistoryReadInventory();
+
+        $supplierFilter = new SupplierProductFilter();
+        $productReadInventory = $supplierFilter->filterProductInventory($productReadInventory);
+        $productVariantReadInventory = $supplierFilter->filterVariantInventory(
+            $productVariantReadInventory,
+            $productReadInventory
+        );
+        $productCostHistoryReadInventory = $supplierFilter->filterHistoryInventory(
+            $productCostHistoryReadInventory,
+            $productReadInventory
+        );
+        $productStockHistoryReadInventory = $supplierFilter->filterHistoryInventory(
+            $productStockHistoryReadInventory,
+            $productReadInventory
+        );
+
         $costStockHistoryDisplay = $this->buildCostStockHistoryDisplay(
             $productReadInventory,
             $productVariantReadInventory,
@@ -100,7 +116,6 @@ class ProductControlController extends Controller
             'variantDisplay' => $this->buildVariantDisplayFromInventories($productReadInventory, $productVariantReadInventory),
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'canManage' => Permission::can('product_control.manage'),
-            'warehouseProductPullAvailable' => (new OpenCartReadClient())->warehouseProductPullAvailable(),
             'currentSupplier' => $this->currentSupplier(),
             'purpose' => $this->purpose(),
             'futureSyncedStructure' => $this->futureSyncedStructure(),

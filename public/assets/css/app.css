@@ -2825,6 +2825,13 @@ body.modal-open { overflow: hidden; }
     gap: 0.5rem;
     flex-wrap: wrap;
 }
+.product-sync-reset-confirm {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+.product-sync-reset-actions {
+    margin-top: 0.5rem;
+}
 .product-control-kpis .kpi-sub {
     display: block;
     margin-top: 0.15rem;

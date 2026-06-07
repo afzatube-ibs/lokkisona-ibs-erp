@@ -27,7 +27,14 @@ class ProductSyncPreviewService
         $fetch = $this->client->fetchWarehouseProductsPage($page);
         $probe = (new OpenCartSchemaProbe())->probeExtensions();
         $message = trim((string) ($fetch['message'] ?? ''));
+        $skipStats = is_array($fetch['skip_stats'] ?? null)
+            ? $fetch['skip_stats']
+            : OpenCartReadClient::emptySkipStats();
         $importRows = is_array($fetch['rows'] ?? null) ? $fetch['rows'] : [];
+        $importRows = array_values(array_filter(
+            $importRows,
+            static fn ($row): bool => is_array($row) && OpenCartReadClient::isStrictSupplierProduct($row)
+        ));
 
         if ($importRows === [] && $message !== '') {
             return [
@@ -103,7 +110,8 @@ class ProductSyncPreviewService
             'has_next' => (bool) ($fetch['has_next'] ?? false),
             'bridge_available' => $fetch['bridge_available'] ?? null,
             'bridge_warning' => $fetch['bridge_warning'] ?? null,
-            'message' => $message,
+            'message' => $message !== '' ? $message : OpenCartReadClient::formatSupplierSkipMessage($skipStats, count($rows)),
+            'skip_stats' => $skipStats,
             'extensions' => $probe,
         ];
     }

@@ -3,11 +3,61 @@
 namespace App\Services\Read;
 
 /**
- * Read-only OpenCart/PIT client (v0.5.7, v1.7.0 product sync, v1.7.1 paginated live test, v1.8.4 real API repair).
+ * Read-only OpenCart/PIT client (v0.5.7, v1.7.0 product sync, v1.7.1 paginated live test, v1.8.4 real API repair, v1.8.5 supplier-only filter).
  */
 class OpenCartReadClient
 {
     public const BRIDGE_WARNING = 'Dispatch Location bridge not found. Product sync cannot safely identify IBS supplier products.';
+
+    public static function emptySkipStats(): array
+    {
+        return [
+            'total_received' => 0,
+            'supplier_products' => 0,
+            'skipped_not_supplier' => 0,
+            'skipped_missing_from_warehouse' => 0,
+        ];
+    }
+
+    /**
+     * Import/preview gate: from_warehouse must be present and equal to integer 1 only.
+     */
+    public static function isStrictSupplierProduct(array $row): bool
+    {
+        if (!array_key_exists('from_warehouse', $row)) {
+            return false;
+        }
+
+        return self::isStrictFromWarehouseValue($row['from_warehouse']);
+    }
+
+    /**
+     * @param mixed $value
+     */
+    public static function isStrictFromWarehouseValue($value): bool
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return false;
+        }
+
+        if (is_bool($value)) {
+            return false;
+        }
+
+        return (int) $value === 1;
+    }
+
+    public static function formatSupplierSkipMessage(array $skipStats, int $supplierCount): string
+    {
+        $skipped = (int) ($skipStats['skipped_not_supplier'] ?? 0)
+            + (int) ($skipStats['skipped_missing_from_warehouse'] ?? 0);
+        $message = $supplierCount . ' supplier product' . ($supplierCount === 1 ? '' : 's') . ' loaded.';
+        if ($skipped > 0) {
+            $message .= ' ' . $skipped . ' non-supplier product' . ($skipped === 1 ? '' : 's') . ' skipped.';
+        }
+
+        return $message;
+    }
 
     public function testConnection(): array
     {
@@ -167,9 +217,12 @@ class OpenCartReadClient
     private function fetchDemoWarehouseProductsPage(int $page, int $limit): array
     {
         $products = config('opencart.demo_warehouse_products', []);
-        $normalized = $this->applyBridgeFilter($this->normalizeWarehouseProducts(is_array($products) ? $products : []), true);
+        $partition = $this->partitionSupplierProducts(is_array($products) ? $products : []);
+        $normalized = $this->normalizeWarehouseProducts($partition['rows']);
+        $result = $this->paginateArray($normalized, $page, $limit, true);
+        $result['skip_stats'] = $partition['skip_stats'];
 
-        return $this->paginateArray($normalized, $page, $limit, true);
+        return $result;
     }
 
     private function fetchLiveWarehouseProductsPage(string $route, int $page, int $limit): array
@@ -220,13 +273,15 @@ class OpenCartReadClient
                     'has_previous' => $page > 1,
                     'has_next' => false,
                     'message' => null,
+                    'skip_stats' => self::emptySkipStats(),
                 ];
             }
 
             return $this->emptyProductPage($page, $limit, null, 'Product API returned an unexpected response shape.');
         }
 
-        $rows = $this->filterWarehouseRows($this->normalizeWarehouseProducts($products));
+        $partition = $this->partitionSupplierProducts($products);
+        $rows = $this->filterWarehouseRows($this->normalizeWarehouseProducts($partition['rows']));
         $bridgeAvailable = $this->resolveBridgeAvailable($decoded);
         if (!$bridgeAvailable && $rows !== []) {
             $bridgeAvailable = true;
@@ -246,6 +301,7 @@ class OpenCartReadClient
             'has_previous' => $page > 1,
             'has_next' => $hasNext,
             'message' => null,
+            'skip_stats' => $partition['skip_stats'],
         ];
     }
 
@@ -408,7 +464,8 @@ class OpenCartReadClient
                 continue;
             }
 
-            $fromWarehouse = (int) ($product['from_warehouse'] ?? $product['fromWarehouse'] ?? -1);
+            $rawFromWarehouse = $product['from_warehouse'] ?? $product['fromWarehouse'] ?? null;
+            $fromWarehouse = self::isStrictFromWarehouseValue($rawFromWarehouse) ? 1 : -1;
             $optionsRaw = $product['options'] ?? $product['option_lines'] ?? $product['variants'] ?? null;
             $options = $this->normalizeOptions(is_array($optionsRaw) ? $optionsRaw : []);
             $hasOptionsKey = array_key_exists('options', $product)
@@ -484,14 +541,50 @@ class OpenCartReadClient
         return $sign . number_format($price, 2);
     }
 
-    private function applyBridgeFilter(array $products, bool $bridgeConfirmed): array
+    /**
+     * @param array<int, mixed> $products
+     * @return array{rows: array<int, array<string, mixed>>, skip_stats: array<string, int>}
+     */
+    public function partitionSupplierProducts(array $products): array
     {
-        $bridgeRequired = (bool) config('opencart.dispatch_bridge_required', true);
-        if (!$bridgeConfirmed && $bridgeRequired) {
-            return [];
+        $totalReceived = 0;
+        $supplierRows = [];
+        $skippedNotSupplier = 0;
+        $skippedMissing = 0;
+
+        foreach ($products as $product) {
+            if (!is_array($product)) {
+                continue;
+            }
+
+            $totalReceived++;
+            if (!array_key_exists('from_warehouse', $product) && !array_key_exists('fromWarehouse', $product)) {
+                $skippedMissing++;
+                continue;
+            }
+
+            $fromWarehouse = $product['from_warehouse'] ?? $product['fromWarehouse'] ?? null;
+            if (!self::isStrictFromWarehouseValue($fromWarehouse)) {
+                if ($fromWarehouse === null || $fromWarehouse === '' || $fromWarehouse === false) {
+                    $skippedMissing++;
+                } else {
+                    $skippedNotSupplier++;
+                }
+                continue;
+            }
+
+            $supplierRows[] = $product;
         }
 
-        return $this->filterWarehouseRows($products);
+        return [
+            'rows' => $supplierRows,
+            'skip_stats' => [
+                'total_received' => $totalReceived,
+                'supplier_products' => count($supplierRows),
+                'skipped_not_supplier' => $skippedNotSupplier,
+                'skipped_missing_from_warehouse' => $skippedMissing,
+            ],
+        ];
     }
 
     /**
@@ -502,7 +595,7 @@ class OpenCartReadClient
     {
         return array_values(array_filter(
             $products,
-            static fn (array $row): bool => (int) ($row['from_warehouse'] ?? 0) === 1
+            [self::class, 'isStrictSupplierProduct']
         ));
     }
 
@@ -692,6 +785,7 @@ class OpenCartReadClient
             'has_previous' => $page > 1,
             'has_next' => false,
             'message' => $message,
+            'skip_stats' => self::emptySkipStats(),
         ];
     }
 

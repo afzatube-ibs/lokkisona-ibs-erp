@@ -57,7 +57,7 @@ class ProductCatalogPageService
         $chip = trim((string) ($filters['chip'] ?? 'all'));
         $allowedChips = [
             'all', 'variable', 'simple', 'low_stock', 'missing_cost',
-            'missing_model', 'needs_work', 'sync_required',
+            'missing_model', 'needs_work', 'sync_required', 'synced_today',
         ];
 
         return [
@@ -105,6 +105,7 @@ class ProductCatalogPageService
                 'missing_model' => !empty($flags['missing_model']),
                 'needs_work' => !empty($flags['needs_work']),
                 'sync_required' => !empty($flags['sync_required']),
+                'synced_today' => !empty($flags['synced_today']),
                 default => true,
             };
         }));

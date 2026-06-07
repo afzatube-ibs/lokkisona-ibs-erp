@@ -232,6 +232,15 @@ view('partials.ops-safety-strip', [
     <?php endif; ?>
 </div>
 
+<?php
+view('partials.product-sync-reset-form', [
+    'canManage' => !empty($canResetProductSync),
+    'productWriteGateReady' => $productWriteGateReady ?? false,
+    'csrfField' => $csrfField ?? '',
+    'redirectTo' => '/sync-api-settings',
+]);
+?>
+
 <details class="planning-collapsible mb-15">
     <summary class="planning-collapsible-summary">Setup Guide</summary>
     <div class="planning-collapsible-body">

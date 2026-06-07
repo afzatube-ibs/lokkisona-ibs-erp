@@ -3,12 +3,13 @@ $filters = $catalogFilters ?? [];
 $chip = (string) ($filters['chip'] ?? 'all');
 $chips = [
     'all' => 'All',
-    'variable' => 'Variable',
-    'simple' => 'Simple',
     'needs_work' => 'Needs Work',
-    'low_stock' => 'Low Stock',
     'missing_cost' => 'Missing Cost',
     'missing_model' => 'Missing Model',
+    'synced_today' => 'Synced Today',
+    'variable' => 'Variable',
+    'simple' => 'Simple',
+    'low_stock' => 'Low Stock',
     'sync_required' => 'Sync Required',
 ];
 $queryWithoutChip = array_filter([

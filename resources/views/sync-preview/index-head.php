@@ -137,6 +137,14 @@ view('partials.write-gate-warning', [
         <?php endif; ?>
     </div>
 </div>
+<?php
+view('partials.product-sync-reset-form', [
+    'canManage' => $canManage ?? false,
+    'productWriteGateReady' => $productWriteGateReady ?? false,
+    'csrfField' => $csrfField ?? '',
+    'redirectTo' => '/sync-preview',
+]);
+?>
 <?php elseif (!empty($canManage)): ?>
 <?php
 view('partials.write-gate-warning', [

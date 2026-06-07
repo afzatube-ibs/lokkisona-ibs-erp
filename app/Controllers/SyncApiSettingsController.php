@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\ActivityLog;
 use App\Csrf;
 use App\Permission;
+use App\ReadFoundation\WriteGate;
 use App\Services\ReadOnly\SyncApiSettingsReadService;
 use App\Services\Write\SyncApiSettingsWriteService;
 
@@ -30,6 +31,8 @@ class SyncApiSettingsController extends Controller
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
             'canManage' => Permission::can('sync_api_settings.manage'),
+            'canResetProductSync' => Permission::can('sync_preview.manage'),
+            'productWriteGateReady' => WriteGate::productSyncImport()['ready'],
         ]);
     }
 

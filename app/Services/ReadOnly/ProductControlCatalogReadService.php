@@ -68,7 +68,11 @@ class ProductControlCatalogReadService
         $noOptionsSynced = !$hasVariants && $syncOptionsState === 'missing_options';
         $isVariable = $hasVariants || $noOptionsSynced;
         $costLabel = $isSupplierView ? 'sale' : 'cost';
-        $health = $this->healthStatus($product, $variants, $isSupplierView, $noOptionsSynced);
+        $lastSynced = (string) ($product['last_synced_at'] ?? '');
+        $lastSyncedDisplay = $lastSynced !== '' ? $lastSynced : '—';
+        $syncedToday = $this->isSyncedToday($lastSynced);
+        $rawImagePath = (string) ($product['image_path'] ?? '');
+        $health = $this->healthStatus($product, $variants, $isSupplierView, $noOptionsSynced, $syncedToday);
         $costDisplay = $this->costDisplay($product, $variants);
         $vendorStock = $this->vendorStockTotal($product, $variants);
         $ownerStock = $hasVariants
@@ -87,6 +91,7 @@ class ProductControlCatalogReadService
                     'option_name' => (string) ($variant['option_name'] ?? ''),
                     'option_value' => (string) ($variant['option_value'] ?? ''),
                     'image_path' => (string) ($variant['option_image_path'] ?? ''),
+                    'image_url' => opencart_media_url((string) ($variant['option_image_path'] ?? '')),
                     'source_model' => (string) ($variant['source_model'] ?? ''),
                     'supplier_model' => (string) ($variant['supplier_model'] ?? ''),
                     'supplier_note' => (string) ($variant['supplier_note'] ?? ''),
@@ -100,15 +105,13 @@ class ProductControlCatalogReadService
             }
         }
 
-        $lastSynced = (string) ($product['last_synced_at'] ?? '');
-        $lastSyncedDisplay = $lastSynced !== '' ? $lastSynced : '—';
-
         return [
             'catalog' => [
                 'product_id' => $productId,
                 'source_product_id' => (string) ($product['source_product_id'] ?? ''),
                 'product_name' => (string) ($product['product_name'] ?? ''),
-                'image_path' => (string) ($product['image_path'] ?? ''),
+                'image_path' => $rawImagePath,
+                'image_url' => opencart_media_url($rawImagePath),
                 'type' => $isVariable ? 'variable' : 'simple',
                 'no_options_synced' => $noOptionsSynced,
                 'source_model' => (string) ($product['source_model'] ?? ''),
@@ -152,7 +155,8 @@ class ProductControlCatalogReadService
                 'completeness' => $health['completeness'],
                 'badges' => $health['badges'],
                 'low_warning_threshold' => $product['low_warning_threshold'] ?? '',
-                'image_path' => (string) ($product['image_path'] ?? ''),
+                'image_path' => $rawImagePath,
+                'image_url' => opencart_media_url($rawImagePath),
                 'type' => $isVariable ? 'variable' : 'simple',
                 'no_options_synced' => $noOptionsSynced,
                 'product_cost' => $product['product_cost'] ?? '',
@@ -165,7 +169,7 @@ class ProductControlCatalogReadService
         ];
     }
 
-    private function healthStatus(array $product, array $variants, bool $isSupplierView, bool $noOptionsSynced = false): array
+    private function healthStatus(array $product, array $variants, bool $isSupplierView, bool $noOptionsSynced = false, bool $syncedToday = false): array
     {
         $missingModel = false;
         $missingCost = false;
@@ -192,6 +196,9 @@ class ProductControlCatalogReadService
         $isReady = !$needsWork;
 
         $badges = [];
+        if ($syncedToday) {
+            $badges[] = ['label' => 'Synced Today', 'class' => 'ok'];
+        }
         if ($isReady) {
             $badges[] = ['label' => 'Ready', 'class' => 'ok'];
         } else {
@@ -204,7 +211,7 @@ class ProductControlCatalogReadService
             $badges[] = ['label' => 'Missing Cost', 'class' => 'warn'];
         }
         if ($missingModel) {
-            $badges[] = ['label' => 'Missing Supplier Model', 'class' => 'warn'];
+            $badges[] = ['label' => 'Missing Model', 'class' => 'warn'];
         }
         if ($syncRequired) {
             $badges[] = ['label' => 'Sync Required', 'class' => 'info'];
@@ -223,8 +230,21 @@ class ProductControlCatalogReadService
                 'missing_model' => $missingModel,
                 'needs_work' => $needsWork,
                 'sync_required' => $syncRequired,
+                'synced_today' => $syncedToday,
             ],
         ];
+    }
+
+    private function isSyncedToday(string $lastSynced): bool
+    {
+        $lastSynced = trim($lastSynced);
+        if ($lastSynced === '') {
+            return false;
+        }
+
+        $timestamp = strtotime($lastSynced);
+
+        return $timestamp !== false && date('Y-m-d', $timestamp) === date('Y-m-d');
     }
 
     private function syncStatusLabel(array $product, bool $noOptionsSynced): string
@@ -253,7 +273,7 @@ class ProductControlCatalogReadService
     {
         $issues = [];
         if (trim((string) ($variant['supplier_model'] ?? '')) === '') {
-            $issues[] = 'Missing Supplier Model';
+            $issues[] = 'Missing Model';
         }
         if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
             $issues[] = $isSupplierView ? 'Missing Sale' : 'Missing Cost';

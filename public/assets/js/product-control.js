@@ -10,7 +10,7 @@
 
     var workspaces = {};
     var historyByProduct = {};
-    var pageConfig = { supplierNoteReady: false };
+    var pageConfig = { supplierNoteReady: false, opencartMediaBase: '' };
     try {
         workspaces = JSON.parse(payloadEl.textContent || '{}');
     } catch (e) {
@@ -27,7 +27,7 @@
         try {
             pageConfig = JSON.parse(configEl.textContent || '{}');
         } catch (e3) {
-            pageConfig = { supplierNoteReady: false };
+            pageConfig = { supplierNoteReady: false, opencartMediaBase: '' };
         }
     }
 
@@ -76,6 +76,24 @@
         if (el) {
             el.value = value === null || value === undefined ? '' : String(value);
         }
+    }
+
+    function mediaUrl(path) {
+        if (!path) {
+            return '';
+        }
+        if (/^https?:\/\//i.test(path)) {
+            return path;
+        }
+        var base = pageConfig.opencartMediaBase || '';
+        if (!base) {
+            return path;
+        }
+        path = String(path).replace(/^\//, '');
+        if (path.indexOf('image/') === 0) {
+            return base + '/' + path;
+        }
+        return base + '/image/' + path;
     }
 
     function renderBadges(containerId, badges) {
@@ -137,8 +155,9 @@
             tr.dataset.optionValue = variant.option_value || '';
             tr.dataset.variantId = String(variant.product_variant_id || '');
 
-            var imageCell = variant.image_path
-                ? '<div class="pcc-thumb"><img src="' + escapeAttr(variant.image_path) + '" alt=""></div>'
+            var imageSrc = variant.image_url || mediaUrl(variant.image_path);
+            var imageCell = imageSrc
+                ? '<div class="pcc-thumb"><img src="' + escapeAttr(imageSrc) + '" alt="" loading="lazy"></div>'
                 : '<span class="pcc-thumb-empty">—</span>';
             var noteCell = '';
             if (pageConfig.supplierNoteReady) {
@@ -226,8 +245,9 @@
         var image = document.getElementById('pccProductImage');
         var placeholder = document.getElementById('pccImagePlaceholder');
         if (image && placeholder) {
-            if (workspace.image_path) {
-                image.src = workspace.image_path;
+            var imageSrc = workspace.image_url || mediaUrl(workspace.image_path);
+            if (imageSrc) {
+                image.src = imageSrc;
                 image.hidden = false;
                 placeholder.hidden = true;
             } else {

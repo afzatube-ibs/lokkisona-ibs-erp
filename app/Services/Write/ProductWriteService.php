@@ -5,6 +5,7 @@ namespace App\Services\Write;
 use App\ActivityLog;
 use App\Repositories\Write\ProductVariantWriteRepository;
 use App\Repositories\Write\ProductWriteRepository;
+use App\Services\Read\OpenCartReadClient;
 
 class ProductWriteService
 {
@@ -101,7 +102,7 @@ class ProductWriteService
                 continue;
             }
 
-            if ((int) ($row['from_warehouse'] ?? 0) !== 1) {
+            if (!OpenCartReadClient::isStrictSupplierProduct($row)) {
                 $skipped++;
                 continue;
             }
