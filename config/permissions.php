@@ -58,6 +58,8 @@ return [
             'business_sources.manage',
             'settings.view',
             'settings.manage',
+            'sync_api_settings.view',
+            'sync_api_settings.manage',
         ],
         'User Management' => [
             'users.view',
@@ -246,6 +248,8 @@ return [
             'sync.manage',
             'sync_preview.view',
             'sync_preview.manage',
+            'sync_api_settings.view',
+            'sync_api_settings.manage',
             'sync_import.view',
             'sync_import.manage',
             'invoices.view',

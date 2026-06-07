@@ -4,6 +4,7 @@
 # Environment
 .env
 .env.*
+config/opencart.local.php
 
 # Storage & logs
 /storage/logs/*.log

@@ -29,7 +29,7 @@ class ProductWriteRepository extends BaseWriteRepository
             $columns[] = 'supplier_product_category';
             $values[] = ':supplier_product_category';
         }
-        if (array_key_exists('image_path', $data)) {
+        if (array_key_exists('image_path', $data) && $this->imagePathColumnReady()) {
             $columns[] = 'image_path';
             $values[] = ':image_path';
         }
@@ -100,7 +100,7 @@ class ProductWriteRepository extends BaseWriteRepository
             'last_synced_at = :last_synced_at',
         ];
 
-        if (array_key_exists('image_path', $data)) {
+        if (array_key_exists('image_path', $data) && $this->imagePathColumnReady()) {
             $fields[] = 'image_path = :image_path';
         }
         if ($this->syncOptionsStateColumnReady() && array_key_exists('sync_options_state', $data)) {
@@ -185,5 +185,22 @@ class ProductWriteRepository extends BaseWriteRepository
     public function syncOptionsStateColumnReady(): bool
     {
         return (bool) (WriteGate::syncOptionsStateColumn()['ready'] ?? false);
+    }
+
+    public function imagePathColumnReady(): bool
+    {
+        if (!$this->tableExists()) {
+            return false;
+        }
+
+        try {
+            return \App\Migration\DevDatabaseActivation::physicalColumnExists(
+                $this->pdo,
+                $this->table(),
+                'image_path'
+            );
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }

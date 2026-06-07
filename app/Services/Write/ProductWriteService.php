@@ -87,8 +87,15 @@ class ProductWriteService
         $variantsCreated = 0;
         $variantsUpdated = 0;
         $variantsSkipped = 0;
+        $errors = [];
+        $limit = max(1, (int) config('opencart.max_products_per_page', 20));
+        $processed = 0;
 
         foreach ($products as $row) {
+            if ($processed >= $limit) {
+                break;
+            }
+
             if (!is_array($row)) {
                 $skipped++;
                 continue;
@@ -110,55 +117,66 @@ class ProductWriteService
                 $name = 'OC Product ' . $sourceProductId;
             }
 
-            $syncedAt = date('Y-m-d H:i:s');
-            $platformFields = [
-                'product_name' => $name,
-                'source_model' => trim((string) ($row['source_model'] ?? '')) ?: null,
-                'source_stock' => isset($row['source_stock']) ? (int) $row['source_stock'] : null,
-                'last_synced_at' => $syncedAt,
-                'image_path' => trim((string) ($row['image_path'] ?? '')) ?: null,
-            ];
-            if ($this->repository->syncOptionsStateColumnReady()) {
-                $platformFields['sync_options_state'] = (string) ($row['sync_options_state'] ?? 'simple');
-            }
+            try {
+                $syncedAt = date('Y-m-d H:i:s');
+                $platformFields = [
+                    'product_name' => $name,
+                    'source_model' => trim((string) ($row['source_model'] ?? '')) ?: null,
+                    'source_stock' => isset($row['source_stock']) ? (int) $row['source_stock'] : null,
+                    'last_synced_at' => $syncedAt,
+                ];
+                if ($this->repository->imagePathColumnReady()) {
+                    $platformFields['image_path'] = trim((string) ($row['image_path'] ?? '')) ?: null;
+                }
+                if ($this->repository->syncOptionsStateColumnReady()) {
+                    $platformFields['sync_options_state'] = (string) ($row['sync_options_state'] ?? 'simple');
+                }
 
-            $existing = $this->repository->findBySourceProductId($businessSourceId, $sourceProductId);
-            if ($existing !== null) {
-                $productId = (int) $existing['product_id'];
-                $this->repository->updatePlatformSyncFields($productId, $platformFields);
+                $existing = $this->repository->findBySourceProductId($businessSourceId, $sourceProductId);
+                if ($existing !== null) {
+                    $productId = (int) $existing['product_id'];
+                    $this->repository->updatePlatformSyncFields($productId, $platformFields);
+                    $variantStats = $this->upsertWarehouseVariants($productId, $row['options'] ?? []);
+                    $variantsCreated += $variantStats['created'];
+                    $variantsUpdated += $variantStats['updated'];
+                    $variantsSkipped += $variantStats['skipped'];
+                    $updated++;
+                    $processed++;
+                    continue;
+                }
+
+                $createData = [
+                    'product_name' => $name,
+                    'business_source_id' => $businessSourceId,
+                    'supplier_id' => $defaultSupplierId,
+                    'source_product_id' => $sourceProductId,
+                    'source_model' => trim((string) ($row['source_model'] ?? '')) ?: null,
+                    'source_stock' => isset($row['source_stock']) ? (int) $row['source_stock'] : null,
+                    'last_synced_at' => $syncedAt,
+                    'supplier_model' => null,
+                    'product_cost' => null,
+                    'vendor_stock' => 0,
+                    'low_warning_threshold' => null,
+                    'status' => 'active',
+                ];
+                if ($this->repository->imagePathColumnReady()) {
+                    $createData['image_path'] = trim((string) ($row['image_path'] ?? '')) ?: null;
+                }
+                if ($this->repository->syncOptionsStateColumnReady()) {
+                    $createData['sync_options_state'] = (string) ($row['sync_options_state'] ?? 'simple');
+                }
+
+                $productId = $this->repository->create($createData);
                 $variantStats = $this->upsertWarehouseVariants($productId, $row['options'] ?? []);
                 $variantsCreated += $variantStats['created'];
                 $variantsUpdated += $variantStats['updated'];
                 $variantsSkipped += $variantStats['skipped'];
-                $updated++;
-                continue;
+                $created++;
+                $processed++;
+            } catch (\Throwable $e) {
+                $skipped++;
+                $errors[] = $sourceProductId . ': ' . $e->getMessage();
             }
-
-            $createData = [
-                'product_name' => $name,
-                'business_source_id' => $businessSourceId,
-                'supplier_id' => $defaultSupplierId,
-                'source_product_id' => $sourceProductId,
-                'source_model' => trim((string) ($row['source_model'] ?? '')) ?: null,
-                'source_stock' => isset($row['source_stock']) ? (int) $row['source_stock'] : null,
-                'last_synced_at' => $syncedAt,
-                'image_path' => trim((string) ($row['image_path'] ?? '')) ?: null,
-                'supplier_model' => null,
-                'product_cost' => null,
-                'vendor_stock' => 0,
-                'low_warning_threshold' => null,
-                'status' => 'active',
-            ];
-            if ($this->repository->syncOptionsStateColumnReady()) {
-                $createData['sync_options_state'] = (string) ($row['sync_options_state'] ?? 'simple');
-            }
-
-            $productId = $this->repository->create($createData);
-            $variantStats = $this->upsertWarehouseVariants($productId, $row['options'] ?? []);
-            $variantsCreated += $variantStats['created'];
-            $variantsUpdated += $variantStats['updated'];
-            $variantsSkipped += $variantStats['skipped'];
-            $created++;
         }
 
         ActivityLog::record('warehouse_product_pull', 'Warehouse product pull finished', [
@@ -169,10 +187,22 @@ class ProductWriteService
             'variants_created' => $variantsCreated,
             'variants_updated' => $variantsUpdated,
             'variants_skipped' => $variantsSkipped,
+            'errors' => $errors,
         ]);
 
-        $message = 'Warehouse product pull: ' . $created . ' created, ' . $updated . ' updated, ' . $skipped . ' skipped. '
-            . 'Variants: ' . $variantsCreated . ' created, ' . $variantsUpdated . ' updated, ' . $variantsSkipped . ' skipped.';
+        $productsImported = $created + $updated;
+        $variantsImported = $variantsCreated + $variantsUpdated;
+        $totalSkipped = $skipped + $variantsSkipped;
+
+        $message = 'Products imported: ' . $productsImported . '. '
+            . 'Variants imported: ' . $variantsImported . '. '
+            . 'Skipped: ' . $totalSkipped . '.';
+        if ($errors !== []) {
+            $message .= ' Errors: ' . implode('; ', array_slice($errors, 0, 3));
+            if (count($errors) > 3) {
+                $message .= ' (+' . (count($errors) - 3) . ' more)';
+            }
+        }
         if (!$this->repository->supplierProductCategoryColumnReady()) {
             $message .= ' Dev note: supplier_product_category column not applied (migration 0011) — category field skipped.';
         }

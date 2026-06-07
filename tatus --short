@@ -1,0 +1,30 @@
+[1mdiff --git a/config/opencart.php b/config/opencart.php[m
+[1mindex c30dafe..6384e80 100644[m
+[1m--- a/config/opencart.php[m
+[1m+++ b/config/opencart.php[m
+[36m@@ -1,17 +1,23 @@[m
+ <?php[m
+ [m
+ /**[m
+[31m- * OpenCart / PIT connection config (v0.5.7, v1.7.1 live sync test).[m
+[32m+[m[32m * OpenCart / PIT connection config (v0.5.7, v1.7.1 live sync test, v1.8.2 Sync/API Settings).[m
+  * Credentials stay on server — do not commit live API keys to Git.[m
+[31m- * Staging template: config/opencart.staging.example.php (api_base_url = staging.lokkisona.com).[m
+[32m+[m[32m * Server overrides: config/opencart.local.php (gitignored) or copy from config/opencart.local.example.php[m
+[32m+[m[32m * Staging template: config/opencart.staging.example.php[m
+  */[m
+ return [[m
+[32m+[m[32m    'source_mode' => 'demo',[m
+     'enabled' => false,[m
+     'demo_mode' => true,[m
+     'api_base_url' => '',[m
+     'api_key' => '',[m
+     'business_source_id' => 1,[m
+     'default_supplier_id' => 1,[m
+[32m+[m[32m    'read_only_lock' => true,[m
+[32m+[m[32m    'product_sync_enabled' => true,[m
+[32m+[m[32m    'order_sync_enabled' => true,[m
+[32m+[m[32m    'dispatch_bridge_required' => true,[m
+     'max_rows_per_page' => 20,[m
+     'max_orders_per_request' => 20,[m
+     'max_products_per_request' => 20,[m

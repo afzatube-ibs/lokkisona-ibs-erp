@@ -7,6 +7,7 @@ use App\Csrf;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Services\ReadOnly\ProductSyncReadService;
+use App\Services\ReadOnly\ProductSyncDiagnosticsService;
 use App\Services\ReadOnly\TestSyncPreviewService;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\Write\SyncImportWriteService;
@@ -40,6 +41,7 @@ class SyncPreviewController extends Controller
             'accessMode' => Permission::accessMode(),
             'testSyncPreview' => (new TestSyncPreviewService())->preview($orderPage, is_array($orderSession) ? $orderSession : null),
             'productSyncStatus' => (new ProductSyncReadService())->status(),
+            'productSyncDiagnostics' => (new ProductSyncDiagnosticsService())->analyze($productPreview),
             'productPreview' => $productPreview,
             'productPage' => $productPage,
             'orderPage' => $orderPage,
@@ -49,6 +51,8 @@ class SyncPreviewController extends Controller
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::syncPreviewImport(),
             'writeGateReady' => WriteGate::syncPreviewImport()['ready'],
+            'productWriteGate' => WriteGate::productSyncImport(),
+            'productWriteGateReady' => WriteGate::productSyncImport()['ready'],
             'warehouseProductPullAvailable' => (new OpenCartReadClient())->warehouseProductPullAvailable(),
             'canManage' => Permission::can('sync_preview.manage'),
             'currentContext' => $this->currentContext(),

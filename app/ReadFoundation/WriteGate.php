@@ -215,6 +215,18 @@ class WriteGate
         ]);
     }
 
+    /**
+     * Product-only sync preview/import (v1.8.1) — does not require order sync tables.
+     */
+    public static function productSyncImport(): array
+    {
+        return self::status([
+            'ibs_products',
+            'ibs_product_variants',
+            'ibs_business_sources',
+        ]);
+    }
+
     public static function invoicePrinting(): array
     {
         return self::status([

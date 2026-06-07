@@ -29,6 +29,13 @@ spl_autoload_register(function ($class) {
 function config($key, $default = null)
 {
     static $configs = [];
+    static $generation = 0;
+    global $ibs_config_generation;
+
+    if (($ibs_config_generation ?? 0) !== $generation) {
+        $configs = [];
+        $generation = (int) ($ibs_config_generation ?? 0);
+    }
 
     $parts = explode('.', $key);
     $file = $parts[0];
@@ -36,6 +43,16 @@ function config($key, $default = null)
     if (!isset($configs[$file])) {
         $path = IBS_CONFIG . '/' . $file . '.php';
         $configs[$file] = file_exists($path) ? require $path : [];
+
+        if ($file === 'opencart') {
+            $localPath = IBS_CONFIG . '/opencart.local.php';
+            if (file_exists($localPath)) {
+                $local = require $localPath;
+                if (is_array($local)) {
+                    $configs[$file] = array_replace_recursive($configs[$file], $local);
+                }
+            }
+        }
     }
 
     $value = $configs[$file];
@@ -49,6 +66,12 @@ function config($key, $default = null)
     }
 
     return $value;
+}
+
+function config_reload(): void
+{
+    global $ibs_config_generation;
+    $ibs_config_generation = (int) ($ibs_config_generation ?? 0) + 1;
 }
 
 function view($name, $data = [])

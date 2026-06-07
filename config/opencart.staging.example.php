@@ -1,17 +1,22 @@
 <?php
 
 /**
- * Staging OpenCart config — copy to config/opencart.php on ERP staging server only.
- * Sync source: https://staging.lokkisona.com
+ * Staging OpenCart config — copy values into config/opencart.local.php on ERP staging server only.
+ * Sync source example: https://www.staging.lokkisona.com
  * Do not commit live API keys to Git.
  */
 return [
+    'source_mode' => 'staging',
     'enabled' => true,
     'demo_mode' => false,
-    'api_base_url' => 'https://staging.lokkisona.com',
+    'api_base_url' => 'https://www.staging.lokkisona.com',
     'api_key' => 'REPLACE_WITH_STAGING_OC_API_KEY',
     'business_source_id' => 1,
     'default_supplier_id' => 1,
+    'read_only_lock' => true,
+    'product_sync_enabled' => true,
+    'order_sync_enabled' => true,
+    'dispatch_bridge_required' => true,
     'max_rows_per_page' => 20,
     'max_orders_per_request' => 20,
     'max_products_per_request' => 20,

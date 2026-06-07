@@ -1,17 +1,23 @@
 <?php
 
 /**
- * OpenCart / PIT connection config (v0.5.7, v1.7.1 live sync test).
+ * OpenCart / PIT connection config (v0.5.7, v1.7.1 live sync test, v1.8.2 Sync/API Settings).
  * Credentials stay on server — do not commit live API keys to Git.
- * Staging template: config/opencart.staging.example.php (api_base_url = staging.lokkisona.com).
+ * Server overrides: config/opencart.local.php (gitignored) or copy from config/opencart.local.example.php
+ * Staging template: config/opencart.staging.example.php
  */
 return [
+    'source_mode' => 'demo',
     'enabled' => false,
     'demo_mode' => true,
     'api_base_url' => '',
     'api_key' => '',
     'business_source_id' => 1,
     'default_supplier_id' => 1,
+    'read_only_lock' => true,
+    'product_sync_enabled' => true,
+    'order_sync_enabled' => true,
+    'dispatch_bridge_required' => true,
     'max_rows_per_page' => 20,
     'max_orders_per_request' => 20,
     'max_products_per_request' => 20,

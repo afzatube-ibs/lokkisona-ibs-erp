@@ -39,7 +39,11 @@ class SyncPreviewWriteService
 
     public function previewProducts(array $input = []): WriteResult
     {
-        if (!WriteGate::syncPreviewImport()['ready']) {
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return WriteResult::fail('Product sync is disabled in System → Sync/API Settings.');
+        }
+
+        if (!WriteGate::productSyncImport()['ready']) {
             return WriteResult::fail(WriteGate::WARNING_MESSAGE);
         }
 
@@ -52,11 +56,12 @@ class SyncPreviewWriteService
         }
 
         $rawFetch = $this->client->fetchWarehouseProductsPage($page);
+        $importRows = $this->bridgeImportRows($rawFetch['rows'] ?? []);
         $_SESSION['ibs_product_sync_preview'] = [
             'page' => $page,
             'business_source_id' => $sourceId,
             'fetched_at' => time(),
-            'products' => $rawFetch['rows'] ?? [],
+            'products' => $importRows,
             'pagination' => [
                 'page' => $preview['page'],
                 'per_page' => $preview['per_page'],
@@ -78,7 +83,11 @@ class SyncPreviewWriteService
 
     public function importProductsFromPreview(array $input = []): WriteResult
     {
-        if (!WriteGate::syncPreviewImport()['ready']) {
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return WriteResult::fail('Product sync is disabled in System → Sync/API Settings.');
+        }
+
+        if (!WriteGate::productSyncImport()['ready']) {
             return WriteResult::fail(WriteGate::WARNING_MESSAGE);
         }
 
@@ -98,12 +107,47 @@ class SyncPreviewWriteService
         }
 
         $sourceId = (int) ($session['business_source_id'] ?? config('opencart.business_source_id', 1));
+        $products = $this->bridgeImportRows($session['products'] ?? []);
+        $products = array_slice($products, 0, $this->productImportLimit());
 
-        return (new ProductWriteService())->upsertWarehouseProducts($sourceId, $session['products']);
+        if ($products === []) {
+            return WriteResult::fail('No Dispatch Location bridge products (from_warehouse = 1) in preview session.');
+        }
+
+        return (new ProductWriteService())->upsertWarehouseProducts($sourceId, $products);
+    }
+
+    /**
+     * @param array<int, mixed> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function bridgeImportRows(array $rows): array
+    {
+        $filtered = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            if ((int) ($row['from_warehouse'] ?? 0) !== 1) {
+                continue;
+            }
+            $filtered[] = $row;
+        }
+
+        return $filtered;
+    }
+
+    private function productImportLimit(): int
+    {
+        return max(1, (int) config('opencart.max_products_per_page', 20));
     }
 
     public function runTestSync(array $input = []): WriteResult
     {
+        if (!(bool) config('opencart.order_sync_enabled', true)) {
+            return WriteResult::fail('Order sync is disabled in System → Sync/API Settings.');
+        }
+
         if (!WriteGate::syncPreviewImport()['ready']) {
             return WriteResult::fail(WriteGate::WARNING_MESSAGE);
         }

@@ -22,6 +22,8 @@ view('partials.write-gate-warning', [
             · <strong>Dispatch Location bridge:</strong> <?= ($productSyncStatus['bridge_available'] ?? null) === false ? 'Missing' : (($productSyncStatus['bridge_available'] ?? null) === true ? 'OK' : '—') ?></p>
         <p><strong>Product API route:</strong> <code><?= e($productSyncStatus['product_route'] ?? '') ?></code></p>
         <p><strong>Preview available:</strong> <?= !empty($productSyncStatus['product_pull_available']) ? 'Yes' : 'No' ?> · <strong>Max per page:</strong> <?= e((string) ($productSyncStatus['max_products_per_page'] ?? 20)) ?></p>
+        <p><strong>Sync/API settings:</strong> <a href="<?= e($productSyncStatus['settings_url'] ?? url('/sync-api-settings')) ?>">System → Sync/API Settings</a>
+            · <strong>Read-only lock:</strong> <?= !empty($productSyncStatus['read_only_lock']) ? 'On' : 'Off' ?></p>
         <ul class="feature-list">
             <?php foreach (($productSyncStatus['rules'] ?? []) as $rule): ?>
             <li><?= e($rule) ?></li>
@@ -29,9 +31,10 @@ view('partials.write-gate-warning', [
         </ul>
     </div>
 </div>
+<?php view('partials.product-sync-diagnostics', ['productSyncDiagnostics' => $productSyncDiagnostics ?? null]); ?>
 <?php endif; ?>
 
-<?php if (!empty($canManage) && !empty($writeGateReady)): ?>
+<?php if (!empty($canManage) && !empty($productWriteGateReady)): ?>
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Product Sync Preview</h2></div>
     <div class="card-body">
@@ -134,7 +137,17 @@ view('partials.write-gate-warning', [
         <?php endif; ?>
     </div>
 </div>
+<?php elseif (!empty($canManage)): ?>
+<?php
+view('partials.write-gate-warning', [
+    'writeGateReady' => $productWriteGateReady ?? false,
+    'writeGate' => $productWriteGate ?? [],
+    'writeGateMessage' => 'Product sync import requires ibs_products, ibs_product_variants, and ibs_business_sources. Apply migrations from Dev DB Activation before loading preview or import.',
+]);
+?>
+<?php endif; ?>
 
+<?php if (!empty($canManage) && !empty($writeGateReady)): ?>
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Order Sync Preview</h2></div>
     <div class="card-body">

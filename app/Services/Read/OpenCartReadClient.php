@@ -11,7 +11,7 @@ class OpenCartReadClient
 
     public function testConnection(): array
     {
-        if ((bool) config('opencart.demo_mode', false)) {
+        if ($this->isDemoMode()) {
             return [
                 'ok' => true,
                 'mode' => 'demo',
@@ -20,11 +20,11 @@ class OpenCartReadClient
             ];
         }
 
-        if (!(bool) config('opencart.enabled', false)) {
+        if (!$this->isLiveReadEnabled()) {
             return [
                 'ok' => false,
                 'mode' => 'off',
-                'message' => 'OpenCart connection disabled. Enable enabled=true or demo_mode=true in config/opencart.php.',
+                'message' => 'OpenCart connection disabled. Set Source Mode to Staging/Live in System → Sync/API Settings, or use Demo mode.',
                 'bridge_available' => null,
             ];
         }
@@ -34,8 +34,8 @@ class OpenCartReadClient
         if ($baseUrl === '' || $apiKey === '') {
             return [
                 'ok' => false,
-                'mode' => 'live',
-                'message' => 'Live mode requires api_base_url and api_key in config/opencart.php.',
+                'mode' => $this->resolvedSourceMode(),
+                'message' => 'Staging/live mode requires Source URL and API key in System → Sync/API Settings.',
                 'bridge_available' => null,
             ];
         }
@@ -52,8 +52,8 @@ class OpenCartReadClient
 
         return [
             'ok' => true,
-            'mode' => 'live',
-            'message' => 'Live OpenCart read connection OK. Dispatch Location bridge reported.',
+            'mode' => $this->resolvedSourceMode(),
+            'message' => ucfirst($this->resolvedSourceMode()) . ' OpenCart read connection OK. Dispatch Location bridge reported.',
             'bridge_available' => true,
         ];
     }
@@ -63,7 +63,11 @@ class OpenCartReadClient
         $page = max(1, $page);
         $limit = $this->pageLimit();
 
-        if ((bool) config('opencart.enabled', false)) {
+        if (!(bool) config('opencart.order_sync_enabled', true)) {
+            return $this->emptyPageWithMessage($page, $limit, 'Order sync is disabled in System → Sync/API Settings.');
+        }
+
+        if ($this->isLiveReadEnabled()) {
             return $this->paginateResult(
                 $this->fetchLiveOrdersPage($page, $limit),
                 $page,
@@ -72,13 +76,13 @@ class OpenCartReadClient
             );
         }
 
-        if ((bool) config('opencart.demo_mode', false)) {
+        if ($this->isDemoMode()) {
             $all = $this->normalizeOrders(config('opencart.demo_orders', []));
 
             return $this->paginateArray($all, $page, $limit);
         }
 
-        return $this->emptyPage($page, $limit);
+        return $this->emptyPageWithMessage($page, $limit, 'OpenCart connection disabled.');
     }
 
     /** @deprecated Use fetchWarehouseProductsPage for v1.7.1 preview flow */
@@ -95,15 +99,19 @@ class OpenCartReadClient
         $limit = $this->pageLimit();
         $route = trim((string) config('opencart.product_api_route', ''));
 
-        if ($route === '') {
-            return $this->emptyProductPage($page, $limit, null, 'Product API route is not configured.');
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return $this->emptyProductPage($page, $limit, null, 'Product sync is disabled in System → Sync/API Settings.');
         }
 
-        if ((bool) config('opencart.enabled', false)) {
+        if ($route === '') {
+            return $this->emptyProductPage($page, $limit, null, 'Product API route is not configured. Set it in System → Sync/API Settings.');
+        }
+
+        if ($this->isLiveReadEnabled()) {
             return $this->fetchLiveWarehouseProductsPage($route, $page, $limit);
         }
 
-        if ((bool) config('opencart.demo_mode', false)) {
+        if ($this->isDemoMode()) {
             return $this->fetchDemoWarehouseProductsPage($page, $limit);
         }
 
@@ -112,9 +120,13 @@ class OpenCartReadClient
 
     public function warehouseProductPullAvailable(): bool
     {
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return false;
+        }
+
         $route = trim((string) config('opencart.product_api_route', ''));
 
-        return $route !== '' && ((bool) config('opencart.enabled', false) || (bool) config('opencart.demo_mode', false));
+        return $route !== '' && ($this->isLiveReadEnabled() || $this->isDemoMode());
     }
 
     public function connectionStatus(): array
@@ -193,7 +205,8 @@ class OpenCartReadClient
         }
 
         $bridgeAvailable = $this->resolveBridgeAvailable($decoded);
-        if (!$bridgeAvailable) {
+        $bridgeRequired = (bool) config('opencart.dispatch_bridge_required', true);
+        if (!$bridgeAvailable && $bridgeRequired) {
             return $this->emptyProductPage($page, $limit, false, self::BRIDGE_WARNING);
         }
 
@@ -385,7 +398,8 @@ class OpenCartReadClient
 
     private function applyBridgeFilter(array $products, bool $bridgeConfirmed): array
     {
-        if (!$bridgeConfirmed) {
+        $bridgeRequired = (bool) config('opencart.dispatch_bridge_required', true);
+        if (!$bridgeConfirmed && $bridgeRequired) {
             return [];
         }
 
@@ -464,6 +478,11 @@ class OpenCartReadClient
 
     private function emptyPage(int $page, int $limit): array
     {
+        return $this->emptyPageWithMessage($page, $limit, 'OpenCart connection disabled.');
+    }
+
+    private function emptyPageWithMessage(int $page, int $limit, string $message): array
+    {
         return [
             'bridge_available' => null,
             'bridge_warning' => null,
@@ -472,8 +491,43 @@ class OpenCartReadClient
             'per_page' => $limit,
             'has_previous' => $page > 1,
             'has_next' => false,
-            'message' => 'OpenCart connection disabled.',
+            'message' => $message,
         ];
+    }
+
+    private function isDemoMode(): bool
+    {
+        $mode = $this->resolvedSourceMode();
+
+        return $mode === 'demo';
+    }
+
+    private function isLiveReadEnabled(): bool
+    {
+        $mode = $this->resolvedSourceMode();
+        if ($mode === 'demo') {
+            return false;
+        }
+
+        return (bool) config('opencart.enabled', false);
+    }
+
+    private function resolvedSourceMode(): string
+    {
+        $mode = strtolower(trim((string) config('opencart.source_mode', '')));
+        if (in_array($mode, ['demo', 'staging', 'live'], true)) {
+            return $mode;
+        }
+
+        if ((bool) config('opencart.demo_mode', false)) {
+            return 'demo';
+        }
+
+        if ((bool) config('opencart.enabled', false)) {
+            return 'staging';
+        }
+
+        return 'off';
     }
 
     private function emptyProductPage(int $page, int $limit, ?bool $bridgeAvailable, ?string $message): array
