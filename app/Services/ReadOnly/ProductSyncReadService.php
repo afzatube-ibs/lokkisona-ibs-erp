@@ -5,7 +5,7 @@ namespace App\Services\ReadOnly;
 use App\Services\Read\OpenCartReadClient;
 
 /**
- * Product sync read facade for Sync Preview and Product Control (v1.7.0).
+ * Product sync read facade for Sync Preview and Product Control (v1.7.0–v1.7.1).
  */
 class ProductSyncReadService
 {
@@ -13,15 +13,17 @@ class ProductSyncReadService
     {
         $client = new OpenCartReadClient();
         $base = $client->productSyncStatus();
+        $connection = $client->testConnection();
 
         return array_merge($base, [
+            'connection_ok' => (bool) ($connection['ok'] ?? false),
             'rules' => [
                 'Read-only from Lokkisona/OpenCart — no ERP writes back',
-                'From Warehouse = Yes products only',
-                'Max 50 parent products per pull',
-                'Parent + option/variant lines sync when options are returned',
-                'Supplier cost/stock/note preserved on re-pull',
-                'No manual ERP product create',
+                'Dispatch Location bridge required (from_warehouse = 1 only)',
+                'Max 20 products per preview page',
+                'Preview → owner confirm → import (no silent pull)',
+                'Parent + option/variant lines in preview; supplier fields editable in ERP only',
+                'Supplier cost/stock/note preserved on re-import',
             ],
         ]);
     }

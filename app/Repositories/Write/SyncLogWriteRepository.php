@@ -36,4 +36,24 @@ class SyncLogWriteRepository extends BaseWriteRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+
+    public function findContextByPreviewId(int $previewId, string $logType = 'test_sync'): ?array
+    {
+        if (!$this->tableExists() || $previewId <= 0) {
+            return null;
+        }
+
+        $sql = 'SELECT context_json FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE sync_preview_id = :preview_id AND log_type = :log_type ORDER BY sync_log_id DESC LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['preview_id' => $previewId, 'log_type' => $logType]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+        if ($row === false) {
+            return null;
+        }
+
+        $decoded = json_decode((string) ($row['context_json'] ?? ''), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
 }

@@ -3288,6 +3288,26 @@ body.modal-open { overflow: hidden; }
     flex-shrink: 0;
 }
 
+.sync-pagination-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.sync-pagination-label {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.sync-option-detail-row td {
+    background: var(--surface-muted, rgba(0, 0, 0, 0.02));
+    padding-top: 0.25rem;
+    padding-bottom: 0.75rem;
+}
+
 @media (max-width: 640px) {
     .sync-action-bar { grid-template-columns: 1fr; }
 }

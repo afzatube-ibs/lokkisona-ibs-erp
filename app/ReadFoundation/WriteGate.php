@@ -284,6 +284,46 @@ class WriteGate
         }
     }
 
+    /**
+     * Column gate for migration 0011 supplier_product_category (read-only INFORMATION_SCHEMA check).
+     */
+    public static function supplierProductCategoryColumn(string $table = 'ibs_products'): array
+    {
+        $connected = (bool) (Database::check()['connected'] ?? false);
+        $message = 'Supplier product category requires migration 0011_supplier_product_category.sql (manual apply only).';
+
+        if (!$connected) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => $table,
+                'column' => 'supplier_product_category',
+                'message' => $message,
+            ];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $exists = DevDatabaseActivation::physicalColumnExists($pdo, $table, 'supplier_product_category');
+
+            return [
+                'ready' => $exists,
+                'connected' => true,
+                'table' => $table,
+                'column' => 'supplier_product_category',
+                'message' => $exists ? 'Supplier product category column ready.' : $message,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => $table,
+                'column' => 'supplier_product_category',
+                'message' => $message,
+            ];
+        }
+    }
+
     public static function syncOptionsStateColumn(): array
     {
         $connected = (bool) (Database::check()['connected'] ?? false);

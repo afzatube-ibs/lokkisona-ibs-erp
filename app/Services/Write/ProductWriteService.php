@@ -44,7 +44,7 @@ class ProductWriteService
             }
         }
 
-        $id = $this->repository->create([
+        $createPayload = [
             'product_name' => $name,
             'business_source_id' => $businessSourceId,
             'supplier_id' => $this->nullableInt($input, 'supplier_id'),
@@ -53,12 +53,16 @@ class ProductWriteService
             'source_stock' => null,
             'last_synced_at' => null,
             'supplier_model' => trim((string) ($input['supplier_model'] ?? '')) ?: null,
-            'supplier_product_category' => $this->nullableCategory($input),
             'product_cost' => $this->nullableDecimal($input, 'product_cost'),
             'vendor_stock' => (int) ($input['vendor_stock'] ?? 0),
             'low_warning_threshold' => $this->nullableInt($input, 'low_warning_threshold'),
             'status' => $this->status($input),
-        ]);
+        ];
+        if ($this->repository->supplierProductCategoryColumnReady()) {
+            $createPayload['supplier_product_category'] = $this->nullableCategory($input);
+        }
+
+        $id = $this->repository->create($createPayload);
 
         ActivityLog::record('product_created', 'Product created', ['product_id' => $id]);
 
@@ -140,7 +144,6 @@ class ProductWriteService
                 'last_synced_at' => $syncedAt,
                 'image_path' => trim((string) ($row['image_path'] ?? '')) ?: null,
                 'supplier_model' => null,
-                'supplier_product_category' => null,
                 'product_cost' => null,
                 'vendor_stock' => 0,
                 'low_warning_threshold' => null,
@@ -170,6 +173,9 @@ class ProductWriteService
 
         $message = 'Warehouse product pull: ' . $created . ' created, ' . $updated . ' updated, ' . $skipped . ' skipped. '
             . 'Variants: ' . $variantsCreated . ' created, ' . $variantsUpdated . ' updated, ' . $variantsSkipped . ' skipped.';
+        if (!$this->repository->supplierProductCategoryColumnReady()) {
+            $message .= ' Dev note: supplier_product_category column not applied (migration 0011) — category field skipped.';
+        }
 
         return WriteResult::ok($message);
     }

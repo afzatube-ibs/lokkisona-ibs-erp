@@ -84,8 +84,22 @@ class SyncImportWriteService
             return WriteResult::fail('No eligible preview rows to import.');
         }
 
-        $eligibleItems = array_slice($eligibleItems, 0, 50);
-        $sourceOrders = $this->indexOrdersByReference($this->client->fetchSupplierOrders());
+        $page = max(1, (int) ($input['page'] ?? 0));
+        $session = $_SESSION['ibs_order_sync_preview'] ?? null;
+        if (is_array($session) && (int) ($session['preview_id'] ?? 0) === $previewId) {
+            $sourceOrders = is_array($session['orders_by_ref'] ?? null) ? $session['orders_by_ref'] : [];
+            if ($page > 0 && (int) ($session['page'] ?? 0) !== $page) {
+                return WriteResult::fail('Order preview page mismatch. Reload order preview for page ' . $page . ' before import.');
+            }
+        } else {
+            $sourceOrders = $this->ordersFromSyncLog($previewId);
+            if ($sourceOrders === []) {
+                return WriteResult::fail('No order preview snapshot found. Run order preview again before import.');
+            }
+        }
+
+        $limit = max(1, min((int) config('opencart.max_rows_per_page', 20), 20));
+        $eligibleItems = array_slice($eligibleItems, 0, $limit);
         $sourceId = (int) ($preview['business_source_id'] ?? config('opencart.business_source_id', 1));
 
         $importRef = 'IMP-' . date('YmdHis') . '-' . random_int(100, 999);
@@ -157,6 +171,12 @@ class SyncImportWriteService
             }
 
             $orderReference = 'IBS-SYNC-' . $ref;
+            $sourceStatusLabel = trim((string) ($orderPayload['source_status'] ?? ''));
+            $sourceStatusId = trim((string) ($orderPayload['source_status_id'] ?? ''));
+            $historyNote = 'Imported from OpenCart preview ' . ($preview['preview_reference'] ?? '')
+                . '. Source status: ' . ($sourceStatusLabel !== '' ? $sourceStatusLabel : '-')
+                . ($sourceStatusId !== '' ? ' (id ' . $sourceStatusId . ')' : '');
+
             $orderId = $this->orders->createFromSync([
                 'business_source_id' => $sourceId,
                 'supplier_id' => null,
@@ -169,6 +189,9 @@ class SyncImportWriteService
                 'customer_address' => $orderPayload['customer_address'] ?? null,
                 'order_total' => round((float) ($orderPayload['order_total'] ?? 0), 2),
                 'ibs_status' => $ibsStatus,
+                'courier_name' => $orderPayload['courier_name'] ?? null,
+                'tracking_number' => $orderPayload['consignment_id'] ?? null,
+                'courier_status' => $orderPayload['courier_status'] ?? null,
                 'cost_snapshot_total' => round($costTotal, 2),
                 'status' => 'active',
             ]);
@@ -178,7 +201,7 @@ class SyncImportWriteService
             }
 
             if ($this->history->tableExists()) {
-                $this->history->insert($orderId, null, null, $ibsStatus, 'Imported from OpenCart Test Sync preview ' . ($preview['preview_reference'] ?? ''), null);
+                $this->history->insert($orderId, null, null, $ibsStatus, $historyNote, null);
             }
 
             $imported++;
@@ -202,6 +225,13 @@ class SyncImportWriteService
         ]);
 
         return WriteResult::ok('Import finished: ' . $imported . ' order(s) created, ' . $failed . ' failed.', $importId);
+    }
+
+    private function ordersFromSyncLog(int $previewId): array
+    {
+        $context = $this->logs->findContextByPreviewId($previewId, 'test_sync');
+
+        return is_array($context['orders_by_ref'] ?? null) ? $context['orders_by_ref'] : [];
     }
 
     private function indexOrdersByReference(array $orders): array

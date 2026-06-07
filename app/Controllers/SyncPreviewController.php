@@ -19,6 +19,18 @@ class SyncPreviewController extends Controller
         $this->authorize('sync_preview.view');
         ActivityLog::record('sync_preview_access', 'Sync Preview and Import Safety planning foundation page viewed');
 
+        $productPage = max(1, (int) ($_GET['product_page'] ?? 1));
+        $orderPage = max(1, (int) ($_GET['order_page'] ?? 1));
+        $sourceId = (int) config('opencart.business_source_id', 1);
+
+        $productSession = $_SESSION['ibs_product_sync_preview'] ?? null;
+        $orderSession = $_SESSION['ibs_order_sync_preview'] ?? null;
+
+        $productPreview = null;
+        if (is_array($productSession) && (int) ($productSession['page'] ?? 0) === $productPage) {
+            $productPreview = $productSession['display'] ?? null;
+        }
+
         $this->render('sync-preview.index', [
             'pageTitle' => 'Sync Preview',
             'breadcrumbs' => [
@@ -26,9 +38,12 @@ class SyncPreviewController extends Controller
                 ['label' => 'Sync Preview', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
-            'testSyncPreview' => (new TestSyncPreviewService())->preview(),
+            'testSyncPreview' => (new TestSyncPreviewService())->preview($orderPage, is_array($orderSession) ? $orderSession : null),
             'productSyncStatus' => (new ProductSyncReadService())->status(),
-            'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
+            'productPreview' => $productPreview,
+            'productPage' => $productPage,
+            'orderPage' => $orderPage,
+            'defaultBusinessSourceId' => $sourceId,
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
@@ -571,7 +586,35 @@ class SyncPreviewController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/sync-preview');
         }
-        $this->redirectWithWriteResult('/sync-preview', (new SyncPreviewWriteService())->runTestSync($_POST));
+        $page = max(1, (int) ($_POST['page'] ?? 1));
+        $result = (new SyncPreviewWriteService())->runTestSync($_POST);
+        $this->redirectWithWriteResult('/sync-preview?order_page=' . $page, $result);
+    }
+
+    public function previewProducts()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+        $page = max(1, (int) ($_POST['page'] ?? 1));
+        $result = (new SyncPreviewWriteService())->previewProducts($_POST);
+        $this->redirectWithWriteResult('/sync-preview?product_page=' . $page, $result);
+    }
+
+    public function importProducts()
+    {
+        $this->authorize('sync_preview.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-preview');
+        }
+        $page = max(1, (int) ($_POST['page'] ?? 1));
+        $result = (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
+        $this->redirectWithWriteResult('/sync-preview?product_page=' . $page, $result);
     }
 
     public function pullWarehouseProducts()
@@ -593,6 +636,9 @@ class SyncPreviewController extends Controller
             $this->flash('error', 'Invalid security token.');
             redirect('/sync-preview');
         }
-        $this->redirectWithWriteResult('/sync-preview', (new SyncImportWriteService())->importFromPreview($_POST));
+        $page = max(1, (int) ($_POST['page'] ?? ($_SESSION['ibs_order_sync_preview']['page'] ?? 1)));
+        $_POST['page'] = $page;
+        $result = (new SyncImportWriteService())->importFromPreview($_POST);
+        $this->redirectWithWriteResult('/sync-preview?order_page=' . $page, $result);
     }
 }

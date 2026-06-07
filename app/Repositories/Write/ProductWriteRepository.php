@@ -16,15 +16,19 @@ class ProductWriteRepository extends BaseWriteRepository
     {
         $columns = [
             'product_name', 'business_source_id', 'supplier_id', 'source_product_id', 'source_model', 'source_stock',
-            'last_synced_at', 'supplier_model', 'supplier_product_category', 'product_cost', 'vendor_stock',
+            'last_synced_at', 'supplier_model', 'product_cost', 'vendor_stock',
             'low_warning_threshold', 'status',
         ];
         $values = [
             ':product_name', ':business_source_id', ':supplier_id', ':source_product_id', ':source_model', ':source_stock',
-            ':last_synced_at', ':supplier_model', ':supplier_product_category', ':product_cost', ':vendor_stock',
+            ':last_synced_at', ':supplier_model', ':product_cost', ':vendor_stock',
             ':low_warning_threshold', ':status',
         ];
 
+        if ($this->supplierProductCategoryColumnReady() && array_key_exists('supplier_product_category', $data)) {
+            $columns[] = 'supplier_product_category';
+            $values[] = ':supplier_product_category';
+        }
         if (array_key_exists('image_path', $data)) {
             $columns[] = 'image_path';
             $values[] = ':image_path';
@@ -45,11 +49,23 @@ class ProductWriteRepository extends BaseWriteRepository
 
     public function update(int $id, array $data): bool
     {
+        $fields = [
+            'product_name = :product_name',
+            'business_source_id = :business_source_id',
+            'supplier_id = :supplier_id',
+            'source_product_id = :source_product_id',
+            'supplier_model = :supplier_model',
+            'product_cost = :product_cost',
+            'vendor_stock = :vendor_stock',
+            'low_warning_threshold = :low_warning_threshold',
+            'status = :status',
+        ];
+        if ($this->supplierProductCategoryColumnReady() && array_key_exists('supplier_product_category', $data)) {
+            $fields[] = 'supplier_product_category = :supplier_product_category';
+        }
+
         $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
-            . 'product_name = :product_name, business_source_id = :business_source_id, supplier_id = :supplier_id, '
-            . 'source_product_id = :source_product_id, '
-            . 'supplier_model = :supplier_model, supplier_product_category = :supplier_product_category, product_cost = :product_cost, vendor_stock = :vendor_stock, '
-            . 'low_warning_threshold = :low_warning_threshold, status = :status, updated_at = NOW() '
+            . implode(', ', $fields) . ', updated_at = NOW() '
             . 'WHERE product_id = :id';
         $data['id'] = $id;
         $statement = $this->pdo->prepare($sql);
@@ -103,14 +119,16 @@ class ProductWriteRepository extends BaseWriteRepository
     {
         $fields = [
             'supplier_model = :supplier_model',
-            'supplier_product_category = :supplier_product_category',
             'product_cost = :product_cost',
             'vendor_stock = :vendor_stock',
             'low_warning_threshold = :low_warning_threshold',
             'status = :status',
         ];
 
-        if (array_key_exists('supplier_note', $data)) {
+        if ($this->supplierProductCategoryColumnReady() && array_key_exists('supplier_product_category', $data)) {
+            $fields[] = 'supplier_product_category = :supplier_product_category';
+        }
+        if ($this->supplierNoteColumnReady() && array_key_exists('supplier_note', $data)) {
             $fields[] = 'supplier_note = :supplier_note';
         }
 
@@ -157,6 +175,11 @@ class ProductWriteRepository extends BaseWriteRepository
     public function supplierNoteColumnReady(): bool
     {
         return (bool) (WriteGate::supplierProductNoteColumn()['ready'] ?? false);
+    }
+
+    public function supplierProductCategoryColumnReady(): bool
+    {
+        return (bool) (WriteGate::supplierProductCategoryColumn()['ready'] ?? false);
     }
 
     public function syncOptionsStateColumnReady(): bool

@@ -25,9 +25,9 @@ class OrderWriteRepository extends BaseWriteRepository
     {
         $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` '
             . '(business_source_id, supplier_id, source_order_id, source_order_reference, source_invoice_reference, order_reference, customer_name, customer_phone, customer_address, '
-            . 'order_total, ibs_status, cost_snapshot_total, status, ordered_at, created_at) '
+            . 'order_total, ibs_status, courier_name, tracking_number, courier_status, cost_snapshot_total, status, ordered_at, created_at) '
             . 'VALUES (:business_source_id, :supplier_id, :source_order_id, :source_order_reference, :source_invoice_reference, :order_reference, :customer_name, :customer_phone, :customer_address, '
-            . ':order_total, :ibs_status, :cost_snapshot_total, :status, NOW(), NOW())';
+            . ':order_total, :ibs_status, :courier_name, :tracking_number, :courier_status, :cost_snapshot_total, :status, NOW(), NOW())';
         $statement = $this->pdo->prepare($sql);
         $statement->execute([
             'business_source_id' => $data['business_source_id'],
@@ -41,6 +41,9 @@ class OrderWriteRepository extends BaseWriteRepository
             'customer_address' => $data['customer_address'] ?? null,
             'order_total' => $data['order_total'],
             'ibs_status' => $data['ibs_status'],
+            'courier_name' => $data['courier_name'] ?? null,
+            'tracking_number' => $data['tracking_number'] ?? null,
+            'courier_status' => $data['courier_status'] ?? null,
             'cost_snapshot_total' => $data['cost_snapshot_total'],
             'status' => $data['status'] ?? 'active',
         ]);

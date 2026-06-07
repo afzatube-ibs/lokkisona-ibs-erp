@@ -69,6 +69,8 @@ $router->post('/status-mapping/create', 'StatusMappingController@create');
 $router->post('/status-mapping/toggle', 'StatusMappingController@toggle');
 $router->post('/status-mapping/seed-defaults', 'StatusMappingController@seedDefaults');
 $router->get('/sync-preview', 'SyncPreviewController@index');
+$router->post('/sync-preview/preview-products', 'SyncPreviewController@previewProducts');
+$router->post('/sync-preview/import-products', 'SyncPreviewController@importProducts');
 $router->post('/sync-preview/run-test-sync', 'SyncPreviewController@runTestSync');
 $router->post('/sync-preview/pull-warehouse-products', 'SyncPreviewController@pullWarehouseProducts');
 $router->post('/sync-preview/import', 'SyncPreviewController@import');

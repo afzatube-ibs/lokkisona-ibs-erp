@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.7.0',
-    'release_label' => 'Product List/Edit Completion + Lokkisona Product Sync',
+    'version' => '1.7.1',
+    'release_label' => 'Live Product + Order Sync Connection Test',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
