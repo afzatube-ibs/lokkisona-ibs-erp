@@ -3,6 +3,8 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
+use App\Repositories\Write\ProductCostHistoryWriteRepository;
+use App\Repositories\Write\ProductStockHistoryWriteRepository;
 use App\Repositories\Write\ProductVariantWriteRepository;
 use App\Repositories\Write\ProductWriteRepository;
 
@@ -10,13 +12,19 @@ class ProductWorkspaceWriteService
 {
     private ProductWriteRepository $products;
     private ProductVariantWriteRepository $variants;
+    private ProductCostHistoryWriteRepository $costHistory;
+    private ProductStockHistoryWriteRepository $stockHistory;
 
     public function __construct(
         ?ProductWriteRepository $products = null,
-        ?ProductVariantWriteRepository $variants = null
+        ?ProductVariantWriteRepository $variants = null,
+        ?ProductCostHistoryWriteRepository $costHistory = null,
+        ?ProductStockHistoryWriteRepository $stockHistory = null
     ) {
         $this->products = $products ?? new ProductWriteRepository();
         $this->variants = $variants ?? new ProductVariantWriteRepository();
+        $this->costHistory = $costHistory ?? new ProductCostHistoryWriteRepository();
+        $this->stockHistory = $stockHistory ?? new ProductStockHistoryWriteRepository();
     }
 
     public function save(int $productId, array $input): WriteResult
@@ -30,7 +38,7 @@ class ProductWorkspaceWriteService
             return WriteResult::fail('Product not found.');
         }
 
-        $this->products->updateSupplierControlFields($productId, [
+        $supplierFields = [
             'supplier_model' => array_key_exists('supplier_model', $input)
                 ? $this->nullableString($input, 'supplier_model')
                 : ($product['supplier_model'] ?? null),
@@ -47,7 +55,20 @@ class ProductWorkspaceWriteService
                 ? $this->nullableInt($input, 'low_warning_threshold', $product['low_warning_threshold'] ?? null)
                 : ($product['low_warning_threshold'] !== null ? (int) $product['low_warning_threshold'] : null),
             'status' => $this->status($input, (string) ($product['status'] ?? 'active')),
-        ]);
+        ];
+
+        if ($this->products->supplierNoteColumnReady() && array_key_exists('supplier_note', $input)) {
+            $supplierFields['supplier_note'] = $this->nullableString($input, 'supplier_note');
+        }
+
+        $this->products->updateSupplierControlFields($productId, $supplierFields);
+
+        if (array_key_exists('supplier_id', $input) && trim((string) $input['supplier_id']) !== '') {
+            $supplierId = (int) $input['supplier_id'];
+            $this->products->updateSupplierAssignment($productId, $supplierId > 0 ? $supplierId : null);
+        }
+
+        $this->recordProductHistoryIfChanged($productId, $product, $supplierFields);
 
         $variantRows = $input['variants'] ?? [];
         $updatedVariants = 0;
@@ -65,7 +86,7 @@ class ProductWorkspaceWriteService
                     continue;
                 }
 
-                $this->variants->updateSupplierControlFields($variantId, [
+                $variantFields = [
                     'supplier_model' => array_key_exists('supplier_model', $row)
                         ? $this->nullableString($row, 'supplier_model')
                         : ($existing['supplier_model'] ?? null),
@@ -76,7 +97,14 @@ class ProductWorkspaceWriteService
                         ? (int) ($row['vendor_stock'] ?? 0)
                         : (int) ($existing['vendor_stock'] ?? 0),
                     'status' => $this->status($row, (string) ($existing['status'] ?? 'active')),
-                ]);
+                ];
+
+                if ($this->products->supplierNoteColumnReady() && array_key_exists('supplier_note', $row)) {
+                    $variantFields['supplier_note'] = $this->nullableString($row, 'supplier_note');
+                }
+
+                $this->variants->updateSupplierControlFields($variantId, $variantFields);
+                $this->recordVariantHistoryIfChanged($productId, $variantId, $existing, $variantFields);
                 $updatedVariants++;
             }
         }
@@ -91,6 +119,89 @@ class ProductWorkspaceWriteService
             : 'Supplier/ERP fields saved. OpenCart data was not changed.';
 
         return WriteResult::ok($message, $productId);
+    }
+
+    private function recordProductHistoryIfChanged(int $productId, array $product, array $newFields): void
+    {
+        if (!$this->costHistory->tableExists() || !$this->stockHistory->tableExists()) {
+            return;
+        }
+
+        $oldCost = $product['product_cost'] !== null ? (float) $product['product_cost'] : null;
+        $newCost = $newFields['product_cost'] ?? $oldCost;
+        $oldStock = (int) ($product['vendor_stock'] ?? 0);
+        $newStock = (int) ($newFields['vendor_stock'] ?? $oldStock);
+        $supplierId = $product['supplier_id'] !== null ? (int) $product['supplier_id'] : null;
+
+        $costChanged = $oldCost === null && $newCost !== null
+            || ($oldCost !== null && $newCost !== null && abs((float) $newCost - (float) $oldCost) > 0.0001)
+            || ($oldCost !== null && $newCost === null);
+
+        $stockChanged = $newStock !== $oldStock;
+
+        if ($costChanged) {
+            $this->costHistory->insert([
+                'product_id' => $productId,
+                'product_variant_id' => null,
+                'supplier_id' => $supplierId,
+                'old_cost' => $oldCost,
+                'new_cost' => $newCost,
+                'note' => 'Workspace save',
+            ]);
+        }
+
+        if ($stockChanged) {
+            $this->stockHistory->insert([
+                'product_id' => $productId,
+                'product_variant_id' => null,
+                'supplier_id' => $supplierId,
+                'old_stock' => $oldStock,
+                'new_stock' => $newStock,
+                'change_type' => 'workspace_save',
+                'note' => 'Workspace save',
+            ]);
+        }
+    }
+
+    private function recordVariantHistoryIfChanged(int $productId, int $variantId, array $existing, array $newFields): void
+    {
+        if (!$this->costHistory->tableExists() || !$this->stockHistory->tableExists()) {
+            return;
+        }
+
+        $oldCost = $existing['product_cost'] !== null ? (float) $existing['product_cost'] : null;
+        $newCost = $newFields['product_cost'] ?? $oldCost;
+        $oldStock = (int) ($existing['vendor_stock'] ?? 0);
+        $newStock = (int) ($newFields['vendor_stock'] ?? $oldStock);
+
+        $costChanged = $oldCost === null && $newCost !== null
+            || ($oldCost !== null && $newCost !== null && abs((float) $newCost - (float) $oldCost) > 0.0001)
+            || ($oldCost !== null && $newCost === null);
+
+        $stockChanged = $newStock !== $oldStock;
+
+        if ($costChanged) {
+            $this->costHistory->insert([
+                'product_id' => $productId,
+                'product_variant_id' => $variantId,
+                'supplier_id' => null,
+                'old_cost' => $oldCost,
+                'new_cost' => $newCost,
+                'note' => 'Workspace save (variant)',
+            ]);
+        }
+
+        if ($stockChanged) {
+            $this->stockHistory->insert([
+                'product_id' => $productId,
+                'product_variant_id' => $variantId,
+                'supplier_id' => null,
+                'old_stock' => $oldStock,
+                'new_stock' => $newStock,
+                'change_type' => 'workspace_save',
+                'note' => 'Workspace save (variant)',
+            ]);
+        }
     }
 
     private function nullableInt(array $input, string $key, $fallback = null): ?int

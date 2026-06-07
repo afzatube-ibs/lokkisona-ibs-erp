@@ -3,6 +3,7 @@
 namespace App\Repositories\Write;
 
 use App\Models\Product;
+use App\ReadFoundation\WriteGate;
 
 class ProductWriteRepository extends BaseWriteRepository
 {
@@ -13,11 +14,29 @@ class ProductWriteRepository extends BaseWriteRepository
 
     public function create(array $data): int
     {
-        $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` '
-            . '(product_name, business_source_id, supplier_id, source_product_id, source_model, source_stock, last_synced_at, '
-            . 'supplier_model, supplier_product_category, product_cost, vendor_stock, low_warning_threshold, status, created_at) '
-            . 'VALUES (:product_name, :business_source_id, :supplier_id, :source_product_id, :source_model, :source_stock, :last_synced_at, '
-            . ':supplier_model, :supplier_product_category, :product_cost, :vendor_stock, :low_warning_threshold, :status, NOW())';
+        $columns = [
+            'product_name', 'business_source_id', 'supplier_id', 'source_product_id', 'source_model', 'source_stock',
+            'last_synced_at', 'supplier_model', 'supplier_product_category', 'product_cost', 'vendor_stock',
+            'low_warning_threshold', 'status',
+        ];
+        $values = [
+            ':product_name', ':business_source_id', ':supplier_id', ':source_product_id', ':source_model', ':source_stock',
+            ':last_synced_at', ':supplier_model', ':supplier_product_category', ':product_cost', ':vendor_stock',
+            ':low_warning_threshold', ':status',
+        ];
+
+        if (array_key_exists('image_path', $data)) {
+            $columns[] = 'image_path';
+            $values[] = ':image_path';
+        }
+        if ($this->syncOptionsStateColumnReady() && array_key_exists('sync_options_state', $data)) {
+            $columns[] = 'sync_options_state';
+            $values[] = ':sync_options_state';
+        }
+
+        $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` ('
+            . implode(', ', $columns) . ', created_at) VALUES ('
+            . implode(', ', $values) . ', NOW())';
         $statement = $this->pdo->prepare($sql);
         $statement->execute($data);
 
@@ -58,10 +77,22 @@ class ProductWriteRepository extends BaseWriteRepository
 
     public function updatePlatformSyncFields(int $id, array $data): bool
     {
+        $fields = [
+            'product_name = :product_name',
+            'source_model = :source_model',
+            'source_stock = :source_stock',
+            'last_synced_at = :last_synced_at',
+        ];
+
+        if (array_key_exists('image_path', $data)) {
+            $fields[] = 'image_path = :image_path';
+        }
+        if ($this->syncOptionsStateColumnReady() && array_key_exists('sync_options_state', $data)) {
+            $fields[] = 'sync_options_state = :sync_options_state';
+        }
+
         $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
-            . 'product_name = :product_name, source_model = :source_model, source_stock = :source_stock, '
-            . 'last_synced_at = :last_synced_at, updated_at = NOW() '
-            . 'WHERE product_id = :id';
+            . implode(', ', $fields) . ', updated_at = NOW() WHERE product_id = :id';
         $data['id'] = $id;
         $statement = $this->pdo->prepare($sql);
 
@@ -70,15 +101,34 @@ class ProductWriteRepository extends BaseWriteRepository
 
     public function updateSupplierControlFields(int $id, array $data): bool
     {
+        $fields = [
+            'supplier_model = :supplier_model',
+            'supplier_product_category = :supplier_product_category',
+            'product_cost = :product_cost',
+            'vendor_stock = :vendor_stock',
+            'low_warning_threshold = :low_warning_threshold',
+            'status = :status',
+        ];
+
+        if (array_key_exists('supplier_note', $data)) {
+            $fields[] = 'supplier_note = :supplier_note';
+        }
+
         $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
-            . 'supplier_model = :supplier_model, supplier_product_category = :supplier_product_category, '
-            . 'product_cost = :product_cost, vendor_stock = :vendor_stock, '
-            . 'low_warning_threshold = :low_warning_threshold, status = :status, updated_at = NOW() '
-            . 'WHERE product_id = :id';
+            . implode(', ', $fields) . ', updated_at = NOW() WHERE product_id = :id';
         $data['id'] = $id;
         $statement = $this->pdo->prepare($sql);
 
         return $statement->execute($data);
+    }
+
+    public function updateSupplierAssignment(int $id, ?int $supplierId): bool
+    {
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` SET '
+            . 'supplier_id = :supplier_id, updated_at = NOW() WHERE product_id = :id';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute(['supplier_id' => $supplierId, 'id' => $id]);
     }
 
     public function find(int $id): ?array
@@ -102,5 +152,15 @@ class ProductWriteRepository extends BaseWriteRepository
         $statement = $this->pdo->prepare($sql);
 
         return $statement->execute(['low_warning_threshold' => $threshold, 'id' => $id]);
+    }
+
+    public function supplierNoteColumnReady(): bool
+    {
+        return (bool) (WriteGate::supplierProductNoteColumn()['ready'] ?? false);
+    }
+
+    public function syncOptionsStateColumnReady(): bool
+    {
+        return (bool) (WriteGate::syncOptionsStateColumn()['ready'] ?? false);
     }
 }

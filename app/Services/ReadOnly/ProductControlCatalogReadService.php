@@ -56,8 +56,11 @@ class ProductControlCatalogReadService
     {
         $productId = (int) ($product['product_id'] ?? 0);
         $hasVariants = $variants !== [];
+        $syncOptionsState = (string) ($product['sync_options_state'] ?? '');
+        $noOptionsSynced = !$hasVariants && $syncOptionsState === 'missing_options';
+        $isVariable = $hasVariants || $noOptionsSynced;
         $costLabel = $isSupplierView ? 'sale' : 'cost';
-        $health = $this->healthStatus($product, $variants, $isSupplierView);
+        $health = $this->healthStatus($product, $variants, $isSupplierView, $noOptionsSynced);
         $costDisplay = $this->costDisplay($product, $variants);
         $vendorStock = $this->vendorStockTotal($product, $variants);
         $ownerStock = $hasVariants
@@ -77,6 +80,7 @@ class ProductControlCatalogReadService
                     'image_path' => (string) ($variant['option_image_path'] ?? ''),
                     'source_model' => (string) ($variant['source_model'] ?? ''),
                     'supplier_model' => (string) ($variant['supplier_model'] ?? ''),
+                    'supplier_note' => (string) ($variant['supplier_note'] ?? ''),
                     'source_stock' => $variant['source_stock'] ?? null,
                     'product_cost' => $variant['product_cost'] ?? '',
                     'vendor_stock' => (int) ($variant['vendor_stock'] ?? 0),
@@ -87,6 +91,9 @@ class ProductControlCatalogReadService
             }
         }
 
+        $lastSynced = (string) ($product['last_synced_at'] ?? '');
+        $lastSyncedDisplay = $lastSynced !== '' ? $lastSynced : '—';
+
         return [
             'is_ready' => $health['is_ready'],
             'catalog' => [
@@ -94,7 +101,8 @@ class ProductControlCatalogReadService
                 'source_product_id' => (string) ($product['source_product_id'] ?? ''),
                 'product_name' => (string) ($product['product_name'] ?? ''),
                 'image_path' => (string) ($product['image_path'] ?? ''),
-                'type' => $hasVariants ? 'variable' : 'simple',
+                'type' => $isVariable ? 'variable' : 'simple',
+                'no_options_synced' => $noOptionsSynced,
                 'source_model' => (string) ($product['source_model'] ?? ''),
                 'supplier_model' => (string) ($product['supplier_model'] ?? ''),
                 'average_cost' => $costDisplay,
@@ -105,6 +113,7 @@ class ProductControlCatalogReadService
                 'health_label' => $health['label'],
                 'health_class' => $health['class'],
                 'supplier_product_category' => (string) ($product['supplier_product_category'] ?? ''),
+                'last_synced_at' => $lastSyncedDisplay,
                 'status' => (string) ($product['status'] ?? 'active'),
                 'search_blob' => strtolower(implode(' ', array_filter([
                     (string) ($product['product_name'] ?? ''),
@@ -121,12 +130,15 @@ class ProductControlCatalogReadService
                 'product_name' => (string) ($product['product_name'] ?? ''),
                 'supplier_model' => (string) ($product['supplier_model'] ?? ''),
                 'supplier_product_category' => (string) ($product['supplier_product_category'] ?? ''),
+                'supplier_note' => (string) ($product['supplier_note'] ?? ''),
+                'supplier_id' => $product['supplier_id'] ?? '',
                 'source_model' => (string) ($product['source_model'] ?? ''),
                 'source_stock' => $product['source_stock'] ?? null,
-                'last_synced_at' => (string) ($product['last_synced_at'] ?? ''),
+                'last_synced_at' => $lastSynced,
                 'low_warning_threshold' => $product['low_warning_threshold'] ?? '',
                 'image_path' => (string) ($product['image_path'] ?? ''),
-                'type' => $hasVariants ? 'variable' : 'simple',
+                'type' => $isVariable ? 'variable' : 'simple',
+                'no_options_synced' => $noOptionsSynced,
                 'product_cost' => $product['product_cost'] ?? '',
                 'vendor_stock' => (int) ($product['vendor_stock'] ?? 0),
                 'business_source_id' => $product['business_source_id'] ?? '',
@@ -137,12 +149,16 @@ class ProductControlCatalogReadService
         ];
     }
 
-    private function healthStatus(array $product, array $variants, bool $isSupplierView): array
+    private function healthStatus(array $product, array $variants, bool $isSupplierView, bool $noOptionsSynced = false): array
     {
         $issues = [];
         $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
         $vendorStock = $this->vendorStockTotal($product, $variants);
         $lowStock = $lowWarning > 0 && $vendorStock <= $lowWarning;
+
+        if ($noOptionsSynced) {
+            $issues[] = 'No option synced';
+        }
 
         if ($variants === []) {
             if (trim((string) ($product['supplier_model'] ?? '')) === '') {

@@ -13,6 +13,23 @@ view('partials.write-gate-warning', [
 ]);
 ?>
 
+<?php if (!empty($productSyncStatus)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Product Sync Status</h2></div>
+    <div class="card-body">
+        <p><strong>Mode:</strong> <?= e($productSyncStatus['mode'] ?? '') ?> — <?= e($productSyncStatus['message'] ?? '') ?></p>
+        <p><strong>Product API route:</strong> <code><?= e($productSyncStatus['product_route'] ?? '') ?></code></p>
+        <p><strong>Pull available:</strong> <?= !empty($productSyncStatus['product_pull_available']) ? 'Yes' : 'No' ?> · <strong>Demo/live warehouse products:</strong> <?= e((string) ($productSyncStatus['warehouse_product_count'] ?? 0)) ?> · <strong>Max per pull:</strong> <?= e((string) ($productSyncStatus['max_products_per_pull'] ?? 50)) ?></p>
+        <ul class="feature-list">
+            <?php foreach (($productSyncStatus['rules'] ?? []) as $rule): ?>
+            <li><?= e($rule) ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <p class="page-description" style="margin-top:0.75rem;">Read-only from Lokkisona. Use <strong>Pull warehouse products</strong> below to sync catalog rows into Product Control. No OpenCart writes.</p>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Test Sync Actions</h2></div>

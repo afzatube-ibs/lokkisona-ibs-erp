@@ -26,6 +26,21 @@ $tableReady = !empty($productReadInventory['table_exists']);
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
+<?php if (!empty($tableReady) && empty($writeGateSupplierNoteReady)): ?>
+<?php view('partials.column-gate-note', [
+    'columnGateReady' => false,
+    'columnGateTitle' => 'Supplier note — migration 0012 not applied',
+    'columnGateMessage' => $writeGateSupplierNote['message'] ?? 'Supplier note requires migration 0012_supplier_product_note.sql (manual apply only).',
+    'columnGateMigrationFile' => '0012_supplier_product_note.sql',
+    'columnGateDetails' => [
+        'Supplier note fields are hidden in the Product Control Center modal.',
+        'Variant supplier note column is hidden until 0012 is applied.',
+        '"No option synced" badge requires sync_options_state column from the same migration.',
+        'All other supplier fields (model, cost, stock, category, status) save normally.',
+    ],
+]); ?>
+<?php endif; ?>
+
 <?php if (empty($writeGateProductCreateReady)): ?>
 <?php view('partials.write-gate-warning', ['writeGateReady' => false, 'writeGate' => $writeGateProductCreate ?? []]); ?>
 <?php endif; ?>
@@ -102,13 +117,17 @@ $tableReady = !empty($productReadInventory['table_exists']);
                 <thead>
                     <tr>
                         <th>Product ID</th>
+                        <th>Product Name</th>
+                        <th>OC ID</th>
                         <th>Image</th>
                         <th>Variable</th>
                         <th>Model</th>
                         <th>Vendor Model</th>
+                        <th>Category</th>
                         <th><?= e($avgCostLabel) ?></th>
                         <th>Owner Stock</th>
                         <th>Vendor Stock</th>
+                        <th>Last Synced</th>
                         <th>Low Warning</th>
                         <th>Health Status</th>
                         <th></th>
@@ -127,6 +146,8 @@ $tableReady = !empty($productReadInventory['table_exists']);
                         role="button"
                         aria-label="Open product #<?= e((string) $row['product_id']) ?>">
                         <td><code>#<?= e((string) $row['product_id']) ?></code></td>
+                        <td><strong><?= e($row['product_name'] !== '' ? $row['product_name'] : '—') ?></strong></td>
+                        <td><code><?= e($row['source_product_id'] !== '' ? $row['source_product_id'] : '—') ?></code></td>
                         <td>
                             <div class="pcc-list-thumb">
                                 <?php if (!empty($row['image_path'])): ?>
@@ -140,12 +161,17 @@ $tableReady = !empty($productReadInventory['table_exists']);
                             <span class="badge <?= ($row['type'] ?? '') === 'variable' ? 'badge-info' : 'badge-ok' ?>">
                                 <?= ($row['type'] ?? '') === 'variable' ? 'Variable' : 'Simple' ?>
                             </span>
+                            <?php if (!empty($row['no_options_synced'])): ?>
+                            <span class="badge badge-warn">No option synced</span>
+                            <?php endif; ?>
                         </td>
                         <td><code><?= e($row['source_model'] !== '' ? $row['source_model'] : '—') ?></code></td>
                         <td><?= e($row['supplier_model'] !== '' ? $row['supplier_model'] : '—') ?></td>
+                        <td><?= e($row['supplier_product_category'] !== '' ? $row['supplier_product_category'] : '—') ?></td>
                         <td><?= e((string) ($row['average_cost'] ?? '—')) ?></td>
                         <td><?= e((string) ($row['owner_stock'] ?? 0)) ?></td>
                         <td><strong><?= e((string) ($row['vendor_stock'] ?? 0)) ?></strong></td>
+                        <td><?= e((string) ($row['last_synced_at'] ?? '—')) ?></td>
                         <td><?= !empty($row['low_warning']) ? '<span class="badge badge-warn">Low</span>' : '—' ?></td>
                         <td><span class="badge <?= ($row['health_class'] ?? '') === 'ok' ? 'badge-ok' : 'badge-warn' ?>"><?= e($row['health_label'] ?? '—') ?></span></td>
                         <td>
@@ -163,6 +189,7 @@ $tableReady = !empty($productReadInventory['table_exists']);
 
 <script type="application/json" id="productCatalogPayload"><?= e(json_encode($catalog['workspaces'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
 <script type="application/json" id="productHistoryPayload"><?= e(json_encode($productHistoryByProduct ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
+<script type="application/json" id="productControlConfig"><?= e(json_encode(['supplierNoteReady' => !empty($writeGateSupplierNoteReady)], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?></script>
 
 <?php view('partials.product-control-center-modal', [
     'csrfField' => $csrfField ?? '',
@@ -171,6 +198,9 @@ $tableReady = !empty($productReadInventory['table_exists']);
     'defaultBusinessSourceId' => $defaultBusinessSourceId ?? 1,
     'canManage' => !empty($canManage),
     'writeGateProductEditReady' => !empty($writeGateProductEditReady),
+    'supplierSelectOptions' => $supplierSelectOptions ?? [],
+    'writeGateSupplierNote' => $writeGateSupplierNote ?? [],
+    'writeGateSupplierNoteReady' => !empty($writeGateSupplierNoteReady),
 ]); ?>
 
 <script src="<?= e(asset('js/product-control.js')) ?>"></script>

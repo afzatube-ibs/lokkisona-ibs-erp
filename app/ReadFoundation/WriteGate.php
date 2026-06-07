@@ -243,4 +243,81 @@ class WriteGate
             'ibs_supplier_quick_invoice_audits',
         ]);
     }
+
+    /**
+     * Column gate for migration 0012 supplier_note (read-only INFORMATION_SCHEMA check).
+     */
+    public static function supplierProductNoteColumn(string $table = 'ibs_products'): array
+    {
+        $connected = (bool) (Database::check()['connected'] ?? false);
+        $message = 'Supplier note requires migration 0012_supplier_product_note.sql (manual apply only).';
+
+        if (!$connected) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => $table,
+                'column' => 'supplier_note',
+                'message' => $message,
+            ];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $exists = DevDatabaseActivation::physicalColumnExists($pdo, $table, 'supplier_note');
+
+            return [
+                'ready' => $exists,
+                'connected' => true,
+                'table' => $table,
+                'column' => 'supplier_note',
+                'message' => $exists ? 'Supplier note column ready.' : $message,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => $table,
+                'column' => 'supplier_note',
+                'message' => $message,
+            ];
+        }
+    }
+
+    public static function syncOptionsStateColumn(): array
+    {
+        $connected = (bool) (Database::check()['connected'] ?? false);
+        $message = 'Option sync state requires migration 0012_supplier_product_note.sql (manual apply only).';
+
+        if (!$connected) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => 'ibs_products',
+                'column' => 'sync_options_state',
+                'message' => $message,
+            ];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $exists = DevDatabaseActivation::physicalColumnExists($pdo, 'ibs_products', 'sync_options_state');
+
+            return [
+                'ready' => $exists,
+                'connected' => true,
+                'table' => 'ibs_products',
+                'column' => 'sync_options_state',
+                'message' => $exists ? 'Option sync state column ready.' : $message,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ready' => false,
+                'connected' => false,
+                'table' => 'ibs_products',
+                'column' => 'sync_options_state',
+                'message' => $message,
+            ];
+        }
+    }
 }

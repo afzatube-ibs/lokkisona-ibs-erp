@@ -22,8 +22,10 @@ class Product extends BaseModel
         'product_cost',
         'vendor_stock',
         'low_warning_threshold',
+        'supplier_note',
         'status',
         'last_synced_at',
+        'sync_options_state',
         'created_at',
         'updated_at',
     ];

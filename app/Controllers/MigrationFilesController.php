@@ -45,6 +45,8 @@ class MigrationFilesController extends Controller
             '0008_supplier_opening_balances_launch_cutovers.sql',
             '0009_settlements_workflow.sql',
             '0010_supplier_quick_invoice_totals.sql',
+            '0011_supplier_product_category.sql',
+            '0012_supplier_product_note.sql',
         ];
     }
 
@@ -139,6 +141,11 @@ class MigrationFilesController extends Controller
             '0005 orders, manual orders, and workflow history planning',
             '0006 dispatch, returns, payables, and settlement planning',
             '0007 invoices, printing, and supplier tool audit planning',
+            '0008 supplier opening balances and launch cutover',
+            '0009 settlements workflow',
+            '0010 supplier quick invoice totals',
+            '0011 supplier product category (ERP reporting column on products)',
+            '0012 supplier note + option sync state (optional v1.7.0 — manual apply only)',
         ];
     }
 }

@@ -16,6 +16,7 @@ use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\ProductControlCatalogReadService;
 use App\Services\ReadOnly\ProductReadService;
 use App\Services\ReadOnly\ProductVariantReadService;
+use App\Services\ReadOnly\SupplierReadService;
 use App\Services\ReadOnly\ProductCostHistoryReadService;
 use App\Services\ReadOnly\ProductStockHistoryReadService;
 use App\ReadFoundation\WriteGate;
@@ -112,6 +113,9 @@ class ProductControlController extends Controller
             'writeGateCostStockReady' => WriteGate::productCostStockForm()['ready'],
             'isSupplierView' => $isSupplierView,
             'boundSupplierId' => $isSupplierView ? SupplierContext::supplierId() : 0,
+            'supplierSelectOptions' => $this->supplierSelectOptions(),
+            'writeGateSupplierNote' => WriteGate::supplierProductNoteColumn(),
+            'writeGateSupplierNoteReady' => WriteGate::supplierProductNoteColumn()['ready'],
         ]);
     }
 
@@ -637,6 +641,32 @@ class ProductControlController extends Controller
         return $variantInventory;
     }
 
+    private function supplierSelectOptions(): array
+    {
+        try {
+            $service = new SupplierReadService();
+            if (!$service->tableExists()) {
+                return [];
+            }
+
+            $options = [];
+            foreach ($service->all(100, 0) as $row) {
+                $id = (int) ($row['supplier_id'] ?? 0);
+                if ($id <= 0) {
+                    continue;
+                }
+                $options[] = [
+                    'supplier_id' => $id,
+                    'label' => trim((string) ($row['supplier_name'] ?? 'Supplier #' . $id)),
+                ];
+            }
+
+            return $options;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     private function currentSupplier()
     {
         return [
@@ -693,7 +723,8 @@ class ProductControlController extends Controller
             'Vendor Stock (supplier ERP field)',
             'Low Warning Threshold (warning only)',
             'ERP status (active / inactive)',
-            'Variant vendor model, cost/sale, and vendor stock per option line',
+            'Supplier note (ERP only, migration 0012)',
+            'Variant vendor model, cost/sale, vendor stock, and note per option line',
         ];
     }
 

@@ -127,7 +127,9 @@ class DevDatabaseActivation
             'Step 9: Apply Group E before invoice printing and supplier tools read testing.',
             'Step 10: Apply 0004_status_mapping_sync_preview.sql before /status-mapping and /sync-preview write tests.',
             'Step 11: Apply 0009_settlements_workflow.sql before /settlements workflow tests.',
-            'Step 12: Complete docs/STAGING-QA-CHECKLIST.md E2E chain before production cutover.',
+            'Step 12: Apply 0011_supplier_product_category.sql for ERP category on Product Control and dashboard reports.',
+            'Step 13: Apply 0012_supplier_product_note.sql (optional v1.7.0) for supplier note fields and "No option synced" badge — manual apply only; Product Control works without it.',
+            'Step 14: Complete docs/STAGING-QA-CHECKLIST.md E2E chain before production cutover.',
         ];
     }
 
@@ -324,6 +326,28 @@ class DevDatabaseActivation
             $row = $statement->fetch(PDO::FETCH_ASSOC);
 
             return ((int) ($row['table_count'] ?? 0)) > 0;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public static function physicalColumnExists(PDO $pdo, string $physicalTable, string $columnName): bool
+    {
+        try {
+            $database = config('database.database', '');
+            $sql = 'SELECT COUNT(*) AS column_count FROM INFORMATION_SCHEMA.COLUMNS '
+                . 'WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table AND COLUMN_NAME = :column';
+            QueryGuard::assertReadOnly($sql);
+
+            $statement = $pdo->prepare($sql);
+            $statement->execute([
+                'schema' => $database,
+                'table' => $physicalTable,
+                'column' => $columnName,
+            ]);
+            $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+            return ((int) ($row['column_count'] ?? 0)) > 0;
         } catch (\Throwable $e) {
             return false;
         }

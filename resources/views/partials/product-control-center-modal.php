@@ -58,6 +58,29 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                         <label class="pcc-field">Low warning
                             <input type="number" name="low_warning_threshold" id="pccLowWarning" min="0" class="form-input">
                         </label>
+                        <label class="pcc-field">ERP status
+                            <select name="status" id="pccStatus" class="form-input">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </label>
+                        <?php if (empty($isSupplierView) && !empty($supplierSelectOptions)): ?>
+                        <label class="pcc-field">Supplier assignment (owner)
+                            <select name="supplier_id" id="pccSupplierId" class="form-input">
+                                <option value="">— Unassigned —</option>
+                                <?php foreach ($supplierSelectOptions as $supplier): ?>
+                                <option value="<?= e((string) ($supplier['supplier_id'] ?? '')) ?>"><?= e($supplier['label'] ?? '') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <?php endif; ?>
+                        <?php if (!empty($writeGateSupplierNoteReady)): ?>
+                        <label class="pcc-field">Supplier note
+                            <textarea name="supplier_note" id="pccSupplierNote" class="form-input" rows="2" placeholder="Internal supplier note (ERP only)"></textarea>
+                        </label>
+                        <?php elseif (!empty($writeGateSupplierNote)): ?>
+                        <p class="page-description pcc-field-hint"><?= e($writeGateSupplierNote['message'] ?? 'Supplier note unavailable until migration 0012 is applied manually.') ?></p>
+                        <?php endif; ?>
                         <p class="page-description pcc-field-hint">Only supplier/ERP fields are saved. OpenCart defaults are never overwritten from this page.</p>
                     </div>
                 </div>
@@ -77,6 +100,7 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                 </div>
 
                 <div class="pcc-variant-section" id="pccVariantSection" hidden>
+                    <p class="page-description pcc-no-options-notice" id="pccNoOptionsNotice" hidden>No option synced from Lokkisona for this variable product. Parent row is kept; option lines will appear after the next warehouse pull returns options.</p>
                     <div class="table-scroll">
                         <table class="data-table pcc-variant-table">
                             <thead>
@@ -88,6 +112,9 @@ $avgLabel = !empty($isSupplierView) ? 'Average Sale' : 'Average Cost';
                                     <th>OC stock</th>
                                     <th><?= e($avgLabel) ?></th>
                                     <th>Vendor stock</th>
+                                    <?php if (!empty($writeGateSupplierNoteReady)): ?>
+                                    <th>Supplier note</th>
+                                    <?php endif; ?>
                                     <th>Warning</th>
                                     <th>Health</th>
                                 </tr>

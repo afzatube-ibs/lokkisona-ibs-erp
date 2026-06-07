@@ -6,6 +6,7 @@ use App\ActivityLog;
 use App\Csrf;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
+use App\Services\ReadOnly\ProductSyncReadService;
 use App\Services\ReadOnly\TestSyncPreviewService;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\Write\SyncImportWriteService;
@@ -26,6 +27,7 @@ class SyncPreviewController extends Controller
             ],
             'accessMode' => Permission::accessMode(),
             'testSyncPreview' => (new TestSyncPreviewService())->preview(),
+            'productSyncStatus' => (new ProductSyncReadService())->status(),
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),

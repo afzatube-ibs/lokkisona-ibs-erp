@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-11',
+            'release_date' => '2026-06-07',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.7.0 Product List/Edit Completion + Lokkisona Product Sync: warehouse pull syncs parent + option/variant lines (read-only from OpenCart, max 50); Product Control list columns (name, OC ID, category, last synced); modal edit for status, supplier assignment, supplier note (migration 0012 column gate); "No option synced" for variable products without options; cost/stock history on workspace save; Sync Preview Product Sync Status card — no manual product create, no OpenCart writes, no order/payable/dispatch/return changes',
                 'v1.6.2 Modern SaaS UI Phase 3: finance and admin page polish, modern login screen, status-mapping and setup-tier alignment — visual only; no business-logic, schema, or route changes',
                 'v1.4.0 Unified Business KPI Dashboard: one Plecto-style wallboard for owner and supplier — sales MTD gauge, orders ratio, top products/categories, 6-week sales trend, avg sale/order, return rate, pipeline, payments, catalog; owner sees retail BDT columns, supplier sees sale amounts only; ERP supplier_product_category on products (migration 0011) + Product Control field + Sales by Category report',
                 'v1.3.1 Supplier Dashboard Analytics: professional supplier overview — 4 hero KPIs, order pipeline bar chart, 6-month growth columns (orders + offline sales), payment/ledger trend, product catalog snapshot; removes duplicate workflow task grid from dashboard; Orders page labeled as operations work queue',

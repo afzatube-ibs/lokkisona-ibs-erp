@@ -60,5 +60,9 @@ Draft migration files:
 - `database/migrations/0006_dispatch_returns_payables.sql`
 - `database/migrations/0007_invoices_printing_supplier_tools.sql`
 - `database/migrations/0008_supplier_opening_balances_launch_cutovers.sql`
+- `database/migrations/0009_settlements_workflow.sql`
+- `database/migrations/0010_supplier_quick_invoice_totals.sql`
+- `database/migrations/0011_supplier_product_category.sql`
+- `database/migrations/0012_supplier_product_note.sql` (optional v1.7.0 — supplier note + sync_options_state; column-gated in Product Control)
 
 These files are not executed by application page load, Build Queue, Migration Runner, Migration Dry Run, Migration Approval, Migration Execution Lock, Supplier Opening Balances, sync/import, staff pages, or supplier pages. Apply manually only after dry-run passes, approval gate is complete, execution lock is ready, owner approval is captured, rollback plan is reviewed, and database backup is confirmed.

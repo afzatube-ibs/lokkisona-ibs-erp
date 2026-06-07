@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.6.2',
-    'release_label' => 'Modern SaaS UI Phase 3',
+    'version' => '1.7.0',
+    'release_label' => 'Product List/Edit Completion + Lokkisona Product Sync',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

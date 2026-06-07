@@ -20,6 +20,7 @@ class ProductVariant extends BaseModel
         'supplier_model',
         'product_cost',
         'vendor_stock',
+        'supplier_note',
         'option_image_path',
         'image_reference_note',
         'status',

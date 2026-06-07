@@ -83,6 +83,8 @@ Owner **backup** staging DB first. Apply manually in SQL client — never via pa
 2. `database/migrations/0004_status_mapping_sync_preview.sql`
 3. `database/migrations/0011_supplier_product_category.sql`
 
+**Optional (v1.7.0):** `database/migrations/0012_supplier_product_note.sql` — supplier note + option sync state (manual apply only).
+
 **Fresh ERP staging DB** — full order from [STAGING-QA-CHECKLIST.md](STAGING-QA-CHECKLIST.md): `0002` → `0003` → `0005` → `0006` → `0008` → `0004` → `0007` → `0009` → `0010` → `0011`.
 
 Verify:
@@ -95,8 +97,8 @@ Verify:
 | Step | Page | Action | Expected |
 |------|------|--------|----------|
 | 1 | `/status-mapping` | Seed/create Lokkisona status mappings | At least one active mapping |
-| 2 | `/sync-preview` | **Pull warehouse products** | Products in Product Control; `from_warehouse=1` only; OC fields updated; supplier cost/stock preserved |
-| 3 | `/product-control` | Open workspace | OC fields read-only; edit supplier fields |
+| 2 | `/sync-preview` | **Pull warehouse products** | Products + option lines in Product Control; `from_warehouse=1` only; OC fields updated; supplier cost/stock/note preserved |
+| 3 | `/product-control` | Open workspace | OC fields read-only; edit supplier fields; variable without options shows "No option synced" |
 | 4 | `/sync-preview` | **Run Test Sync** | Orders from `staging.lokkisona.com` |
 | 5 | `/sync-preview` | **Import 1–3 orders** | `source_product_id` on lines; cost from mapped ERP product |
 | 6 | `/activity-log` | Review | `warehouse_product_pull` + import events |

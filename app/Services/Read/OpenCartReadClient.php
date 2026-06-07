@@ -3,7 +3,7 @@
 namespace App\Services\Read;
 
 /**
- * Read-only OpenCart/PIT client (v0.5.7). SELECT/API read only — no ERP writes.
+ * Read-only OpenCart/PIT client (v0.5.7, v1.7.0 product+option sync). SELECT/API read only — no ERP writes.
  */
 class OpenCartReadClient
 {
@@ -47,21 +47,35 @@ class OpenCartReadClient
 
     public function connectionStatus(): array
     {
+        $productRoute = trim((string) config('opencart.product_api_route', ''));
+        $productPull = $this->warehouseProductPullAvailable();
+
         if ((bool) config('opencart.enabled', false)) {
             $orders = $this->fetchLiveOrders();
+            $products = $productPull ? $this->fetchWarehouseProducts() : [];
+            $warehouseCount = count(array_filter($products, static fn (array $row): bool => (int) ($row['from_warehouse'] ?? 0) === 1));
 
             return [
                 'status' => 'connected',
-                'message' => 'OpenCart API enabled. Fetched ' . count($orders) . ' supplier-handled order(s).',
+                'message' => 'OpenCart API enabled. Orders: ' . count($orders) . '. Warehouse products: ' . $warehouseCount . '.',
                 'mode' => 'live',
+                'product_route_configured' => $productRoute !== '',
+                'product_pull_available' => $productPull,
+                'warehouse_product_count' => $warehouseCount,
             ];
         }
 
         if ((bool) config('opencart.demo_mode', false)) {
+            $products = $productPull ? $this->demoWarehouseProducts() : [];
+            $warehouseCount = count(array_filter($products, static fn (array $row): bool => (int) ($row['from_warehouse'] ?? 0) === 1));
+
             return [
                 'status' => 'demo',
-                'message' => 'Demo mode active. Set opencart.enabled=true on staging with API credentials for live reads.',
+                'message' => 'Demo mode active. ' . $warehouseCount . ' demo warehouse product(s) available for pull.',
                 'mode' => 'demo',
+                'product_route_configured' => $productRoute !== '',
+                'product_pull_available' => $productPull,
+                'warehouse_product_count' => $warehouseCount,
             ];
         }
 
@@ -69,6 +83,26 @@ class OpenCartReadClient
             'status' => 'not_connected',
             'message' => 'OpenCart connection disabled. Enable demo_mode or enabled in config/opencart.php.',
             'mode' => 'off',
+            'product_route_configured' => $productRoute !== '',
+            'product_pull_available' => false,
+            'warehouse_product_count' => 0,
+        ];
+    }
+
+    public function productSyncStatus(): array
+    {
+        $connection = $this->connectionStatus();
+        $route = trim((string) config('opencart.product_api_route', ''));
+
+        return [
+            'mode' => $connection['mode'] ?? 'off',
+            'status' => $connection['status'] ?? 'not_connected',
+            'message' => $connection['message'] ?? '',
+            'product_route' => $route !== '' ? $route : '(not configured)',
+            'product_pull_available' => (bool) ($connection['product_pull_available'] ?? false),
+            'warehouse_product_count' => (int) ($connection['warehouse_product_count'] ?? 0),
+            'max_products_per_pull' => 50,
+            'read_only' => true,
         ];
     }
 
@@ -216,15 +250,68 @@ class OpenCartReadClient
             }
 
             $fromWarehouse = (int) ($product['from_warehouse'] ?? $product['fromWarehouse'] ?? 0);
+            $optionsRaw = $product['options'] ?? $product['option_lines'] ?? $product['variants'] ?? null;
+            $options = $this->normalizeOptions(is_array($optionsRaw) ? $optionsRaw : []);
+            $hasOptionsKey = array_key_exists('options', $product)
+                || array_key_exists('option_lines', $product)
+                || array_key_exists('variants', $product);
+            $productType = strtolower(trim((string) ($product['type'] ?? $product['product_type'] ?? '')));
+            $variableIntent = $hasOptionsKey || in_array($productType, ['variable', 'variant', 'options'], true);
+
             $normalized[] = [
                 'source_product_id' => (string) ($product['product_id'] ?? $product['source_product_id'] ?? ''),
                 'product_name' => (string) ($product['name'] ?? $product['product_name'] ?? ''),
                 'source_model' => (string) ($product['model'] ?? $product['source_model'] ?? ''),
                 'source_stock' => isset($product['quantity']) ? (int) $product['quantity'] : (isset($product['source_stock']) ? (int) $product['source_stock'] : null),
+                'image_path' => trim((string) ($product['image'] ?? $product['image_path'] ?? $product['thumb'] ?? '')) ?: null,
                 'from_warehouse' => $fromWarehouse,
+                'options' => $options,
+                'variable_intent' => $variableIntent,
+                'sync_options_state' => $this->resolveSyncOptionsState($variableIntent, $options),
             ];
         }
 
         return $normalized;
+    }
+
+    private function normalizeOptions(array $options): array
+    {
+        $normalized = [];
+        foreach ($options as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+
+            $sourceOptionId = trim((string) ($option['option_id'] ?? $option['source_option_id'] ?? ''));
+            $sourceOptionValueId = trim((string) ($option['option_value_id'] ?? $option['source_option_value_id'] ?? ''));
+            if ($sourceOptionId === '' && $sourceOptionValueId === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'source_option_id' => $sourceOptionId !== '' ? $sourceOptionId : ('opt-' . (count($normalized) + 1)),
+                'source_option_value_id' => $sourceOptionValueId !== '' ? $sourceOptionValueId : ('val-' . (count($normalized) + 1)),
+                'option_name' => (string) ($option['option_name'] ?? $option['name'] ?? 'Option'),
+                'option_value' => (string) ($option['option_value'] ?? $option['value'] ?? ''),
+                'source_model' => trim((string) ($option['model'] ?? $option['source_model'] ?? '')) ?: null,
+                'source_stock' => isset($option['quantity']) ? (int) $option['quantity'] : (isset($option['source_stock']) ? (int) $option['source_stock'] : null),
+                'option_image_path' => trim((string) ($option['image'] ?? $option['option_image_path'] ?? '')) ?: null,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function resolveSyncOptionsState(bool $variableIntent, array $options): string
+    {
+        if ($options !== []) {
+            return 'has_options';
+        }
+
+        if ($variableIntent) {
+            return 'missing_options';
+        }
+
+        return 'simple';
     }
 }
