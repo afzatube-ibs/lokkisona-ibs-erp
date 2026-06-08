@@ -681,6 +681,23 @@ select.form-input,
     padding-top: 0.5rem;
 }
 
+.nav-section-label-settings {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.nav-section-label-future {
+    color: rgba(255, 255, 255, 0.28);
+    padding-top: 1.25rem;
+}
+
+.sidebar-tier-future .sidebar-tier-summary {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-tier-future .sidebar-tier-summary:hover {
+    color: rgba(255, 255, 255, 0.48);
+}
+
 .nav-item {
     display: flex;
     align-items: center;
@@ -3861,6 +3878,29 @@ body.modal-open { overflow: hidden; }
 
 .sync-settings-inline-status {
     margin: 0 0 0.45rem;
+}
+
+.sync-settings-saved-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted, #f8fafc);
+    margin-bottom: 1rem;
+}
+
+.sync-settings-saved-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.sync-settings-saved-hint strong {
+    color: var(--color-text);
+    font-weight: 600;
 }
 
 .sync-settings-manual-inline {

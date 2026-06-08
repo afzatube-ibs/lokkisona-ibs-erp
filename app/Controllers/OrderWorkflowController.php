@@ -467,11 +467,11 @@ class OrderWorkflowController extends Controller
     private function buildWorkflowStageNavFromCounts(?string $activeStatus, array $counts): array
     {
         $mainStages = [];
-        foreach (OrderWorkflowStatus::mainStages() as $stage) {
+        foreach (OrderWorkflowStatus::releaseStatusCards() as $stage) {
             $code = $stage['code'];
             $mainStages[] = [
                 'code' => $code,
-                'label' => $code === 'dispatch_report_created' ? 'Created Report' : $stage['label'],
+                'label' => $stage['label'],
                 'count' => $counts[$code] ?? 0,
                 'url' => '/order-workflow?status=' . rawurlencode($code),
                 'active' => $activeStatus === $code,
@@ -479,7 +479,7 @@ class OrderWorkflowController extends Controller
         }
 
         $exceptionStages = [];
-        foreach (OrderWorkflowStatus::exceptionStages() as $stage) {
+        foreach (OrderWorkflowStatus::releaseExceptionChips() as $stage) {
             $code = $stage['code'];
             $exceptionStages[] = [
                 'code' => $code,
@@ -515,11 +515,11 @@ class OrderWorkflowController extends Controller
         }
 
         $mainStages = [];
-        foreach (OrderWorkflowStatus::mainStages() as $stage) {
+        foreach (OrderWorkflowStatus::releaseStatusCards() as $stage) {
             $code = $stage['code'];
             $mainStages[] = [
                 'code' => $code,
-                'label' => $code === 'dispatch_report_created' ? 'Created Report' : $stage['label'],
+                'label' => $stage['label'],
                 'count' => $counts[$code] ?? 0,
                 'url' => '/order-workflow?status=' . rawurlencode($code),
                 'active' => $activeStatus === $code,
@@ -527,7 +527,7 @@ class OrderWorkflowController extends Controller
         }
 
         $exceptionStages = [];
-        foreach (OrderWorkflowStatus::exceptionStages() as $stage) {
+        foreach (OrderWorkflowStatus::releaseExceptionChips() as $stage) {
             $code = $stage['code'];
             $exceptionStages[] = [
                 'code' => $code,

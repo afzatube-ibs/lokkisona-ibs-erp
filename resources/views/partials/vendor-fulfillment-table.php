@@ -155,7 +155,8 @@ $rangeLabel = $total > 0
                                     data-requires-checkbox="<?= !empty($primary['requires_checkbox']) ? '1' : '0' ?>"
                                     data-checkbox-label="<?= e((string) ($primary['checkbox_label'] ?? '')) ?>"
                                     data-is-delivery-stop="<?= !empty($primary['is_delivery_stop']) ? '1' : '0' ?>"
-                                    data-is-hub-return="<?= !empty($primary['is_hub_return']) ? '1' : '0' ?>">
+                                    data-is-hub-return="<?= !empty($primary['is_hub_return']) ? '1' : '0' ?>"
+                                    data-is-dispatch-create="<?= !empty($primary['is_dispatch_create']) ? '1' : '0' ?>">
                                     <?= e((string) ($primary['label'] ?? 'Action')) ?>
                                 </button>
                                 <?php endif; ?>

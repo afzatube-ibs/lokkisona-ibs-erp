@@ -74,7 +74,7 @@ $renderNavItem = static function (array $item) use ($navItemActive, $buildNavHre
     <?php
 };
 
-$renderTier = static function (string $summary, array $items) use ($renderNavItem, $navItemActive): void {
+$renderTier = static function (string $summary, array $items, string $tierClass = '') use ($renderNavItem, $navItemActive): void {
     if ($items === []) {
         return;
     }
@@ -86,8 +86,10 @@ $renderTier = static function (string $summary, array $items) use ($renderNavIte
             break;
         }
     }
+
+    $class = 'sidebar-tier' . ($tierClass !== '' ? ' ' . $tierClass : '');
     ?>
-    <details class="sidebar-tier"<?= $isOpen ? ' open' : '' ?>>
+    <details class="<?= e($class) ?>"<?= $isOpen ? ' open' : '' ?>>
         <summary class="sidebar-tier-summary"><?= e($summary) ?></summary>
         <div class="sidebar-tier-body">
             <?php foreach ($items as $item): ?>
@@ -97,13 +99,23 @@ $renderTier = static function (string $summary, array $items) use ($renderNavIte
     </details>
     <?php
 };
+
+$filterFutureItems = static function (array $items) use ($showDeveloperNav): array {
+    return array_values(array_filter($items, static function (array $item) use ($showDeveloperNav): bool {
+        if (!empty($item['dev_only']) && !$showDeveloperNav) {
+            return false;
+        }
+
+        return true;
+    }));
+};
 ?>
 
 <?php foreach ($nav['dashboard'] ?? [] as $item): ?>
     <?php $renderNavItem($item); ?>
 <?php endforeach; ?>
 
-<?php foreach ($nav['primary'] ?? [] as $groupName => $groupItems): ?>
+<?php foreach ($nav['main'] ?? [] as $groupName => $groupItems): ?>
     <span class="nav-section-label"><?= e($groupName) ?></span>
     <?php foreach ($groupItems as $item): ?>
         <?php $renderNavItem($item); ?>
@@ -111,9 +123,14 @@ $renderTier = static function (string $summary, array $items) use ($renderNavIte
 <?php endforeach; ?>
 
 <?php $renderTier('Reports', $nav['reports'] ?? []); ?>
+
+<span class="nav-section-label nav-section-label-settings">Settings</span>
 <?php $renderTier('Settings', $nav['settings'] ?? []); ?>
-<?php $renderTier('Tools', $nav['tools'] ?? []); ?>
-<?php $renderTier('System', $nav['system'] ?? []); ?>
-<?php if ($showDeveloperNav): ?>
-    <?php $renderTier('Developer', $nav['developer'] ?? []); ?>
+
+<?php
+$futureItems = $filterFutureItems($nav['future'] ?? []);
+if ($futureItems !== []):
+?>
+<span class="nav-section-label nav-section-label-future">Future Modules</span>
+<?php $renderTier('Future Modules', $futureItems, 'sidebar-tier-future'); ?>
 <?php endif; ?>

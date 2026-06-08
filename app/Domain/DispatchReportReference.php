@@ -49,12 +49,8 @@ class DispatchReportReference
         $base = self::baseForDate();
         $existing = array_flip($existingReferences);
 
-        if (!isset($existing[$base])) {
-            return $base;
-        }
-
         $part = 1;
-        while (isset($existing[$base . '-P' . $part])) {
+        while (isset($existing[$base . '-P' . $part]) || ($part === 1 && isset($existing[$base]))) {
             $part++;
         }
 

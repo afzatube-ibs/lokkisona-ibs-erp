@@ -2,8 +2,14 @@
 
 namespace App\Services\ReadOnly;
 
+use App\ActivityLog;
+use App\Database\Connection;
+use App\Database\QueryGuard;
+use App\Database\TableName;
+use App\Models\Order;
 use App\ReadFoundation\WriteGate;
 use App\Services\Read\OpenCartReadClient;
+use PDO;
 
 /**
  * Sync/API settings read facade (v1.8.2) — config file based, no DB table.
@@ -24,6 +30,7 @@ class SyncApiSettingsReadService
             'api_base_url' => trim((string) config('opencart.api_base_url', '')),
             'api_key_set' => $apiKey !== '',
             'api_key_status' => $apiKey !== '' ? 'Configured' : 'Not configured',
+            'api_key_mask' => $this->maskedApiKeyHint($apiKey),
             'product_api_route' => trim((string) config('opencart.product_api_route', '')),
             'order_api_route' => trim((string) config('opencart.order_api_route', '')),
             'read_only_lock' => true,
@@ -50,29 +57,146 @@ class SyncApiSettingsReadService
     {
         $client = new OpenCartReadClient();
         $test = $client->testConnection();
-        $status = $client->productSyncStatus();
+        $productStatus = $client->productSyncStatus();
         $mode = $this->resolvedSourceMode();
         $connectionOk = (bool) ($test['ok'] ?? false);
         $apiKey = trim((string) config('opencart.api_key', ''));
         $localExists = file_exists($this->localConfigPath());
         $exampleExists = file_exists($this->exampleConfigPath());
+        $lastConnectionTest = $this->latestActivityEntry('sync_api_connection_test');
+        $supplierId = (int) config('app.auth.supplier_id', 1);
+        $productFreshness = (new ProductControlListReadService())->snapshotFreshness($supplierId);
 
         return [
             'source_mode' => $mode,
             'connection_ok' => $connectionOk,
             'connection_message' => (string) ($test['message'] ?? ''),
             'bridge_available' => $test['bridge_available'] ?? null,
+            'bridge_status' => $this->bridgeStatusLabel($test['bridge_available'] ?? null),
             'product_route' => trim((string) config('opencart.product_api_route', '')),
             'order_api_route' => trim((string) config('opencart.order_api_route', '')),
             'api_base_url' => trim((string) config('opencart.api_base_url', '')),
+            'saved_api_base_url' => trim((string) config('opencart.api_base_url', '')),
             'read_only_lock' => true,
             'product_sync_enabled' => (bool) config('opencart.product_sync_enabled', true),
             'order_sync_enabled' => (bool) config('opencart.order_sync_enabled', true),
             'dispatch_bridge_required' => (bool) config('opencart.dispatch_bridge_required', true),
             'api_key_status' => $apiKey !== '' ? 'Configured' : 'Not configured',
+            'api_key_mask' => $this->maskedApiKeyHint($apiKey),
+            'product_api_status' => $this->productApiStatusLabel($productStatus, $connectionOk),
+            'order_api_status' => $this->orderApiStatusLabel($connectionOk),
+            'last_connection_test_at' => (string) ($lastConnectionTest['time'] ?? ''),
+            'last_connection_test_message' => (string) ($lastConnectionTest['message'] ?? ''),
+            'last_connection_test_ok' => $lastConnectionTest !== null,
+            'last_product_sync_at' => (string) ($productFreshness['last_synced_at'] ?? ''),
+            'last_order_sync_at' => $this->lastOrderSyncAt(),
             'header_badge' => $this->headerBadge($mode, $connectionOk),
             'storage' => $this->storageBadge($localExists, $exampleExists),
         ];
+    }
+
+    private function maskedApiKeyHint(string $apiKey): string
+    {
+        $apiKey = trim($apiKey);
+        if ($apiKey === '') {
+            return '';
+        }
+
+        $suffix = strlen($apiKey) >= 4 ? substr($apiKey, -4) : $apiKey;
+
+        return 'Token saved ••••••••' . $suffix;
+    }
+
+    private function productApiStatusLabel(array $productStatus, bool $connectionOk): string
+    {
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return 'Off';
+        }
+
+        $route = trim((string) config('opencart.product_api_route', ''));
+        if ($route === '') {
+            return 'Route not configured';
+        }
+
+        if (!($productStatus['product_pull_available'] ?? false)) {
+            return $connectionOk ? 'Configured — preview unavailable' : 'Not ready';
+        }
+
+        $mode = (string) ($productStatus['mode'] ?? 'off');
+
+        return $connectionOk ? ucfirst($mode) . ' — ready' : 'Not connected';
+    }
+
+    private function orderApiStatusLabel(bool $connectionOk): string
+    {
+        if (!(bool) config('opencart.order_sync_enabled', true)) {
+            return 'Off';
+        }
+
+        $route = trim((string) config('opencart.order_api_route', ''));
+        if ($route === '') {
+            return 'Route not configured';
+        }
+
+        if (!$connectionOk) {
+            return 'Not connected';
+        }
+
+        return 'Configured — ready';
+    }
+
+    /**
+     * @param bool|null $bridgeAvailable
+     */
+    private function bridgeStatusLabel($bridgeAvailable): string
+    {
+        if (!(bool) config('opencart.dispatch_bridge_required', true)) {
+            return 'Not required';
+        }
+
+        if ($bridgeAvailable === null) {
+            return 'Unknown';
+        }
+
+        return $bridgeAvailable ? 'Available' : 'Unavailable';
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function latestActivityEntry(string $action): ?array
+    {
+        foreach (ActivityLog::recent(200) as $entry) {
+            if (($entry['action'] ?? '') === $action) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
+    private function lastOrderSyncAt(): string
+    {
+        $importEntry = $this->latestActivityEntry('sync_import');
+        if ($importEntry !== null && ($importEntry['time'] ?? '') !== '') {
+            return (string) $importEntry['time'];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $table = TableName::forModel(Order::class);
+            $sql = 'SELECT MAX(created_at) AS latest FROM `' . str_replace('`', '``', $table) . '`';
+            QueryGuard::assertReadOnly($sql);
+            $stmt = $pdo->query($sql);
+            if ($stmt === false) {
+                return '';
+            }
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return trim((string) ($row['latest'] ?? ''));
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**
