@@ -20,23 +20,12 @@ $pageQuery = array_filter([
     'q' => ($filters['q'] ?? '') !== '' ? $filters['q'] : null,
     'per_page' => $perPage !== 20 ? (string) $perPage : null,
 ], static fn ($v) => $v !== '' && $v !== null);
-$rangeLabel = $total > 0
-    ? 'Showing ' . $from . '–' . $to . ' of ' . $total . ' orders'
-    : 'Showing 0 orders';
 ?>
-<div class="card mb-15 vf-list-card">
-    <div class="card-header vf-table-header">
-        <div>
-            <h2 class="card-title">Vendor Fulfillment</h2>
-            <p class="page-description mb-0">Local ERP order snapshot — product cost only. IBS workflow actions do not change OpenCart order status.</p>
-        </div>
-        <span class="vf-range-label"><?= e($rangeLabel) ?></span>
-    </div>
-    <div class="card-body">
-        <?php if (!$tableReady): ?>
-        <p class="page-description">Orders table unavailable. Apply migration 0005 manually first.</p>
-        <?php elseif ($total === 0): ?>
-        <p class="page-description">
+<div class="vf-table-panel">
+    <?php if (!$tableReady): ?>
+    <p class="page-description vf-table-empty">Orders table unavailable. Apply migration 0005 manually first.</p>
+    <?php elseif ($total === 0): ?>
+    <p class="page-description vf-table-empty">
             <?php if ($statusFilter !== null || ($filters['q'] ?? '') !== ''): ?>
             No orders match the current filters. <a href="<?= e(url('/order-workflow')) ?>">Clear filters</a>
             <?php else: ?>
@@ -44,7 +33,7 @@ $rangeLabel = $total > 0
             <?php endif; ?>
         </p>
         <?php else: ?>
-        <div class="table-scroll vf-table-scroll vf-table-tight">
+        <div class="table-scroll vf-table-scroll">
             <table class="data-table vf-fulfillment-table">
                 <thead>
                     <tr>
@@ -52,12 +41,12 @@ $rangeLabel = $total > 0
                         <th>Order No</th>
                         <th>Customer</th>
                         <th class="vf-col-product">Product Card</th>
-                        <th>Total Qty</th>
-                        <th>Total Cost</th>
+                        <th>Qty</th>
+                        <th>Cost</th>
                         <th>Fulfillment Status</th>
-                        <th class="vf-hide-md">Courier Status</th>
-                        <th class="vf-hide-md">Consignment ID</th>
-                        <th class="vf-hide-md">OC Order Status</th>
+                        <th>Courier Status</th>
+                        <th>Consignment</th>
+                        <th>OC Status</th>
                         <th class="vf-col-actions">Action</th>
                     </tr>
                 </thead>
@@ -130,9 +119,9 @@ $rangeLabel = $total > 0
                                 <?= e((string) ($row['fulfillment_status_label'] ?? '')) ?>
                             </span>
                         </td>
-                        <td class="vf-hide-md"><?= e((string) ($row['courier_status'] ?? '—')) ?></td>
-                        <td class="vf-hide-md"><?= e((string) ($row['consignment_id'] ?? 'Not Assigned')) ?></td>
-                        <td class="vf-hide-md">
+                        <td><?= e((string) ($row['courier_status'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['consignment_id'] ?? 'Not Assigned')) ?></td>
+                        <td>
                             <?php if (!empty($row['oc_order_status'])): ?>
                             <span class="badge badge-info vf-oc-badge"><?= e((string) $row['oc_order_status']) ?></span>
                             <span class="vf-oc-origin">Origin: <?= e((string) $row['oc_order_status']) ?></span>
@@ -202,7 +191,6 @@ $rangeLabel = $total > 0
         ]);
         ?>
         <?php endif; ?>
-    </div>
 </div>
 
 <form method="post" action="<?= e(url('/order-workflow/action')) ?>" id="vfActionForm" class="vf-hidden-form">

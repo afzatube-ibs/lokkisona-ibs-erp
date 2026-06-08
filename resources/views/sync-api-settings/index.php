@@ -23,7 +23,7 @@ $formatTimestamp = static function (string $value): string {
             <p class="ops-page-subtitle">Connect Lokkisona product/order sync in read-only mode.</p>
         </div>
         <div class="sync-settings-header-actions">
-            <a href="<?= e(url('/sync-preview')) ?>" class="btn btn-secondary btn-sm">Analytics</a>
+            <a href="<?= e(url('/sync-preview')) ?>" class="btn btn-secondary btn-sm">Sync Preview / Import</a>
             <a href="<?= e(url('/product-control')) ?>" class="btn btn-secondary btn-sm">Product Control</a>
         </div>
     </div>

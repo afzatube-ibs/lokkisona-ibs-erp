@@ -3,6 +3,8 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
+use App\Domain\OrderSyncMappingRules;
+use App\Domain\OrderWorkflowStatus;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\StatusMappingWriteRepository;
 
@@ -27,19 +29,29 @@ class StatusMappingWriteService
         }
 
         $sourceStatus = trim((string) ($input['source_status'] ?? ''));
-        $ibsStatus = trim((string) ($input['ibs_status'] ?? ''));
+        $ibsStatus = OrderSyncMappingRules::normalizeIbsStatus((string) ($input['ibs_status'] ?? ''));
         if ($sourceStatus === '' || $ibsStatus === '') {
-            return WriteResult::fail('Source status and IBS status are required.');
+            return WriteResult::fail('Origin/OpenCart status and IBS initial status are required.');
+        }
+
+        if (!OrderWorkflowStatus::isKnown($ibsStatus)) {
+            return WriteResult::fail('Unknown IBS initial status.');
+        }
+
+        $statusMessage = OrderSyncMappingRules::validationMessageForStatus($ibsStatus);
+        if ($statusMessage !== null) {
+            return WriteResult::fail($statusMessage);
         }
 
         $id = $this->mappings->create([
             'business_source_id' => $sourceId,
             'source_status' => $sourceStatus,
             'ibs_status' => $ibsStatus,
-            'workflow_group' => trim((string) ($input['workflow_group'] ?? '')) ?: null,
+            'workflow_group' => trim((string) ($input['workflow_group'] ?? '')) ?: 'workflow',
             'return_type' => trim((string) ($input['return_type'] ?? '')) ?: null,
             'courier_status' => trim((string) ($input['courier_status'] ?? '')) ?: null,
-            'is_active' => 1,
+            'notes' => trim((string) ($input['notes'] ?? '')) ?: null,
+            'is_active' => !empty($input['is_active']) ? 1 : 1,
             'created_by' => null,
         ]);
 
@@ -86,10 +98,14 @@ class StatusMappingWriteService
         }
 
         $defaults = [
+            ['source_status' => 'Follow Up', 'ibs_status' => 'new_order', 'notes' => 'Example: OC Follow Up imports as IBS New Order only at first sync'],
+            ['source_status' => '54', 'ibs_status' => 'new_order', 'notes' => 'Staging/Lokkisona: order_status_id 54 (Emmergency Followup bucket)'],
+            ['source_status' => 'Emmergency Followup', 'ibs_status' => 'new_order', 'notes' => 'Exact OpenCart status name from API — map by id 54 if label changes'],
             ['source_status' => 'Supplier Processing', 'ibs_status' => 'new_order'],
             ['source_status' => 'Processing', 'ibs_status' => 'new_order'],
-            ['source_status' => 'Returning', 'ibs_status' => 'order_returning'],
-            ['source_status' => 'Return', 'ibs_status' => 'order_returning'],
+            ['source_status' => 'Returning', 'ibs_status' => 'new_order', 'notes' => 'Demo/live return candidate — imports as New Order unless advanced mapping enabled'],
+            ['source_status' => '3', 'ibs_status' => 'new_order', 'notes' => 'OpenCart status id fallback when name differs'],
+            ['source_status' => '7', 'ibs_status' => 'new_order', 'notes' => 'OpenCart Returning status id fallback'],
         ];
 
         $created = 0;
@@ -104,6 +120,7 @@ class StatusMappingWriteService
                 'workflow_group' => 'workflow',
                 'return_type' => null,
                 'courier_status' => null,
+                'notes' => $row['notes'] ?? null,
                 'is_active' => 1,
                 'created_by' => null,
             ]);

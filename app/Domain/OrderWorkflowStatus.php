@@ -14,7 +14,7 @@ class OrderWorkflowStatus
 
     public const OUT_FOR_DELIVERY_NOTE = 'Courier/PIT status reflection only. Supplier does not manage courier stages.';
 
-    public const SYNC_IMPORT_RULE_NOTE = 'ERP must sync only supplier-handled orders based on PIT/OpenCart order status mapping. Do not import all product orders just because the product is mapped.';
+    public const SYNC_IMPORT_RULE_NOTE = 'Order import eligibility is status-mapping-only. Product mapping, cost, and vendor stock affect Product Control — never block order import.';
 
     private const LABELS = [
         'new_order' => 'New Order',
@@ -132,7 +132,7 @@ class OrderWorkflowStatus
         }
 
         if ($normalized === 'order_returning') {
-            return 'Customer Return';
+            return 'Order Returning';
         }
 
         return self::label($code);
@@ -147,6 +147,29 @@ class OrderWorkflowStatus
             ['code' => 'packaging', 'label' => 'Packaging'],
             ['code' => 'shipped', 'label' => 'Shipped'],
             ['code' => 'dispatch_report_created', 'label' => 'Created Report'],
+            ['code' => 'out_for_delivery', 'label' => 'Out For Delivery'],
+            ['code' => 'delivered', 'label' => 'Delivered'],
+        ];
+    }
+
+    /**
+     * Status card groups on /order-workflow release UI (supplier vs courier-sync phases).
+     *
+     * @return array<int, array{key: string, label: string, codes: array<int, string>}>
+     */
+    public static function releaseStatusCardGroups(): array
+    {
+        return [
+            [
+                'key' => 'supplier',
+                'label' => 'IBS Workflow',
+                'codes' => ['new_order', 'order_received', 'packaging', 'shipped'],
+            ],
+            [
+                'key' => 'courier',
+                'label' => 'Courier Flow',
+                'codes' => ['dispatch_report_created', 'out_for_delivery', 'delivered'],
+            ],
         ];
     }
 
@@ -154,9 +177,11 @@ class OrderWorkflowStatus
     public static function releaseExceptionChips(): array
     {
         return [
+            ['code' => 'hold', 'label' => 'Hold'],
+            ['code' => 'cancelled', 'label' => 'Cancelled'],
             ['code' => 'delivery_stop', 'label' => 'Delivery Stop'],
             ['code' => 'hub_return', 'label' => 'Hub Return'],
-            ['code' => 'order_returning', 'label' => 'Customer Return'],
+            ['code' => 'order_returning', 'label' => 'Order Returning'],
         ];
     }
 
@@ -392,12 +417,12 @@ class OrderWorkflowStatus
     public static function stageAccentClass(string $code): string
     {
         return match ($code) {
-            'new_order' => 'workflow-accent-primary',
-            'order_received' => 'workflow-accent-info',
+            'new_order' => 'workflow-accent-warn',
+            'order_received' => 'workflow-accent-success',
             'packaging' => 'workflow-accent-purple',
-            'shipped' => 'workflow-accent-success',
-            'dispatch_report_created' => 'workflow-accent-warn',
-            'out_for_delivery' => 'workflow-accent-cyan',
+            'shipped' => 'workflow-accent-primary',
+            'dispatch_report_created' => 'workflow-accent-cyan',
+            'out_for_delivery' => 'workflow-accent-warn',
             'delivered' => 'workflow-accent-success',
             'hold' => 'workflow-accent-warn',
             'cancelled' => 'workflow-accent-muted',
@@ -406,5 +431,19 @@ class OrderWorkflowStatus
             'order_returning' => 'workflow-accent-error',
             default => 'workflow-accent-muted',
         };
+    }
+
+    /** @return array<int, array{code: string, label: string}> */
+    public static function filterStatusOptions(): array
+    {
+        $options = [['code' => '', 'label' => 'All statuses']];
+        foreach (self::releaseStatusCards() as $stage) {
+            $options[] = $stage;
+        }
+        foreach (self::releaseExceptionChips() as $stage) {
+            $options[] = $stage;
+        }
+
+        return $options;
     }
 }

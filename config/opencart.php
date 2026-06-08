@@ -32,6 +32,16 @@ return [
     'supplier_handled_workflow_groups' => ['workflow', 'supplier_handled'],
     'courier_only_workflow_groups' => ['courier', 'courier_reference'],
     'courier_stage_ibs_statuses' => ['out_for_delivery', 'delivered'],
+    'order_sync_advanced_mapping' => false,
+    'allowed_initial_ibs_statuses' => [
+        'new_order',
+        'order_received',
+        'packaging',
+        'shipped',
+        'dispatch_report_created',
+        'hold',
+        'cancelled',
+    ],
     'extension_table_probe' => [
         'poip_product_option_value',
         'product_option_value_image',

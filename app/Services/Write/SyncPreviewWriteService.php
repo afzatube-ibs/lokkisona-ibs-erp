@@ -3,6 +3,7 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
+use App\Domain\OrderSyncMappingRules;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\OrderWriteRepository;
 use App\Repositories\Write\StatusMappingWriteRepository;
@@ -11,6 +12,7 @@ use App\Repositories\Write\SyncPreviewItemWriteRepository;
 use App\Repositories\Write\SyncPreviewWriteRepository;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\ProductSyncPreviewService;
+use App\Support\OrderSyncPreviewPresenter;
 
 class SyncPreviewWriteService
 {
@@ -208,12 +210,13 @@ class SyncPreviewWriteService
         ]);
 
         $counts = [
-            'eligible_supplier_orders' => 0,
+            'fetched' => count($orders),
+            'eligible' => 0,
+            'updated_snapshot' => 0,
             'blocked_unmapped' => 0,
-            'blocked_not_supplier_handled' => 0,
+            'blocked_invalid_mapping' => 0,
             'skipped_missing_status' => 0,
             'return_candidates' => 0,
-            'duplicate_existing' => 0,
         ];
 
         $ordersByRef = [];
@@ -240,30 +243,20 @@ class SyncPreviewWriteService
                 $ordersByRef[$ref] = $order;
             }
 
-            $displayRows[] = array_merge([
+            $displayRows[] = OrderSyncPreviewPresenter::enrichDisplayRow(array_merge([
                 'source_order_id' => (string) ($order['source_order_id'] ?? ''),
                 'source_order_reference' => $ref,
                 'source_status' => (string) ($order['source_status'] ?? ''),
                 'mapped_status' => (string) ($classification['mapped_status'] ?? ''),
                 'preview_status' => (string) $classification['preview_status'],
-                'customer_name' => (string) ($order['customer_name'] ?? ''),
-                'customer_phone' => (string) ($order['customer_phone'] ?? ''),
-                'order_total' => number_format((float) ($order['order_total'] ?? 0), 2),
-                'total_quantity' => (int) ($order['total_quantity'] ?? 0),
-                'product_card' => (string) ($extra['product_card'] ?? ''),
-                'courier_status' => (string) ($order['courier_status'] ?? ''),
-                'consignment_id' => (string) ($order['consignment_id'] ?? ''),
-                'supplier_handled' => (string) ($extra['supplier_handled'] ?? ''),
-                'supplier_handled_reason' => (string) ($extra['supplier_handled_reason'] ?? ''),
-                'already_imported' => $classification['preview_status'] === 'duplicate_existing' ? 'Yes' : 'No',
-            ], $extra);
+            ], $extra));
         }
 
         $totals = [
             'total_found' => count($orders),
-            'total_new' => $counts['eligible_supplier_orders'],
-            'total_existing' => $counts['duplicate_existing'],
-            'total_blocked' => $counts['blocked_unmapped'] + $counts['blocked_not_supplier_handled'] + $counts['skipped_missing_status'],
+            'total_new' => $counts['eligible'],
+            'total_existing' => $counts['updated_snapshot'],
+            'total_blocked' => $counts['blocked_unmapped'] + $counts['blocked_invalid_mapping'] + $counts['skipped_missing_status'],
         ];
         $this->previews->finish($previewId, $totals, 'completed');
 
@@ -299,9 +292,12 @@ class SyncPreviewWriteService
         ]);
 
         return WriteResult::ok(
-            'Order preview page ' . $page . ': ' . $counts['eligible_supplier_orders'] . ' eligible, '
-            . $counts['blocked_unmapped'] . ' unmapped, '
-            . $counts['blocked_not_supplier_handled'] . ' not supplier-handled.',
+            'Order preview page ' . $page . ': ' . $counts['eligible'] . ' new import, '
+            . $counts['updated_snapshot'] . ' snapshot update, '
+            . $counts['blocked_unmapped'] . ' blocked unmapped status, '
+            . $counts['blocked_invalid_mapping'] . ' blocked invalid mapping, '
+            . $counts['skipped_missing_status'] . ' missing status skipped. '
+            . 'Product/cost/stock does not affect order import eligibility.',
             $previewId
         );
     }
@@ -319,25 +315,28 @@ class SyncPreviewWriteService
 
         $items = $this->previewItems->forPreview((int) $preview['sync_preview_id']);
         $counts = [
-            'eligible_supplier_orders' => 0,
+            'fetched' => count($items),
+            'eligible' => 0,
+            'updated_snapshot' => 0,
             'blocked_unmapped' => 0,
-            'blocked_not_supplier_handled' => 0,
+            'blocked_invalid_mapping' => 0,
             'skipped_missing_status' => 0,
             'return_candidates' => 0,
-            'duplicate_existing' => 0,
         ];
         foreach ($items as $item) {
             $status = (string) ($item['preview_status'] ?? '');
             if ($status === 'eligible') {
-                $counts['eligible_supplier_orders']++;
+                $counts['eligible']++;
+            } elseif ($status === 'snapshot_update') {
+                $counts['updated_snapshot']++;
             } elseif ($status === 'blocked_unmapped') {
                 $counts['blocked_unmapped']++;
+            } elseif ($status === 'blocked_invalid_mapping') {
+                $counts['blocked_invalid_mapping']++;
             } elseif ($status === 'blocked_not_supplier_handled') {
-                $counts['blocked_not_supplier_handled']++;
+                $counts['eligible']++;
             } elseif ($status === 'skipped_missing') {
                 $counts['skipped_missing_status']++;
-            } elseif ($status === 'duplicate_existing') {
-                $counts['duplicate_existing']++;
             }
             if (($item['mapped_status'] ?? '') === 'order_returning') {
                 $counts['return_candidates']++;
@@ -445,15 +444,18 @@ class SyncPreviewWriteService
 
     private function classifyOrder(int $sourceId, array $order): array
     {
-        $sourceStatusId = (string) ($order['source_status_id'] ?? '');
+        $sourceStatusId = trim((string) ($order['source_status_id'] ?? ''));
         $sourceStatus = trim((string) ($order['source_status'] ?? ''));
         $sourceRef = trim((string) ($order['source_order_reference'] ?? ''));
         $extra = $this->orderPreviewExtra($order);
+        $matchProbe = $this->mappings->probeActiveMapping($sourceId, $sourceStatusId, $sourceStatus);
+        $extra['origin_status_id'] = $sourceStatusId;
+        $extra['origin_status_name'] = $sourceStatus;
+        $extra['mapping_matched'] = !empty($matchProbe['matched']) ? 'YES' : 'NO';
+        $extra['mapping_match_mode'] = (string) ($matchProbe['match_mode'] ?? '');
+        $extra['mapping_matched_key'] = (string) ($matchProbe['matched_key'] ?? '');
 
         if ($this->shouldSkipMissing($sourceStatusId, $sourceStatus)) {
-            $extra['supplier_handled'] = 'No';
-            $extra['supplier_handled_reason'] = 'Missing or status 0 — skipped';
-
             return [
                 'mapped_status' => null,
                 'preview_status' => 'skipped_missing',
@@ -464,9 +466,6 @@ class SyncPreviewWriteService
 
         $mapping = $this->resolveMapping($sourceId, $sourceStatusId, $sourceStatus);
         if ($mapping === null) {
-            $extra['supplier_handled'] = 'No';
-            $extra['supplier_handled_reason'] = 'No active status mapping';
-
             return [
                 'mapped_status' => null,
                 'preview_status' => 'blocked_unmapped',
@@ -475,27 +474,24 @@ class SyncPreviewWriteService
             ];
         }
 
-        if (!$this->isSupplierHandled($mapping)) {
-            $extra['supplier_handled'] = 'No';
-            $extra['supplier_handled_reason'] = 'Status mapping is courier-only or not supplier-handled';
+        $mappedStatus = (string) $mapping['ibs_status'];
 
+        $sourceOrderId = trim((string) ($order['source_order_id'] ?? ''));
+        $existing = $this->orders->findExistingForSync($sourceId, $sourceOrderId, $sourceRef);
+        if ($existing !== null) {
             return [
-                'mapped_status' => (string) $mapping['ibs_status'],
-                'preview_status' => 'blocked_not_supplier_handled',
-                'count_key' => 'blocked_not_supplier_handled',
+                'mapped_status' => $mappedStatus,
+                'preview_status' => 'snapshot_update',
+                'count_key' => 'updated_snapshot',
                 'extra' => $extra,
             ];
         }
 
-        $mappedStatus = (string) $mapping['ibs_status'];
-        $extra['supplier_handled'] = 'Yes';
-        $extra['supplier_handled_reason'] = 'Active supplier-handled status mapping';
-
-        if ($sourceRef !== '' && $this->orders->findBySourceReference($sourceRef, $sourceId) !== null) {
+        if (!OrderSyncMappingRules::isAllowedInitialStatus($mappedStatus, OrderSyncMappingRules::advancedModeEnabled())) {
             return [
                 'mapped_status' => $mappedStatus,
-                'preview_status' => 'duplicate_existing',
-                'count_key' => 'duplicate_existing',
+                'preview_status' => 'blocked_invalid_mapping',
+                'count_key' => 'blocked_invalid_mapping',
                 'extra' => $extra,
             ];
         }
@@ -503,7 +499,7 @@ class SyncPreviewWriteService
         return [
             'mapped_status' => $mappedStatus,
             'preview_status' => 'eligible',
-            'count_key' => 'eligible_supplier_orders',
+            'count_key' => 'eligible',
             'extra' => $extra,
         ];
     }
@@ -551,29 +547,6 @@ class SyncPreviewWriteService
         ];
     }
 
-    private function isSupplierHandled(array $mapping): bool
-    {
-        $group = strtolower(trim((string) ($mapping['workflow_group'] ?? '')));
-        $ibsStatus = strtolower(trim((string) ($mapping['ibs_status'] ?? '')));
-        $courierGroups = array_map('strtolower', (array) config('opencart.courier_only_workflow_groups', []));
-        $supplierGroups = array_map('strtolower', (array) config('opencart.supplier_handled_workflow_groups', []));
-        $courierStages = array_map('strtolower', (array) config('opencart.courier_stage_ibs_statuses', []));
-
-        if ($group !== '' && in_array($group, $courierGroups, true)) {
-            return false;
-        }
-
-        if ($group !== '' && in_array($group, $supplierGroups, true)) {
-            return true;
-        }
-
-        if (in_array($ibsStatus, $courierStages, true)) {
-            return false;
-        }
-
-        return $group === '' || $group === 'workflow';
-    }
-
     private function shouldSkipMissing(string $statusId, string $statusName): bool
     {
         $skipIds = config('opencart.skip_status_ids', ['0']);
@@ -587,17 +560,6 @@ class SyncPreviewWriteService
 
     private function resolveMapping(int $sourceId, string $statusId, string $statusName): ?array
     {
-        if ($statusName !== '') {
-            $byName = $this->mappings->findBySourceStatus($sourceId, $statusName);
-            if ($byName !== null) {
-                return $byName;
-            }
-        }
-
-        if ($statusId !== '') {
-            return $this->mappings->findBySourceStatus($sourceId, $statusId);
-        }
-
-        return null;
+        return $this->mappings->resolveActiveMapping($sourceId, $statusId, $statusName);
     }
 }

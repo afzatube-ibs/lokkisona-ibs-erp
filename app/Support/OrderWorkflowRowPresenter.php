@@ -146,6 +146,12 @@ class OrderWorkflowRowPresenter
 
     public static function resolveSourceOrderStatus(array $order, ?array $importHistory = null): ?string
     {
+        if (!empty($order['origin_order_status_name'])) {
+            $label = trim((string) $order['origin_order_status_name']);
+
+            return $label !== '' ? $label : null;
+        }
+
         if (!empty($order['source_order_status'])) {
             $label = trim((string) $order['source_order_status']);
 

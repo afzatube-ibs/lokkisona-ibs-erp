@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Lokkisona OpenCart status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map supplier-handled source statuses into IBS workflow before Test Sync or controlled import. Apply migration 0004 manually first.</p>
+    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map origin statuses to IBS <strong>initial</strong> fulfillment status at import only. After import, IBS workflow is independent. Apply migrations 0004 and 0015 manually first.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -13,6 +13,31 @@ view('partials.write-gate-warning', [
 ]);
 ?>
 
+<?php if (!empty($syncSummary)): ?>
+<div class="kpi-grid kpi-grid-inline mb-15">
+    <div class="kpi-card kpi-accent-muted">
+        <span class="kpi-label">Connection</span>
+        <span class="kpi-value kpi-value-sm"><?= !empty($syncSummary['connection_ok']) ? 'Connected' : 'Not tested' ?></span>
+    </div>
+    <div class="kpi-card kpi-accent-info">
+        <span class="kpi-label">Products API</span>
+        <span class="kpi-value kpi-value-sm"><?= e((string) ($syncSummary['product_api_status'] ?? '—')) ?></span>
+    </div>
+    <div class="kpi-card kpi-accent-primary">
+        <span class="kpi-label">Orders API</span>
+        <span class="kpi-value kpi-value-sm"><?= e((string) ($syncSummary['order_api_status'] ?? '—')) ?></span>
+    </div>
+    <div class="kpi-card kpi-accent-success">
+        <span class="kpi-label">Mapped Statuses</span>
+        <span class="kpi-value"><?= e((string) ($mappedStatusCount ?? 0)) ?></span>
+    </div>
+    <div class="kpi-card kpi-accent-warn">
+        <span class="kpi-label">Last Order Sync</span>
+        <span class="kpi-value kpi-value-sm"><?= e((string) ($syncSummary['last_order_sync_at'] ?? '—')) ?></span>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
 <div class="card mb-15">
     <div class="card-header"><h2 class="card-title">Status Mapping Writes</h2></div>
@@ -20,8 +45,15 @@ view('partials.write-gate-warning', [
         <form method="post" action="<?= e(url('/status-mapping/create')) ?>" class="form-grid">
             <?= $csrfField ?? '' ?>
             <label>Business Source ID<input type="number" name="business_source_id" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>" min="1" required></label>
-            <label>Source Status<input type="text" name="source_status" placeholder="Supplier Processing" required></label>
-            <label>IBS Status<input type="text" name="ibs_status" placeholder="new_order" required></label>
+            <label>Origin / OpenCart Order Status<input type="text" name="source_status" placeholder="Follow Up or status id" required></label>
+            <label>IBS Initial Fulfillment Status
+                <select name="ibs_status" required>
+                    <?php foreach ($initialStatusOptions ?? [] as $option): ?>
+                    <option value="<?= e((string) ($option['code'] ?? '')) ?>"><?= e((string) ($option['label'] ?? '')) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label>Notes<textarea name="notes" rows="2" placeholder="e.g. Follow Up imports as New Order only at first sync"></textarea></label>
             <label>Workflow Group<input type="text" name="workflow_group" value="workflow"></label>
             <button type="submit" class="btn btn-primary">Save Mapping</button>
         </form>
@@ -40,7 +72,7 @@ view('partials.write-gate-warning', [
     <div class="card-body card-body-flush">
         <div class="table-scroll">
             <table class="data-table">
-                <thead><tr><th>ID</th><th>Source</th><th>Source Status</th><th>IBS Status</th><th>Active</th><th>Action</th></tr></thead>
+                <thead><tr><th>ID</th><th>Source</th><th>Origin Status</th><th>IBS Initial</th><th>Enabled</th><th>Notes</th><th>Last Match</th><th>Last Synced</th><th>Action</th></tr></thead>
                 <tbody>
                     <?php foreach ($mappingRows as $row): ?>
                     <tr>
@@ -49,6 +81,9 @@ view('partials.write-gate-warning', [
                         <td><?= e((string) ($row['source_status'] ?? '')) ?></td>
                         <td><?= e((string) ($row['ibs_status'] ?? '')) ?></td>
                         <td><?= !empty($row['is_active']) ? 'Yes' : 'No' ?></td>
+                        <td class="cell-detail"><?= e((string) ($row['notes'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['last_matched_count'] ?? '0')) ?></td>
+                        <td><?= e((string) ($row['last_synced_at'] ?? '—')) ?></td>
                         <td>
                             <?php if (!empty($canManage) && !empty($writeGateReady)): ?>
                             <form method="post" action="<?= e(url('/status-mapping/toggle')) ?>" style="display:inline;">
@@ -68,6 +103,18 @@ view('partials.write-gate-warning', [
 </div>
 <?php endif; ?>
 
+<?php if (empty($writeGateReady)): ?>
+<div class="card mb-15">
+    <div class="card-header"><h2 class="card-title">Migration Required — Status Mapping</h2></div>
+    <div class="card-body">
+        <p class="page-description">Apply <strong>migration 0004</strong> manually in your SQL client (backup first). The <code>ibs_status_mappings</code> table is defined in <code>database/migrations/0004_status_mapping_sync_preview.sql</code> (uses <code>IF NOT EXISTS</code> — safe to run when the table is missing).</p>
+        <p class="page-description">For <a href="<?= e(url('/sync-preview')) ?>">Sync Preview</a>, apply the full 0004 file (sync preview, import, and log tables). Copy SQL from <a href="<?= e(url('/migration-files')) ?>">Migration Files</a>.</p>
+        <p class="page-description"><a href="<?= e(url('/dev-db-activation')) ?>">Open Dev DB Activation</a> · <a href="<?= e(url('/migration-files')) ?>">Migration Files</a></p>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (empty($writeGateReady) && ($appEnv ?? 'local') !== 'production'): ?>
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Mapping Planning Foundation (developer reference)</summary>
     <div class="planning-collapsible-body">
@@ -329,3 +376,4 @@ view('partials.write-gate-warning', [
 
     </div>
 </details>
+<?php endif; ?>

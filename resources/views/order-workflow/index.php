@@ -6,17 +6,20 @@ $displayActionNote = static function (?string $note): string {
 };
 $statusFilter = $statusFilter ?? null;
 $recentWorkflowHistory = $recentWorkflowHistory ?? [];
-$appVersion = $appVersion ?? config('app.version');
-$releaseLabel = $releaseLabel ?? config('app.release_label');
+$showDeveloperContent = ($appEnv ?? 'local') !== 'production';
 ?>
-<div class="page-header page-header-compact">
+<div class="vf-ops-page">
+<div class="page-header page-header-compact vf-page-header">
     <h1 class="page-title">Vendor Fulfillment</h1>
-    <p class="ops-page-subtitle">v<?= e((string) $appVersion) ?> — <?= e((string) $releaseLabel) ?> · Showing product cost only. Selling amount stays hidden.</p>
+    <?php if (!empty($canCreateOrders)): ?>
+    <button type="button" class="btn btn-primary btn-sm vf-header-create-btn" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
+    <?php endif; ?>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
 <?php if (!empty($writeGateReady)): ?>
+
 <?php view('partials.workflow-stage-nav', [
     'workflowStageNav' => $workflowStageNav ?? [],
     'statusFilter' => $statusFilter,
@@ -27,21 +30,9 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
     'statusFilter' => $statusFilter,
     'canManageWorkflow' => $canManageWorkflow ?? false,
     'bulkActionForFilter' => $bulkActionForFilter ?? null,
-    'canShowTestSync' => $canShowTestSync ?? false,
+    'bulkActionLabelForFilter' => $bulkActionLabelForFilter ?? null,
+    'statusFilterOptions' => $statusFilterOptions ?? [],
 ]); ?>
-
-<?php view('partials.vendor-fulfillment-filters', [
-    'fulfillmentFilters' => $fulfillmentFilters ?? [],
-    'statusFilter' => $statusFilter,
-    'supplierOptions' => $supplierOptions ?? [],
-    'isSupplierView' => !empty($isSupplierView),
-]); ?>
-
-<div class="vf-toolbar-secondary">
-    <?php if (!empty($canCreateOrders)): ?>
-    <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
-    <?php endif; ?>
-</div>
 
 <?php view('partials.vendor-fulfillment-table', [
     'fulfillmentRows' => $fulfillmentRows ?? [],
@@ -65,11 +56,11 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
 ]); ?>
 
 <?php if (!empty($recentWorkflowHistory)): ?>
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Recent Workflow History</h2></div>
-    <div class="card-body">
-        <div class="table-scroll">
-            <table class="data-table">
+<details class="planning-collapsible vf-history-collapsible">
+    <summary class="planning-collapsible-summary">Recent Workflow History</summary>
+    <div class="planning-collapsible-body">
+        <div class="table-scroll vf-history-table-wrap">
+            <table class="data-table vf-history-table">
                 <thead>
                     <tr>
                         <th>Order</th>
@@ -95,7 +86,7 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
             </table>
         </div>
     </div>
-</div>
+</details>
 <?php endif; ?>
 
 <?php if (!empty($canCreateOrders)): ?>
@@ -124,7 +115,9 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
 <?php else: ?>
 <?php view('partials.write-gate-warning', ['writeGateReady' => $writeGateReady ?? false, 'writeGate' => $writeGate ?? []]); ?>
 <?php endif; ?>
+</div>
 
+<?php if ($showDeveloperContent): ?>
 <details class="planning-collapsible">
     <summary class="planning-collapsible-summary">Read-Only Order Workflow Inventory (developer reference)</summary>
     <div class="planning-collapsible-body">
@@ -218,5 +211,6 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
 
     </div>
 </details>
+<?php endif; ?>
 
 <script src="<?= e(asset('js/order-workflow.js')) ?>"></script>

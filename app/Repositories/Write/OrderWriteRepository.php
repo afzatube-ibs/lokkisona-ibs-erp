@@ -3,6 +3,7 @@
 namespace App\Repositories\Write;
 
 use App\Models\Order;
+use App\Support\SchemaColumnProbe;
 
 class OrderWriteRepository extends BaseWriteRepository
 {
@@ -23,13 +24,8 @@ class OrderWriteRepository extends BaseWriteRepository
 
     private function createOrder(array $data): int
     {
-        $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` '
-            . '(business_source_id, supplier_id, source_order_id, source_order_reference, source_invoice_reference, order_reference, customer_name, customer_phone, customer_address, '
-            . 'order_total, ibs_status, courier_name, tracking_number, courier_status, cost_snapshot_total, status, ordered_at, created_at) '
-            . 'VALUES (:business_source_id, :supplier_id, :source_order_id, :source_order_reference, :source_invoice_reference, :order_reference, :customer_name, :customer_phone, :customer_address, '
-            . ':order_total, :ibs_status, :courier_name, :tracking_number, :courier_status, :cost_snapshot_total, :status, NOW(), NOW())';
-        $statement = $this->pdo->prepare($sql);
-        $statement->execute([
+        $table = $this->table();
+        $columns = [
             'business_source_id' => $data['business_source_id'],
             'supplier_id' => $data['supplier_id'] ?? null,
             'source_order_id' => $data['source_order_id'] ?? null,
@@ -46,7 +42,29 @@ class OrderWriteRepository extends BaseWriteRepository
             'courier_status' => $data['courier_status'] ?? null,
             'cost_snapshot_total' => $data['cost_snapshot_total'],
             'status' => $data['status'] ?? 'active',
-        ]);
+        ];
+
+        $optional = [
+            'origin_order_status_id' => $data['origin_order_status_id'] ?? null,
+            'origin_order_status_name' => $data['origin_order_status_name'] ?? null,
+            'sync_source' => $data['sync_source'] ?? null,
+            'imported_at' => $data['imported_at'] ?? null,
+            'last_synced_at' => $data['last_synced_at'] ?? null,
+        ];
+        foreach ($optional as $column => $value) {
+            if ($value !== null && SchemaColumnProbe::tableHasColumn($table, $column, $this->pdo)) {
+                $columns[$column] = $value;
+            }
+        }
+
+        $fieldNames = array_keys($columns);
+        $placeholders = array_map(static fn (string $name): string => ':' . $name, $fieldNames);
+        $sql = 'INSERT INTO `' . $this->escapeIdentifier($table) . '` ('
+            . implode(', ', array_map(fn (string $c): string => '`' . $this->escapeIdentifier($c) . '`', $fieldNames))
+            . ', ordered_at, created_at) VALUES ('
+            . implode(', ', $placeholders) . ', NOW(), NOW())';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($columns);
 
         return (int) $this->pdo->lastInsertId();
     }
@@ -64,6 +82,83 @@ class OrderWriteRepository extends BaseWriteRepository
         $row = $statement->fetch(\PDO::FETCH_ASSOC);
 
         return $row === false ? null : $row;
+    }
+
+    public function findBySourceOrderId(string $sourceOrderId, int $businessSourceId): ?array
+    {
+        if (!$this->tableExists() || trim($sourceOrderId) === '') {
+            return null;
+        }
+
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE source_order_id = :source_order_id AND business_source_id = :source_id LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['source_order_id' => trim($sourceOrderId), 'source_id' => $businessSourceId]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return $row === false ? null : $row;
+    }
+
+    public function findExistingForSync(int $businessSourceId, string $sourceOrderId, string $sourceReference): ?array
+    {
+        $sourceOrderId = trim($sourceOrderId);
+        $sourceReference = trim($sourceReference);
+
+        if ($sourceOrderId !== '') {
+            $byId = $this->findBySourceOrderId($sourceOrderId, $businessSourceId);
+            if ($byId !== null) {
+                return $byId;
+            }
+        }
+
+        if ($sourceReference !== '') {
+            return $this->findBySourceReference($sourceReference, $businessSourceId);
+        }
+
+        return null;
+    }
+
+    /**
+     * Refresh OpenCart snapshot fields only — never touches ibs_status or dispatch locks.
+     */
+    public function updateOriginSnapshot(int $orderId, array $data): bool
+    {
+        if (!$this->tableExists() || $orderId <= 0) {
+            return false;
+        }
+
+        $table = $this->table();
+        $set = [];
+        $params = ['id' => $orderId];
+        $allowed = [
+            'origin_order_status_id' => 'origin_order_status_id',
+            'origin_order_status_name' => 'origin_order_status_name',
+            'courier_status' => 'courier_status',
+            'tracking_number' => 'tracking_number',
+            'customer_name' => 'customer_name',
+            'customer_phone' => 'customer_phone',
+            'customer_address' => 'customer_address',
+            'last_synced_at' => 'last_synced_at',
+        ];
+
+        foreach ($allowed as $key => $column) {
+            if (!array_key_exists($key, $data) || !SchemaColumnProbe::tableHasColumn($table, $column, $this->pdo)) {
+                continue;
+            }
+            $set[] = '`' . $this->escapeIdentifier($column) . '` = :' . $key;
+            $params[$key] = $data[$key];
+        }
+
+        if ($set === []) {
+            $set[] = 'updated_at = NOW()';
+        } else {
+            $set[] = 'updated_at = NOW()';
+        }
+
+        $sql = 'UPDATE `' . $this->escapeIdentifier($table) . '` SET ' . implode(', ', $set) . ' WHERE order_id = :id LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+
+        return $statement->execute($params);
     }
 
     public function updateStatus(int $id, string $status): bool

@@ -63,6 +63,7 @@ class Permission
             // Settings — admin setup
             ['label' => 'Sync Settings', 'path' => '/sync-api-settings', 'permission' => 'sync_api_settings.view', 'tier' => 'settings', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>'],
             ['label' => 'Status Mapping', 'path' => '/status-mapping', 'permission' => 'status_mapping.view', 'tier' => 'settings', 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>'],
+            ['label' => 'Sync Preview / Import', 'path' => '/sync-preview', 'permission' => 'sync_preview.view', 'tier' => 'settings', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
             ['label' => 'Suppliers', 'path' => '/suppliers', 'permission' => 'suppliers.view', 'tier' => 'settings', 'icon' => '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 22V12h6v10"/>'],
             ['label' => 'Business Sources', 'path' => '/business-sources', 'permission' => 'business_sources.view', 'tier' => 'settings', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20"/><path d="M12 2a15.3 15.3 0 0 0 0 20"/>'],
             ['label' => 'Users', 'path' => '/users', 'permission' => 'users.view', 'tier' => 'settings', 'icon' => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
@@ -70,7 +71,6 @@ class Permission
             ['label' => 'Database Safety', 'path' => '/database-safety', 'permission' => 'database_safety.view', 'tier' => 'settings', 'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M9 12l2 2 4-4"/>'],
 
             // Future Modules — foundation, planning, developer
-            ['label' => 'Analytics', 'path' => '/sync-preview', 'permission' => 'sync_preview.view', 'tier' => 'future', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
             ['label' => 'Supplier Tools', 'path' => '/supplier-tools', 'permission' => 'supplier_quick_invoice.manage', 'tier' => 'future', 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],
             ['label' => 'Calculator', 'path' => '', 'nav_action' => 'supplierCalculatorModal', 'permission' => 'supplier_calculator.view', 'tier' => 'future', 'icon' => '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/>'],
             ['label' => 'Invoice Printing', 'path' => '/invoice-printing', 'permission' => 'invoice_printing.view', 'tier' => 'future', 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],

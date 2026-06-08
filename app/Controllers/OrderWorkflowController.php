@@ -53,6 +53,7 @@ class OrderWorkflowController extends Controller
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $fulfillmentList = $listService->listPage($filters, $page, $supplierId, $timer);
         $stageCounts = $fulfillmentList['stage_counts'] ?? [];
+        $operationalSummary = $listService->operationalSummary($stageCounts, $supplierId);
 
         $this->render('order-workflow.index', [
             'pageTitle' => 'Vendor Fulfillment',
@@ -108,9 +109,12 @@ class OrderWorkflowController extends Controller
             'vendorReturnFuture' => $this->vendorReturnFuture(),
             'fulfillmentTableColumns' => $this->fulfillmentTableColumns(),
             'bulkActionForFilter' => $this->resolveBulkActionForFilter($statusFilter),
+            'bulkActionLabelForFilter' => $this->resolveBulkActionLabelForFilter($statusFilter),
+            'operationalSummary' => $operationalSummary,
+            'statusFilterOptions' => OrderWorkflowStatus::filterStatusOptions(),
             'canShowTestSync' => !SupplierContext::isSupplier(),
             'dispatchFlash' => $this->resolveDispatchFlashFromQuery(),
-            'requestTiming' => $timer !== null ? $timer->laps() : null,
+            'requestTiming' => config('app.env', 'local') !== 'production' && $timer !== null ? $timer->laps() : null,
             'appVersion' => config('app.version'),
             'releaseLabel' => config('app.release_label'),
         ]);
@@ -298,6 +302,21 @@ class OrderWorkflowController extends Controller
             'order_received' => 'bulk_packaging',
             'packaging' => 'bulk_shipped',
             'shipped' => $dispatchReady ? 'bulk_dispatch' : null,
+            default => null,
+        };
+    }
+
+    private function resolveBulkActionLabelForFilter(?string $statusFilter): ?string
+    {
+        if ($statusFilter === null) {
+            return null;
+        }
+
+        return match (OrderWorkflowStatus::normalize($statusFilter)) {
+            'new_order' => 'Receive Order',
+            'order_received' => 'Print & Start Packaging',
+            'packaging' => 'Mark Shipped',
+            'shipped' => 'Create Dispatch Report',
             default => null,
         };
     }

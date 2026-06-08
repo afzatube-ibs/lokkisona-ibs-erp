@@ -243,6 +243,65 @@ class OrderWorkflowListReadService
     }
 
     /**
+     * Compact operational stats for vendor fulfillment header (read-only UI).
+     *
+     * @param array<string, int> $stageCounts
+     * @return array<string, int>
+     */
+    public function operationalSummary(array $stageCounts, int $supplierId = 0): array
+    {
+        $waiting = (int) ($stageCounts['new_order'] ?? 0) + (int) ($stageCounts['order_received'] ?? 0);
+
+        $summary = [
+            'orders_waiting' => $waiting,
+            'packaging_queue' => (int) ($stageCounts['packaging'] ?? 0),
+            'ready_for_dispatch' => (int) ($stageCounts['shipped'] ?? 0),
+            'low_cost_data' => 0,
+            'missing_models' => 0,
+        ];
+
+        if (!$this->tableExists() || !$this->orderItems->tableExists()) {
+            return $summary;
+        }
+
+        try {
+            $orderTable = TableName::forModel(Order::class);
+            $itemTable = TableName::forModel(OrderItem::class);
+            $productTable = TableName::forModel(Product::class);
+            $supplierSql = '';
+            $params = [];
+            if ($supplierId > 0) {
+                $supplierSql = ' AND o.supplier_id = :supplier_id';
+                $params['supplier_id'] = $supplierId;
+            }
+
+            $lowCostSql = 'SELECT COUNT(DISTINCT o.order_id) AS c FROM `' . $this->escapeIdentifier($orderTable) . '` o '
+                . 'INNER JOIN `' . $this->escapeIdentifier($itemTable) . '` oi ON oi.order_id = o.order_id '
+                . 'WHERE (oi.supplier_cost_snapshot IS NULL OR oi.supplier_cost_snapshot <= 0)'
+                . " AND o.ibs_status NOT IN ('cancelled', 'delivered')" . $supplierSql;
+            QueryGuard::assertReadOnly($lowCostSql);
+            $stmt = $this->pdo()->prepare($lowCostSql);
+            $stmt->execute($params);
+            $summary['low_cost_data'] = (int) ($stmt->fetchColumn() ?: 0);
+
+            $missingModelSql = 'SELECT COUNT(DISTINCT o.order_id) AS c FROM `' . $this->escapeIdentifier($orderTable) . '` o '
+                . 'INNER JOIN `' . $this->escapeIdentifier($itemTable) . '` oi ON oi.order_id = o.order_id '
+                . 'LEFT JOIN `' . $this->escapeIdentifier($productTable) . '` p ON p.product_id = oi.product_id '
+                . "WHERE TRIM(COALESCE(oi.product_name, '')) = '' "
+                . "AND TRIM(COALESCE(p.supplier_model, p.source_model, '')) = '' "
+                . "AND o.ibs_status NOT IN ('cancelled', 'delivered')" . $supplierSql;
+            QueryGuard::assertReadOnly($missingModelSql);
+            $stmt = $this->pdo()->prepare($missingModelSql);
+            $stmt->execute($params);
+            $summary['missing_models'] = (int) ($stmt->fetchColumn() ?: 0);
+        } catch (\Throwable $e) {
+            return $summary;
+        }
+
+        return $summary;
+    }
+
+    /**
      * @param array<string, mixed> $filters
      * @return array<string, mixed>
      */

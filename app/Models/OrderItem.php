@@ -14,6 +14,7 @@ class OrderItem extends BaseModel
         'product_id',
         'product_variant_id',
         'source_product_id',
+        'source_line_key',
         'product_name',
         'variant_label',
         'quantity',

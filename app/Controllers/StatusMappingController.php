@@ -4,7 +4,9 @@ namespace App\Controllers;
 
 use App\ActivityLog;
 use App\Csrf;
+use App\Domain\OrderSyncMappingRules;
 use App\Permission;
+use App\Services\ReadOnly\SyncApiSettingsReadService;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\StatusMappingWriteRepository;
 use App\Services\Write\StatusMappingWriteService;
@@ -18,8 +20,13 @@ class StatusMappingController extends Controller
 
         $sourceId = (int) config('opencart.business_source_id', 1);
 
+        $syncSummary = (new SyncApiSettingsReadService())->connectionSummary();
+
         $this->render('status-mapping.index', [
             'pageTitle' => 'Status Mapping',
+            'initialStatusOptions' => OrderSyncMappingRules::initialStatusOptions(OrderSyncMappingRules::advancedModeEnabled()),
+            'syncSummary' => $syncSummary,
+            'mappedStatusCount' => (new StatusMappingWriteRepository())->countActiveForSource($sourceId),
             'breadcrumbs' => [
                 ['label' => 'Operations', 'active' => false],
                 ['label' => 'Status Mapping', 'active' => true],

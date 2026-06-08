@@ -2,9 +2,9 @@
     'use strict';
 
     var BULK_LABELS = {
-        bulk_receive: 'Bulk Receive Order',
+        bulk_receive: 'Receive Order',
         bulk_packaging: 'Print & Start Packaging',
-        bulk_shipped: 'Mark as Shipped',
+        bulk_shipped: 'Mark Shipped',
         bulk_dispatch: 'Create Dispatch Report'
     };
 
@@ -177,6 +177,14 @@
         });
     }
 
+    function setBulkButtonState(btn, visible, enabled) {
+        if (!btn) {
+            return;
+        }
+        btn.hidden = !visible;
+        btn.disabled = !enabled;
+    }
+
     function updateToolbar() {
         var countEl = document.getElementById('vfSelectedCount');
         var forwardBtn = document.getElementById('vfBulkForwardBtn');
@@ -191,22 +199,31 @@
             return;
         }
 
-        if (selected.length === 0) {
-            forwardBtn.hidden = true;
-            if (holdBtn) holdBtn.hidden = true;
-            if (cancelBtn) cancelBtn.hidden = true;
+        var filterBulk = toolbar ? toolbar.getAttribute('data-bulk-filter') || '' : '';
+        var filterLabel = toolbar ? toolbar.getAttribute('data-bulk-label') || '' : '';
+        var hasSelection = selected.length > 0;
+
+        var statusFilter = toolbar ? toolbar.getAttribute('data-status-filter') || '' : '';
+        var holdCancelEligible = filterBulk === 'bulk_receive' || filterBulk === 'bulk_packaging' || statusFilter === 'hold';
+
+        if (!hasSelection) {
+            if (filterBulk) {
+                setBulkButtonState(forwardBtn, true, false);
+                forwardBtn.setAttribute('data-bulk-action', filterBulk);
+                forwardBtn.textContent = filterLabel || BULK_LABELS[filterBulk] || 'Bulk action';
+            } else {
+                setBulkButtonState(forwardBtn, false, false);
+            }
+            setBulkButtonState(holdBtn, holdCancelEligible && statusFilter !== 'hold', holdCancelEligible && statusFilter !== 'hold');
+            setBulkButtonState(cancelBtn, holdCancelEligible, holdCancelEligible);
             if (hint) hint.hidden = true;
             return;
         }
 
         var statuses = {};
-        var bulkKeys = {};
         var allHoldCancel = true;
         selected.forEach(function (row) {
             statuses[row.ibsStatus] = true;
-            if (row.bulkKey) {
-                bulkKeys[row.bulkKey] = true;
-            }
             if (!row.canHoldCancel) {
                 allHoldCancel = false;
             }
@@ -214,29 +231,34 @@
         var statusKeys = Object.keys(statuses);
         var homogeneous = statusKeys.length === 1;
         var bulkKey = homogeneous ? (selected[0].bulkKey || '') : '';
-        var filterBulk = toolbar ? toolbar.getAttribute('data-bulk-filter') || '' : '';
+        var activeBulk = '';
 
         if (homogeneous && bulkKey) {
-            forwardBtn.hidden = false;
-            forwardBtn.setAttribute('data-bulk-action', bulkKey);
-            forwardBtn.textContent = BULK_LABELS[bulkKey] || 'Bulk action';
-            if (hint) hint.hidden = true;
+            activeBulk = bulkKey;
         } else if (homogeneous && filterBulk && filterBulk === selected[0].bulkKey) {
-            forwardBtn.hidden = false;
-            forwardBtn.setAttribute('data-bulk-action', filterBulk);
-            forwardBtn.textContent = BULK_LABELS[filterBulk] || 'Bulk action';
+            activeBulk = filterBulk;
+        } else if (homogeneous && filterBulk) {
+            activeBulk = filterBulk;
+        }
+
+        if (activeBulk) {
+            setBulkButtonState(forwardBtn, true, true);
+            forwardBtn.setAttribute('data-bulk-action', activeBulk);
+            forwardBtn.textContent = (homogeneous && bulkKey ? BULK_LABELS[bulkKey] : null) || filterLabel || BULK_LABELS[activeBulk] || 'Bulk action';
             if (hint) hint.hidden = true;
+        } else if (filterBulk) {
+            setBulkButtonState(forwardBtn, true, false);
+            forwardBtn.setAttribute('data-bulk-action', filterBulk);
+            forwardBtn.textContent = filterLabel || BULK_LABELS[filterBulk] || 'Bulk action';
+            if (hint) hint.hidden = !homogeneous;
         } else {
-            forwardBtn.hidden = true;
+            setBulkButtonState(forwardBtn, false, false);
             if (hint) hint.hidden = !homogeneous;
         }
 
-        if (holdBtn) {
-            holdBtn.hidden = !(homogeneous && allHoldCancel);
-        }
-        if (cancelBtn) {
-            cancelBtn.hidden = !(homogeneous && (allHoldCancel || statusKeys[0] === 'hold'));
-        }
+        var showHoldCancel = homogeneous && (allHoldCancel || statusKeys[0] === 'hold');
+        setBulkButtonState(holdBtn, showHoldCancel && allHoldCancel, showHoldCancel && allHoldCancel);
+        setBulkButtonState(cancelBtn, showHoldCancel, showHoldCancel);
     }
 
     function fetchSelectionPreview(orderIds, callback) {
@@ -400,6 +422,10 @@
     var forwardBtn = document.getElementById('vfBulkForwardBtn');
     if (forwardBtn) {
         forwardBtn.addEventListener('click', function () {
+            if (forwardBtn.disabled) {
+                window.alert('Select at least one order row.');
+                return;
+            }
             var selected = selectedRows();
             if (selected.length === 0) {
                 window.alert('Select at least one order row.');
@@ -412,6 +438,10 @@
     var holdBtn = document.getElementById('vfBulkHoldBtn');
     if (holdBtn) {
         holdBtn.addEventListener('click', function () {
+            if (holdBtn.disabled) {
+                window.alert('Select at least one order row.');
+                return;
+            }
             var ids = selectedRows().map(function (r) { return r.id; });
             if (ids.length === 0) {
                 return;
@@ -431,6 +461,10 @@
     var cancelBtn = document.getElementById('vfBulkCancelBtn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function () {
+            if (cancelBtn.disabled) {
+                window.alert('Select at least one order row.');
+                return;
+            }
             var ids = selectedRows().map(function (r) { return r.id; });
             if (ids.length === 0) {
                 return;
@@ -611,6 +645,33 @@
                 printLink.href = '/dispatch-reports?report_id=' + flash.report_id + '&print=1';
             }
             dispatchModal.hidden = false;
+        }
+    }
+
+    var toolbarForm = document.getElementById('vfToolbarForm');
+    if (toolbarForm) {
+        qsa('.vf-toolbar-status-select, .vf-toolbar-per-page-select', toolbarForm).forEach(function (el) {
+            el.addEventListener('change', function () {
+                toolbarForm.submit();
+            });
+        });
+        var searchInput = qs('.vf-toolbar-search-input', toolbarForm);
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    toolbarForm.submit();
+                }
+            });
+        }
+        var courierInput = qs('.vf-toolbar-courier-input', toolbarForm);
+        if (courierInput) {
+            courierInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    toolbarForm.submit();
+                }
+            });
         }
     }
 
