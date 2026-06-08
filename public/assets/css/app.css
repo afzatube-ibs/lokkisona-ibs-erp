@@ -488,6 +488,13 @@ select.form-input,
     border-color: #bbf7d0;
 }
 
+.alert-success .alert-link {
+    margin-left: 0.5rem;
+    font-weight: 600;
+    color: #15803d;
+    text-decoration: underline;
+}
+
 [data-theme="dark"] .alert-error {
     background: rgba(220,38,38,0.12);
     color: #fca5a5;

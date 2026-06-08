@@ -79,6 +79,7 @@ class OrderWorkflowController extends Controller
             'performanceRules' => $this->performanceRules(),
             'futureSyncSafety' => $this->futureSyncSafety(),
             'flashSuccess' => $this->pullFlash('success'),
+            'flashSuccessLink' => $this->pullFlashLink(),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
             'writeGate' => WriteGate::orderWorkflow(),
@@ -168,9 +169,18 @@ class OrderWorkflowController extends Controller
         if ($result->success) {
             (new OrderWorkflowListReadService())->invalidateCache();
         }
-        $this->redirectWithWriteResult(
-            $this->workflowRedirectPath(),
-            $result
+
+        $targetStatus = null;
+        if ($result->success) {
+            $targetStatus = OrderWorkflowStatus::isResumeAction($toStatus)
+                ? 'order_received'
+                : OrderWorkflowStatus::normalize($toStatus);
+        }
+
+        $this->redirectWithWorkflowResult(
+            $this->workflowRedirectAfterWrite($result, $targetStatus),
+            $result,
+            $targetStatus
         );
     }
 
@@ -194,12 +204,13 @@ class OrderWorkflowController extends Controller
             (new OrderWorkflowListReadService())->invalidateCache();
         }
 
-        $redirectPath = $this->workflowRedirectPath();
+        $targetStatus = $result->success ? OrderWorkflowStatus::bulkActionTargetStatus($action) : null;
+        $redirectPath = $this->workflowRedirectAfterWrite($result, $targetStatus, $action);
         if ($result->success && $action === 'bulk_dispatch' && ($result->id ?? 0) > 0) {
             $redirectPath = $this->appendDispatchFlashQuery($redirectPath, (int) $result->id);
         }
 
-        $this->redirectWithWriteResult($redirectPath, $result);
+        $this->redirectWithWorkflowResult($redirectPath, $result, $targetStatus);
     }
 
     public function historyJson()
@@ -302,6 +313,7 @@ class OrderWorkflowController extends Controller
             'order_received' => 'bulk_packaging',
             'packaging' => 'bulk_shipped',
             'shipped' => $dispatchReady ? 'bulk_dispatch' : null,
+            'hold' => 'bulk_resume',
             default => null,
         };
     }
@@ -317,8 +329,54 @@ class OrderWorkflowController extends Controller
             'order_received' => 'Print & Start Packaging',
             'packaging' => 'Mark Shipped',
             'shipped' => 'Create Dispatch Report',
+            'hold' => 'Resume Order Received',
             default => null,
         };
+    }
+
+    private function redirectWithWorkflowResult(string $path, \App\Services\Write\WriteResult $result, ?string $targetStatus = null): void
+    {
+        if ($result->success) {
+            $this->flash('success', $result->message);
+            $returnStatus = trim((string) ($_POST['return_status'] ?? ''));
+            $currentFilter = $returnStatus !== '' ? OrderWorkflowStatus::normalize($returnStatus) : null;
+            $normalizedTarget = $targetStatus !== null && $targetStatus !== ''
+                ? OrderWorkflowStatus::normalize($targetStatus)
+                : null;
+            if ($normalizedTarget !== null && ($currentFilter === null || $currentFilter !== $normalizedTarget)) {
+                $label = OrderWorkflowStatus::groupDisplayLabel($normalizedTarget);
+                $this->flashLink(url('/order-workflow?status=' . rawurlencode($normalizedTarget)), 'View ' . $label);
+            }
+        } else {
+            $this->flash('error', $result->message);
+        }
+
+        redirect($path);
+    }
+
+    private function workflowRedirectAfterWrite(
+        \App\Services\Write\WriteResult $result,
+        ?string $targetStatus = null,
+        ?string $bulkAction = null
+    ): string {
+        if (!$result->success) {
+            return $this->workflowRedirectPath();
+        }
+
+        if ($targetStatus === null || $targetStatus === '') {
+            $targetStatus = OrderWorkflowStatus::bulkActionTargetStatus((string) $bulkAction);
+        }
+
+        if ($targetStatus === null || $targetStatus === '') {
+            return $this->workflowRedirectPath();
+        }
+
+        $returnStatus = trim((string) ($_POST['return_status'] ?? ''));
+        if ($returnStatus !== '') {
+            return '/order-workflow?status=' . rawurlencode(OrderWorkflowStatus::normalize($targetStatus));
+        }
+
+        return '/order-workflow';
     }
 
     /**

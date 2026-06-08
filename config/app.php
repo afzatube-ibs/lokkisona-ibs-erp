@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.9.6',
-    'release_label' => 'Order Sync Mapping Safety Foundation',
+    'version' => '1.9.7',
+    'release_label' => 'Vendor Fulfillment Workflow Completion Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

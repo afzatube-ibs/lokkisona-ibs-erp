@@ -42,11 +42,11 @@ class OrderWorkflowRowPresenter
             }
         }
 
-        $actions = self::buildActions($displayStatus, $normalized, $batchLocked, $dispatchModuleReady);
         $orderNo = self::formatOrderNo($order);
         $viewReportUrl = ($dispatchReportId ?? 0) > 0
             ? url('/dispatch-reports?report_id=' . (int) $dispatchReportId)
             : null;
+        $actions = self::buildActions($displayStatus, $normalized, $batchLocked, $dispatchModuleReady, $viewReportUrl);
 
         return [
             'order_id' => $orderId,
@@ -196,11 +196,30 @@ class OrderWorkflowRowPresenter
         string $displayStatus,
         string $normalized,
         bool $batchLocked,
-        bool $dispatchModuleReady
+        bool $dispatchModuleReady,
+        ?string $viewReportUrl = null
     ): array {
         if ($batchLocked || $displayStatus === 'dispatch_report_created') {
+            $primary = null;
+            if ($viewReportUrl !== null && $viewReportUrl !== '') {
+                $primary = [
+                    'code' => 'view_report',
+                    'label' => 'View Report',
+                    'url' => $viewReportUrl,
+                    'is_link' => true,
+                    'requires_note' => false,
+                    'requires_checkbox' => false,
+                    'checkbox_label' => null,
+                    'requires_confirm' => false,
+                    'is_delivery_stop' => false,
+                    'is_hub_return' => false,
+                    'is_dispatch_create' => false,
+                    'menu_only' => false,
+                ];
+            }
+
             return [
-                'primary' => null,
+                'primary' => $primary,
                 'menu_items' => self::baseMenuItems($normalized, true, false, false),
                 'selectable' => false,
                 'bulk_action_key' => null,
@@ -313,7 +332,7 @@ class OrderWorkflowRowPresenter
             return true;
         }
 
-        return in_array($status, ['new_order', 'order_received', 'packaging'], true);
+        return in_array($status, ['new_order', 'order_received', 'packaging', 'hold'], true);
     }
 
     private static function bulkActionKey(string $status, bool $dispatchModuleReady): ?string
@@ -323,6 +342,7 @@ class OrderWorkflowRowPresenter
             'order_received' => 'bulk_packaging',
             'packaging' => 'bulk_shipped',
             'shipped' => $dispatchModuleReady ? 'bulk_dispatch' : null,
+            'hold' => 'bulk_resume',
             default => null,
         };
     }

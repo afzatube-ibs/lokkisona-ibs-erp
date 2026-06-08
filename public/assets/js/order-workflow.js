@@ -5,7 +5,8 @@
         bulk_receive: 'Receive Order',
         bulk_packaging: 'Print & Start Packaging',
         bulk_shipped: 'Mark Shipped',
-        bulk_dispatch: 'Create Dispatch Report'
+        bulk_dispatch: 'Create Dispatch Report',
+        bulk_resume: 'Resume Order Received'
     };
 
     var modal = document.getElementById('vfActionModal');

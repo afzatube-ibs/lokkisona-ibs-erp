@@ -130,11 +130,11 @@ $pageQuery = array_filter([
                             <?php endif; ?>
                         </td>
                         <td class="vf-col-actions">
-                            <?php if (!empty($row['view_report_url'])): ?>
-                            <a href="<?= e((string) $row['view_report_url']) ?>" class="btn btn-secondary btn-sm">View Report</a>
-                            <?php elseif ($canManage && ($primary !== null || $menuItems !== [])): ?>
+                            <?php if ($canManage && ($primary !== null || $menuItems !== [])): ?>
                             <div class="vf-row-actions">
-                                <?php if ($primary !== null): ?>
+                                <?php if ($primary !== null && !empty($primary['is_link']) && !empty($primary['url'])): ?>
+                                <a href="<?= e((string) $primary['url']) ?>" class="btn btn-primary btn-sm"><?= e((string) ($primary['label'] ?? 'View Report')) ?></a>
+                                <?php elseif ($primary !== null): ?>
                                 <button type="button"
                                     class="btn btn-primary btn-sm js-vf-row-action"
                                     data-order-id="<?= e((string) $orderId) ?>"

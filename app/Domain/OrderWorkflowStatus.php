@@ -112,6 +112,39 @@ class OrderWorkflowStatus
         return self::LEGACY_ALIASES[$code] ?? $code;
     }
 
+    /**
+     * Canonical status plus any legacy DB aliases that map to it (for SQL filters).
+     *
+     * @return array<int, string>
+     */
+    public static function statusCodesIncludingLegacy(string $canonical): array
+    {
+        $canonical = self::normalize($canonical);
+        $codes = [$canonical];
+        foreach (self::LEGACY_ALIASES as $legacy => $mapped) {
+            if ($mapped === $canonical) {
+                $codes[] = $legacy;
+            }
+        }
+
+        return array_values(array_unique($codes));
+    }
+
+    /** Target list filter after a successful bulk action. */
+    public static function bulkActionTargetStatus(string $bulkAction): ?string
+    {
+        return match (trim($bulkAction)) {
+            'bulk_receive' => 'order_received',
+            'bulk_packaging' => 'packaging',
+            'bulk_shipped' => 'shipped',
+            'bulk_dispatch' => 'dispatch_report_created',
+            'bulk_resume' => 'order_received',
+            'bulk_hold' => 'hold',
+            'bulk_cancel' => 'cancelled',
+            default => null,
+        };
+    }
+
     public static function label(string $code): string
     {
         if (self::isResumeAction($code)) {

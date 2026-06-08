@@ -91,6 +91,15 @@ class Controller
         $_SESSION['flash'][$key] = $message;
     }
 
+    protected function flashLink(string $url, string $label): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION['flash']['success_link_url'] = $url;
+        $_SESSION['flash']['success_link_label'] = $label;
+    }
+
     protected function pullFlash(string $key): ?string
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -100,6 +109,24 @@ class Controller
         unset($_SESSION['flash'][$key]);
 
         return $message;
+    }
+
+    /**
+     * @return array{url: string, label: string}|null
+     */
+    protected function pullFlashLink(): ?array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $url = $_SESSION['flash']['success_link_url'] ?? null;
+        $label = $_SESSION['flash']['success_link_label'] ?? null;
+        unset($_SESSION['flash']['success_link_url'], $_SESSION['flash']['success_link_label']);
+        if (!is_string($url) || $url === '' || !is_string($label) || $label === '') {
+            return null;
+        }
+
+        return ['url' => $url, 'label' => $label];
     }
 
     protected function redirectWithWriteResult(string $path, WriteResult $result): void

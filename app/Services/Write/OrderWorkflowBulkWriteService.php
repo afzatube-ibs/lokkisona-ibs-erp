@@ -59,6 +59,49 @@ class OrderWorkflowBulkWriteService
             return $this->bulkException($orderIds, 'cancelled', $input);
         }
 
+        if ($action === 'bulk_resume') {
+            $validation = $this->validateHomogeneousStatus($orderIds, 'hold');
+            if ($validation !== null) {
+                return $validation;
+            }
+
+            if (empty($input['action_confirmed'])) {
+                return WriteResult::fail('Bulk action confirmation is required.');
+            }
+
+            $success = 0;
+            $errors = [];
+            foreach ($orderIds as $orderId) {
+                $result = $this->workflow->transition($orderId, OrderWorkflowStatus::RESUME_ACTION, null, false, true);
+                if ($result->success) {
+                    $success++;
+                } else {
+                    $errors[] = 'Order #' . $orderId . ': ' . $result->message;
+                }
+            }
+
+            (new OrderWorkflowListReadService())->invalidateCache();
+
+            if ($success === 0) {
+                return WriteResult::fail($errors[0] ?? 'Bulk resume failed for all selected orders.');
+            }
+
+            $message = $success . ' order(s) resumed to Order Received.';
+            if ($errors !== []) {
+                $message .= ' ' . count($errors) . ' failed.';
+            }
+
+            ActivityLog::record('order_workflow_bulk_action', 'Bulk workflow: bulk_resume', [
+                'action' => 'bulk_resume',
+                'action_key' => 'bulk_resume',
+                'order_ids' => $orderIds,
+                'success' => $success,
+                'failed' => count($errors),
+            ]);
+
+            return WriteResult::ok($message);
+        }
+
         $map = [
             'bulk_receive' => ['from' => 'new_order', 'to' => 'order_received', 'checkbox' => false],
             'bulk_packaging' => ['from' => 'order_received', 'to' => 'packaging', 'checkbox' => true],
@@ -307,6 +350,7 @@ class OrderWorkflowBulkWriteService
                 'order_received' => 'bulk_packaging',
                 'packaging' => 'bulk_shipped',
                 'shipped' => $dispatchReady ? 'bulk_dispatch' : null,
+                'hold' => 'bulk_resume',
                 default => null,
             };
         }

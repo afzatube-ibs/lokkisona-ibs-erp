@@ -288,24 +288,23 @@ class OrderWorkflowWriteService
                 continue;
             }
 
+            $adjustmentNote = null;
             if ($previous === 'new_order') {
-                return [
-                    'status' => 'order_received',
-                    'adjustment_note' => 'Resume adjusted: supplier cannot return to New Order; restored to Order Received.',
-                ];
+                $adjustmentNote = 'Resume adjusted: supplier cannot return to New Order; restored to Order Received.';
+            } elseif ($previous !== 'order_received') {
+                $adjustmentNote = 'Resume restored to Order Received (was ' . OrderWorkflowStatus::label($previous) . ').';
             }
 
-            if (in_array($previous, OrderWorkflowStatus::validResumeTargets(), true)) {
-                return [
-                    'status' => $previous,
-                    'adjustment_note' => null,
-                ];
-            }
-
-            return null;
+            return [
+                'status' => 'order_received',
+                'adjustment_note' => $adjustmentNote,
+            ];
         }
 
-        return null;
+        return [
+            'status' => 'order_received',
+            'adjustment_note' => 'Resume restored to Order Received (no prior hold history found).',
+        ];
     }
 
     private function buildHistoryNote(?string $note, ?string $adjustmentNote, ?string $actionKey = null): ?string

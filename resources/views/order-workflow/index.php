@@ -16,7 +16,11 @@ $showDeveloperContent = ($appEnv ?? 'local') !== 'production';
     <?php endif; ?>
 </div>
 
-<?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
+<?php view('partials.flash-messages', [
+    'flashSuccess' => $flashSuccess ?? null,
+    'flashSuccessLink' => $flashSuccessLink ?? null,
+    'flashError' => $flashError ?? null,
+]); ?>
 
 <?php if (!empty($writeGateReady)): ?>
 

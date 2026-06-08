@@ -347,14 +347,17 @@ class OrderWorkflowListReadService
 
         if ($filters['status'] !== '') {
             if ($filters['status'] === 'dispatch_report_created' && $this->dispatchReports->tableExists()) {
-                $where .= ' AND (o.ibs_status = :dispatch_status OR o.order_id IN (SELECT order_id FROM dispatch_items_sub))';
-                $params['dispatch_status'] = 'dispatch_report_created';
+                [$statusSql, $statusParams] = $this->statusMatchClause('dispatch_report_created', 'dispatch_status');
+                $where .= ' AND (' . $statusSql . ' OR o.order_id IN (SELECT order_id FROM dispatch_items_sub))';
+                $params = array_merge($params, $statusParams);
             } elseif ($filters['status'] === 'shipped' && $this->dispatchReports->tableExists()) {
-                $where .= ' AND o.ibs_status = :ibs_status AND o.order_id NOT IN (SELECT order_id FROM dispatch_items_sub)';
-                $params['ibs_status'] = 'shipped';
+                [$statusSql, $statusParams] = $this->statusMatchClause('shipped', 'ibs_status');
+                $where .= ' AND ' . $statusSql . ' AND o.order_id NOT IN (SELECT order_id FROM dispatch_items_sub)';
+                $params = array_merge($params, $statusParams);
             } else {
-                $where .= ' AND o.ibs_status = :ibs_status';
-                $params['ibs_status'] = $filters['status'];
+                [$statusSql, $statusParams] = $this->statusMatchClause($filters['status'], 'ibs_status');
+                $where .= ' AND ' . $statusSql;
+                $params = array_merge($params, $statusParams);
             }
         }
 
@@ -434,6 +437,27 @@ class OrderWorkflowListReadService
         } catch (\Throwable $e) {
             return [];
         }
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function statusMatchClause(string $canonicalStatus, string $paramPrefix): array
+    {
+        $codes = OrderWorkflowStatus::statusCodesIncludingLegacy($canonicalStatus);
+        if (count($codes) === 1) {
+            return ['o.ibs_status = :' . $paramPrefix, [$paramPrefix => $codes[0]]];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($codes as $index => $code) {
+            $key = $paramPrefix . '_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $code;
+        }
+
+        return ['o.ibs_status IN (' . implode(', ', $placeholders) . ')', $params];
     }
 
     private function replaceDispatchSubquery(string $whereSql): string
