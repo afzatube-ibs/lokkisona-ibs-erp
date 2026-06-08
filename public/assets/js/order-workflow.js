@@ -661,11 +661,19 @@
             qs('#vfDispatchCost', dispatchModal).textContent = Number(flash.total_product_cost || 0).toFixed(2);
             var openReport = qs('#vfDispatchOpenReport', dispatchModal);
             var printLink = qs('#vfDispatchPrint', dispatchModal);
-            if (openReport && flash.report_id) {
-                openReport.href = '/dispatch-reports?report_id=' + flash.report_id;
+            if (openReport) {
+                if (flash.reference) {
+                    openReport.href = '/dispatch-report/' + encodeURIComponent(flash.reference);
+                } else if (flash.report_id) {
+                    openReport.href = '/dispatch-reports?report_id=' + flash.report_id;
+                }
             }
-            if (printLink && flash.report_id) {
-                printLink.href = '/dispatch-reports?report_id=' + flash.report_id + '&print=1';
+            if (printLink) {
+                if (flash.reference) {
+                    printLink.href = '/dispatch-report/' + encodeURIComponent(flash.reference) + '?print=1';
+                } else if (flash.report_id) {
+                    printLink.href = '/dispatch-reports?report_id=' + flash.report_id + '&print=1';
+                }
             }
             dispatchModal.hidden = false;
         }

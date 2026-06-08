@@ -156,6 +156,28 @@ class DispatchReportRepository extends BaseReadOnlyRepository
         }
     }
 
+    public function findByReference(string $reference): ?array
+    {
+        $reference = trim($reference);
+        if ($reference === '' || !$this->tableExists()) {
+            return null;
+        }
+
+        try {
+            $table = \App\Database\TableName::forModel(DispatchReport::class);
+            $sql = 'SELECT * FROM `' . $this->escapeIdentifier($table) . '` '
+                . 'WHERE dispatch_reference = :reference LIMIT 1';
+            \App\Database\QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['reference' => $reference]);
+            $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+            return $row !== false ? $row : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function findItemsWithOrders(int $dispatchReportId): array
     {
         if (!$this->tableExists() || $dispatchReportId <= 0) {

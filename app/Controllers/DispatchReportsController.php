@@ -71,6 +71,32 @@ class DispatchReportsController extends Controller
         ]);
     }
 
+    public function show($batch)
+    {
+        $this->authorize('dispatch_reports.view');
+        ActivityLog::record('dispatch_report_view', 'Dispatch report batch viewed: ' . (string) $batch);
+
+        $supplierId = SupplierContext::enforceSupplierId(0);
+        $batchReference = trim(rawurldecode((string) $batch));
+        $printMode = !empty($_GET['print']);
+        $reportDetail = $this->buildReportDetailByReference($batchReference, $supplierId);
+
+        $this->render('dispatch-reports.show', [
+            'pageTitle' => $reportDetail !== null
+                ? 'Dispatch Report ' . ($reportDetail['report']['dispatch_reference'] ?? '')
+                : 'Dispatch Report',
+            'breadcrumbs' => [
+                ['label' => 'Operations', 'active' => false],
+                ['label' => 'Vendor Fulfillment', 'active' => false, 'url' => '/order-workflow'],
+                ['label' => 'Dispatch Report', 'active' => true],
+            ],
+            'reportDetail' => $reportDetail,
+            'batchReference' => $batchReference,
+            'printMode' => $printMode,
+            'isSupplierView' => SupplierContext::isSupplier(),
+        ]);
+    }
+
     public function create()
     {
         $this->authorize('dispatch_reports.manage');
@@ -183,30 +209,122 @@ class DispatchReportsController extends Controller
                 return null;
             }
 
-            if ($supplierId > 0 && (int) ($report['supplier_id'] ?? 0) !== $supplierId) {
+            return $this->enrichReportDetail($report, $supplierId);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function buildReportDetailByReference(string $reference, int $supplierId = 0): ?array
+    {
+        if ($reference === '') {
+            return null;
+        }
+
+        try {
+            $repository = new DispatchReportRepository();
+            if (!$repository->tableExists()) {
                 return null;
             }
 
-            $items = $repository->findItemsWithOrders($reportId);
-            $orderItemRepo = new OrderItemRepository();
-
-            foreach ($items as $index => $item) {
-                $orderId = (int) ($item['order_id'] ?? 0);
-                $items[$index]['product_lines'] = $orderId > 0
-                    ? $orderItemRepo->findByOrderId($orderId)
-                    : [];
+            $report = $repository->findByReference($reference);
+            if ($report === null) {
+                return null;
             }
 
-            $report['status_label'] = DispatchReportReference::statusLabel(
-                (string) ($report['status'] ?? '')
-            );
-
-            return [
-                'report' => $report,
-                'items' => $items,
-            ];
+            return $this->enrichReportDetail($report, $supplierId);
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     * @return array{report: array<string, mixed>, items: array<int, array<string, mixed>>, total_quantity: int, supplier_name: string, prepared_by: string}
+     */
+    private function enrichReportDetail(array $report, int $supplierId = 0): ?array
+    {
+        if ($supplierId > 0 && (int) ($report['supplier_id'] ?? 0) !== $supplierId) {
+            return null;
+        }
+
+        $reportId = (int) ($report['dispatch_report_id'] ?? 0);
+        if ($reportId <= 0) {
+            return null;
+        }
+
+        $repository = new DispatchReportRepository();
+        $items = $repository->findItemsWithOrders($reportId);
+        $orderItemRepo = new OrderItemRepository();
+        $totalQuantity = 0;
+
+        foreach ($items as $index => $item) {
+            $orderId = (int) ($item['order_id'] ?? 0);
+            $lineQty = (int) ($item['item_count'] ?? 0);
+            $totalQuantity += $lineQty;
+            $productLines = $orderId > 0 ? $orderItemRepo->findByOrderId($orderId) : [];
+            $lineCost = 0.0;
+            foreach ($productLines as $line) {
+                $qty = max(1, (int) ($line['quantity'] ?? 0));
+                $lineCost += (float) ($line['supplier_cost_snapshot'] ?? 0) * $qty;
+            }
+            $items[$index]['product_lines'] = $productLines;
+            $items[$index]['line_cost_total'] = round($lineCost, 2);
+            $items[$index]['order_no'] = $this->formatDispatchOrderNo($item);
+        }
+
+        $report['status_label'] = DispatchReportReference::statusLabel(
+            (string) ($report['status'] ?? '')
+        );
+
+        $supplierNames = $this->supplierNameMap();
+        $supplierKey = (int) ($report['supplier_id'] ?? 0);
+
+        return [
+            'report' => $report,
+            'items' => $items,
+            'total_quantity' => $totalQuantity,
+            'supplier_name' => $supplierNames[$supplierKey] ?? '—',
+            'prepared_by' => $this->resolvePreparedByLabel($report),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     */
+    private function formatDispatchOrderNo(array $item): string
+    {
+        $ref = trim((string) ($item['erp_order_reference'] ?? $item['order_reference'] ?? ''));
+        if ($ref === '') {
+            return '#' . (int) ($item['order_id'] ?? 0);
+        }
+
+        return str_starts_with($ref, '#') ? $ref : '#' . $ref;
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     */
+    private function resolvePreparedByLabel(array $report): string
+    {
+        $createdBy = trim((string) ($report['created_by'] ?? ''));
+        if ($createdBy !== '') {
+            return $createdBy;
+        }
+
+        $lockedBy = (int) ($report['locked_by'] ?? 0);
+        if ($lockedBy <= 0) {
+            return '—';
+        }
+
+        try {
+            $user = (new \App\Repositories\UserRepository())->findById($lockedBy);
+
+            return trim((string) ($user['username'] ?? '')) !== ''
+                ? (string) $user['username']
+                : '—';
+        } catch (\Throwable $e) {
+            return '—';
         }
     }
 

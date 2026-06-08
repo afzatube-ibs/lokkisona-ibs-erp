@@ -43,9 +43,12 @@ class OrderWorkflowRowPresenter
         }
 
         $orderNo = self::formatOrderNo($order);
-        $viewReportUrl = ($dispatchReportId ?? 0) > 0
-            ? url('/dispatch-reports?report_id=' . (int) $dispatchReportId)
-            : null;
+        $batchRef = trim((string) ($dispatchReference ?? ''));
+        $viewReportUrl = $batchRef !== ''
+            ? url('/dispatch-report/' . rawurlencode($batchRef))
+            : (($dispatchReportId ?? 0) > 0
+                ? url('/dispatch-reports?report_id=' . (int) $dispatchReportId)
+                : null);
         $actions = self::buildActions($displayStatus, $normalized, $batchLocked, $dispatchModuleReady, $viewReportUrl);
 
         return [
@@ -70,7 +73,7 @@ class OrderWorkflowRowPresenter
             'dispatch_report_id' => $dispatchReportId,
             'view_report_url' => $viewReportUrl,
             'created_report_note' => $batchLocked || $displayStatus === 'dispatch_report_created'
-                ? 'Batched orders waiting for courier entry/sync. Normal workflow actions are locked.'
+                ? 'Included in Dispatch Batch'
                 : null,
             'batch_locked' => $batchLocked,
             'primary_action' => $actions['primary'],
@@ -220,7 +223,7 @@ class OrderWorkflowRowPresenter
 
             return [
                 'primary' => $primary,
-                'menu_items' => self::lockedMenuItems(),
+                'menu_items' => self::createdReportMenuItems($normalized),
                 'selectable' => false,
                 'bulk_action_key' => null,
                 'can_hold_cancel' => false,
@@ -265,9 +268,16 @@ class OrderWorkflowRowPresenter
     /**
      * @return array<int, array<string, mixed>>
      */
-    private static function lockedMenuItems(): array
+    private static function createdReportMenuItems(string $normalized): array
     {
-        return [
+        $fromStatus = match ($normalized) {
+            'delivery_stop' => 'delivery_stop',
+            'out_for_delivery' => 'out_for_delivery',
+            'shipped' => 'shipped',
+            default => 'dispatch_report_created',
+        };
+
+        $items = [
             [
                 'code' => 'view_timeline',
                 'label' => 'View timeline',
@@ -280,6 +290,16 @@ class OrderWorkflowRowPresenter
                 'menu_only' => true,
             ],
         ];
+
+        if ($normalized !== 'delivery_stop') {
+            $items[] = self::actionMeta($fromStatus, 'delivery_stop', false);
+        }
+
+        if ($normalized === 'delivery_stop') {
+            $items[] = self::actionMeta('delivery_stop', 'hub_return', false);
+        }
+
+        return $items;
     }
 
     /**

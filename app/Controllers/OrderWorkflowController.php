@@ -25,7 +25,6 @@ use App\Services\Write\OrderWorkflowWriteService;
 use App\Services\ReadOnly\OrderWorkflowListReadService;
 use App\Services\Write\OrderWorkflowBulkWriteService;
 use App\Support\ManualOrderFormOptions;
-use App\Support\RequestTimer;
 use App\Support\WorkflowHistoryPresenter;
 
 class OrderWorkflowController extends Controller
@@ -39,7 +38,6 @@ class OrderWorkflowController extends Controller
         $manualOrderForm = ManualOrderFormOptions::forCreateForm();
         $manualOrderWriteGate = WriteGate::manualOrderCreateForm();
         $supplierId = SupplierContext::enforceSupplierId((int) ($_GET['supplier_id'] ?? 0));
-        $timer = config('app.env') === 'local' ? new RequestTimer() : null;
         $listService = new OrderWorkflowListReadService();
 
         $fromCard = !empty($_GET['from_card']);
@@ -63,19 +61,9 @@ class OrderWorkflowController extends Controller
                 'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
             ];
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $fulfillmentList = $listService->listPage($filters, $page, $supplierId, $timer);
+        $fulfillmentList = $listService->listPage($filters, $page, $supplierId, null);
         $stageCounts = $fulfillmentList['stage_counts'] ?? [];
         $operationalSummary = $listService->operationalSummary($stageCounts, $supplierId);
-        $vfDebugMode = $this->isVendorFulfillmentDebugMode();
-        $vfDebugPanel = $vfDebugMode
-            ? $this->buildVendorFulfillmentDebugPanel(
-                $listService,
-                $statusFilter,
-                $fulfillmentList,
-                $stageCounts,
-                $supplierId
-            )
-            : null;
 
         $this->render('order-workflow.index', [
             'pageTitle' => 'Vendor Fulfillment',
@@ -124,7 +112,7 @@ class OrderWorkflowController extends Controller
             'fulfillmentPagination' => $fulfillmentList['pagination'] ?? [],
             'fulfillmentRows' => $fulfillmentList['rows'] ?? [],
             'tableReady' => $listService->tableExists(),
-            'workflowStageNav' => $this->buildWorkflowStageNavFromCounts($statusFilter, $stageCounts),
+            'workflowStageNav' => $this->buildWorkflowStageNavFromCounts($statusFilter, $stageCounts, $supplierId),
             'recentWorkflowHistory' => $this->buildRecentWorkflowHistory(),
             'deliveryStopReasonOptions' => DeliveryStopReason::options(),
             'dispatchDevNote' => OrderWorkflowStatus::DISPATCH_DEV_NOTE,
@@ -137,9 +125,6 @@ class OrderWorkflowController extends Controller
             'statusFilterOptions' => OrderWorkflowStatus::filterStatusOptions(),
             'canShowTestSync' => !SupplierContext::isSupplier(),
             'dispatchFlash' => $this->resolveDispatchFlashFromQuery(),
-            'vfDebugMode' => $vfDebugMode,
-            'vfDebugPanel' => $vfDebugPanel,
-            'requestTiming' => $vfDebugMode && $timer !== null ? $timer->laps() : null,
             'appVersion' => config('app.version'),
             'releaseLabel' => config('app.release_label'),
         ]);
@@ -554,8 +539,10 @@ class OrderWorkflowController extends Controller
     /**
      * @param array<string, int> $counts
      */
-    private function buildWorkflowStageNavFromCounts(?string $activeStatus, array $counts): array
+    private function buildWorkflowStageNavFromCounts(?string $activeStatus, array $counts, int $supplierId = 0): array
     {
+        $latestBatchReference = $this->resolveLatestDispatchBatchReference($supplierId);
+
         $mainStages = [];
         foreach (OrderWorkflowStatus::releaseStatusCards() as $stage) {
             $code = $stage['code'];
@@ -565,6 +552,7 @@ class OrderWorkflowController extends Controller
                 'count' => $counts[$code] ?? 0,
                 'url' => '/order-workflow?status=' . rawurlencode($code) . '&from_card=1',
                 'active' => $activeStatus === $code,
+                'latest_batch' => $code === 'dispatch_report_created' ? $latestBatchReference : null,
             ];
         }
 
@@ -589,41 +577,21 @@ class OrderWorkflowController extends Controller
         ];
     }
 
-    /**
-     * @param array<string, mixed> $fulfillmentList
-     * @param array<string, int> $stageCounts
-     * @return array<string, mixed>
-     */
-    private function buildVendorFulfillmentDebugPanel(
-        OrderWorkflowListReadService $listService,
-        ?string $statusFilter,
-        array $fulfillmentList,
-        array $stageCounts,
-        int $supplierId
-    ): array {
-        $activeBucket = $statusFilter ?? '(all)';
-        $listTotal = (int) ($fulfillmentList['pagination']['total'] ?? 0);
-        $cardCount = $statusFilter !== null ? (int) ($stageCounts[$statusFilter] ?? 0) : array_sum($stageCounts);
-        $includedIds = array_values($listService->loadIncludedDispatchOrderIds(500));
-        $sqlCodes = $statusFilter !== null
-            ? OrderWorkflowStatus::statusCodesForBucket($statusFilter)
-            : [];
-
-        return [
-            'active_filter' => $activeBucket,
-            'sql_status_codes' => $sqlCodes,
-            'included_dispatch_order_ids' => array_slice($includedIds, 0, 20),
-            'included_dispatch_total' => count($includedIds),
-            'raw_status_histogram' => $listService->rawStatusHistogram($supplierId, 10),
-            'stage_count_for_filter' => $cardCount,
-            'list_total_for_filter' => $listTotal,
-            'counts_match' => $statusFilter === null || $cardCount === $listTotal,
-        ];
-    }
-
-    private function isVendorFulfillmentDebugMode(): bool
+    private function resolveLatestDispatchBatchReference(int $supplierId = 0): ?string
     {
-        return !empty($_GET['debug']) && config('app.env', 'local') === 'local';
+        try {
+            $repository = new DispatchReportRepository();
+            if (!$repository->tableExists()) {
+                return null;
+            }
+
+            $latest = $repository->latestForSupplier($supplierId, 1);
+            $reference = trim((string) ($latest[0]['dispatch_reference'] ?? ''));
+
+            return $reference !== '' ? $reference : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function buildWorkflowStageNav(?string $activeStatus = null): array
@@ -683,7 +651,7 @@ class OrderWorkflowController extends Controller
                 return [];
             }
 
-            $rows = $historyService->latest(30);
+            $rows = $historyService->latest(20);
             if ($rows === []) {
                 return [];
             }

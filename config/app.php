@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.9.8',
-    'release_label' => 'Vendor Fulfillment Release Completion',
+    'version' => '1.9.9',
+    'release_label' => 'Dispatch Report Operational Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

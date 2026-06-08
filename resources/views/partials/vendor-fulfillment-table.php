@@ -25,13 +25,22 @@ $pageQuery = array_filter([
     <?php if (!$tableReady): ?>
     <p class="page-description vf-table-empty">Orders table unavailable. Apply migration 0005 manually first.</p>
     <?php elseif ($total === 0): ?>
-    <p class="page-description vf-table-empty">
-            <?php if ($statusFilter !== null || ($filters['q'] ?? '') !== ''): ?>
-            No orders match the current filters. <a href="<?= e(url('/order-workflow')) ?>">Clear filters</a>
-            <?php else: ?>
-            No orders in vendor fulfillment yet.
-            <?php endif; ?>
-        </p>
+    <?php
+    $hasActiveFilters = $statusFilter !== null
+        || ($filters['q'] ?? '') !== ''
+        || ($filters['courier_status'] ?? '') !== ''
+        || ($filters['date_from'] ?? '') !== ''
+        || ($filters['date_to'] ?? '') !== '';
+    ?>
+    <div class="vf-table-empty-state">
+        <?php if ($hasActiveFilters): ?>
+        <p class="vf-table-empty-title">No orders found</p>
+        <p class="page-description vf-table-empty">Try another status or clear filters.</p>
+        <a href="<?= e(url('/order-workflow')) ?>" class="btn btn-sm btn-secondary vf-clear-filters-btn">Clear Filters</a>
+        <?php else: ?>
+        <p class="vf-table-empty-title">No orders in vendor fulfillment yet</p>
+        <?php endif; ?>
+    </div>
         <?php else: ?>
         <div class="table-scroll vf-table-scroll">
             <table class="data-table vf-fulfillment-table">

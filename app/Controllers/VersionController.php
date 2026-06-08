@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-09',
+            'release_date' => '2026-06-10',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.9.9 Dispatch Report Operational Foundation: removed VF debug UI from release; compact workflow header cards; Created Report row lock with View Report, Delivery Stop, Hub Return and "Included in Dispatch Batch" note; read-only /dispatch-report/{batch} view with Print and Export PDF; Created Report card shows latest batch reference; recent workflow history (20 rows); improved empty filter state — v1.9.8.1 filter consistency preserved, no sync/mapping/import changes',
                 'v1.9.8 Vendor Fulfillment Release Completion: All status card filter with matching counts; per-row timeline button; enriched workflow history (action, batch, user); Created Report lock guard; bulk mixed-status warning; debug blocks hidden unless ?debug=1; release-quality vendor fulfillment ready for owner testing — no OpenCart writes',
                 'v1.9.7 Vendor Fulfillment Workflow Completion Foundation: Packaging → Shipped no longer disappears — post-action redirect lands on the new status filter with success link; legacy ibs_status aliases (processing, ready_for_dispatch) match list/count filters; Hold resume always restores Order Received; bulk Resume on Hold filter; Created Report primary View Report button; shipped rows visible without batch/courier; re-sync never resets ibs_status; local ERP snapshot only — no OpenCart writes',
                 'v1.9.4 Navigation Release Structure Cleanup: sidebar regrouped into Dashboard + Fulfillment (Order, Manual Order, Dispatched Total, Return List, Payables, Product Control) + Finance (Balance Sheet, Payable & Settlement, Opening Balance, Supplier Account / Ledger) + Reports tier + Settings + Future Modules; Sync Settings shows saved URL, masked token hint, connection/API/bridge status, last test and sync timestamps; buttons Save API Settings, Test Connection, Refresh Products, Sync Log — no route deletion, no workflow logic change',

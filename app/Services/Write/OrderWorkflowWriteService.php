@@ -50,7 +50,11 @@ class OrderWorkflowWriteService
         }
 
         $fromStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
-        if ($this->isBatchLocked($orderId, $fromStatus)) {
+        $rawToStatus = trim($toStatus);
+        $pendingToStatus = OrderWorkflowStatus::isResumeAction($rawToStatus)
+            ? $rawToStatus
+            : OrderWorkflowStatus::normalize($rawToStatus);
+        if ($this->isBatchLocked($orderId, $fromStatus, $pendingToStatus)) {
             return WriteResult::fail('Created Report orders are locked from normal workflow actions.');
         }
 
@@ -58,7 +62,6 @@ class OrderWorkflowWriteService
             return WriteResult::fail('No workflow action is allowed for ' . OrderWorkflowStatus::label($fromStatus) . ' orders.');
         }
 
-        $rawToStatus = trim($toStatus);
         $resumeAdjustmentNote = null;
 
         if (OrderWorkflowStatus::isResumeAction($rawToStatus)) {
@@ -340,8 +343,16 @@ class OrderWorkflowWriteService
         return implode(' ', $parts);
     }
 
-    private function isBatchLocked(int $orderId, string $fromStatus): bool
+    private function isBatchLocked(int $orderId, string $fromStatus, string $toStatus = ''): bool
     {
+        if (in_array($toStatus, ['delivery_stop'], true)) {
+            return false;
+        }
+
+        if ($fromStatus === 'delivery_stop' && $toStatus === 'hub_return') {
+            return false;
+        }
+
         if ($fromStatus === 'dispatch_report_created') {
             return true;
         }

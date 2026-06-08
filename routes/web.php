@@ -60,6 +60,7 @@ $router->post('/order-workflow/bulk-action', 'OrderWorkflowController@bulkAction
 $router->post('/order-workflow/note', 'OrderWorkflowController@note');
 $router->post('/order-workflow/create', 'OrderWorkflowController@create');
 $router->get('/dispatch-reports', 'DispatchReportsController@index');
+$router->get('/dispatch-report/{batch}', 'DispatchReportsController@show');
 $router->post('/dispatch-reports/create', 'DispatchReportsController@create');
 $router->get('/supplier-payables', 'SupplierPayablesController@index');
 $router->post('/supplier-payables/create', 'SupplierPayablesController@createManual');
