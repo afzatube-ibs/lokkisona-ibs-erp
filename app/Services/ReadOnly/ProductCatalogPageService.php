@@ -77,10 +77,21 @@ class ProductCatalogPageService
             'product_name' => trim((string) ($filters['product_name'] ?? '')),
             'model' => trim((string) ($filters['model'] ?? '')),
             'supplier_model' => trim((string) ($filters['supplier_model'] ?? '')),
+            'category' => trim((string) ($filters['category'] ?? '')),
             'type' => in_array($type, $allowedTypes, true) ? $type : 'all',
             'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'product_id_asc',
             'chip' => in_array($chip, $allowedChips, true) ? $chip : 'all',
+            'per_page' => $this->normalizePerPage($filters['per_page'] ?? ProductControlListReadService::PER_PAGE),
         ];
+    }
+
+    private function normalizePerPage(mixed $perPage): int
+    {
+        $value = (int) $perPage;
+
+        return in_array($value, [ProductControlListReadService::PER_PAGE, ProductControlListReadService::MAX_PER_PAGE], true)
+            ? $value
+            : ProductControlListReadService::PER_PAGE;
     }
 
     private function applyFilters(array $rows, array $filters): array
@@ -106,6 +117,9 @@ class ProductCatalogPageService
                 return false;
             }
             if ($f['supplier_model'] !== '' && !str_contains(strtolower((string) ($row['supplier_model'] ?? '')), strtolower($f['supplier_model']))) {
+                return false;
+            }
+            if ($f['category'] !== '' && strcasecmp((string) ($row['supplier_product_category'] ?? ''), $f['category']) !== 0) {
                 return false;
             }
             if ($type === 'simple' && ($row['type'] ?? '') !== 'simple') {

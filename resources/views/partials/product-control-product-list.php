@@ -11,20 +11,22 @@ $pageQuery = array_filter([
     'q' => $catalogFilters['q'] ?? '',
     'product_name' => $catalogFilters['product_name'] ?? '',
     'supplier_model' => $catalogFilters['supplier_model'] ?? '',
+    'category' => ($catalogFilters['category'] ?? '') !== '' ? ($catalogFilters['category'] ?? '') : '',
     'type' => ($catalogFilters['type'] ?? '') !== 'all' ? ($catalogFilters['type'] ?? '') : '',
     'sort' => ($catalogFilters['sort'] ?? '') !== 'product_id_asc' ? ($catalogFilters['sort'] ?? '') : '',
     'chip' => ($catalogFilters['chip'] ?? '') !== 'all' ? ($catalogFilters['chip'] ?? '') : '',
+    'per_page' => $perPage !== 20 ? (string) $perPage : '',
 ], static fn ($value) => $value !== '' && $value !== null && $value !== 'all');
 $paginationMeta = 'Page ' . $currentPage . ' of ' . $totalPages . ' · ' . $totalFiltered . ' records · ' . $perPage . ' per page';
 $actionLabel = $canManage ? 'Manage' : 'Open';
 ?>
-<div class="card mb-15 pcc-list-card">
-    <div class="card-header product-control-table-header">
+<div class="card pc-card pcc-list-card">
+    <div class="card-header product-control-table-header pc-table-header">
         <div>
             <h2 class="card-title">Inventory Products</h2>
-            <p class="page-description mb-0">Read-only inventory monitor. Click any row or use Manage to open Product Control Center.</p>
+            <p class="pc-table-subtitle">Local snapshot view. Click Manage to edit supplier fields.</p>
         </div>
-        <span class="page-description mb-0"><?= e($paginationMeta) ?></span>
+        <span class="pc-pagination-meta"><?= e($paginationMeta) ?></span>
     </div>
     <div class="card-body">
         <?php if (!$tableReady): ?>
@@ -35,11 +37,11 @@ $actionLabel = $canManage ? 'Manage' : 'Open';
         <p class="page-description">No products match the current filters. <a href="<?= e(url('/product-control')) ?>">Clear filters</a></p>
         <?php else: ?>
         <div class="table-scroll pcc-list-scroll">
-            <table class="data-table product-catalog-table product-catalog-table-compact product-catalog-table-v874 product-catalog-table-v874-fixed pcc-table-tight">
+            <table class="data-table product-catalog-table product-catalog-table-v874 product-catalog-table-v874-fixed pc-product-table">
                 <thead>
                     <tr>
                         <th class="pcc-col-product">Product</th>
-                        <th class="pcc-col-variable">Variable</th>
+                        <th class="pcc-col-variable">Type / Variable</th>
                         <th class="pcc-col-vendor-model">Vendor Model</th>
                         <th class="pcc-col-numeric pcc-hide-sm">Average Cost</th>
                         <th class="pcc-col-numeric pcc-hide-sm">Owner Stock</th>
@@ -60,10 +62,10 @@ $actionLabel = $canManage ? 'Manage' : 'Open';
                     $healthLabel = (string) ($row['health_status_display'] ?? $row['health_label'] ?? '—');
                     $healthClass = (string) ($row['health_status_class'] ?? $row['health_class'] ?? 'muted');
                     ?>
-                    <tr class="product-catalog-row" data-product-id="<?= e((string) $productId) ?>" tabindex="0">
+                    <tr class="product-catalog-row pc-table-row" data-product-id="<?= e((string) $productId) ?>" tabindex="0">
                         <td class="pcc-col-product">
                             <div class="pcc-product-cell">
-                                <div class="pcc-list-thumb">
+                                <div class="pcc-list-thumb pc-list-thumb">
                                     <?php if ($imageUrl !== ''): ?>
                                     <img src="<?= e($imageUrl) ?>" alt="" loading="lazy">
                                     <?php else: ?>
@@ -76,16 +78,16 @@ $actionLabel = $canManage ? 'Manage' : 'Open';
                                 </div>
                             </div>
                         </td>
-                        <td class="pcc-col-variable"><span class="badge <?= $isVariable ? 'badge-info' : 'badge-ok' ?>"><?= $isVariable ? 'Variable' : 'Simple' ?></span></td>
+                        <td class="pcc-col-variable"><span class="badge pc-cell-badge <?= $isVariable ? 'badge-info' : 'badge-ok' ?>"><?= $isVariable ? 'Variable' : 'Simple' ?></span></td>
                         <td class="pcc-col-vendor-model"><span class="pcc-cell-ellipsis" title="<?= e($vendorModel) ?>"><?= $vendorModel !== '' ? e($vendorModel) : '—' ?></span></td>
                         <td class="pcc-col-numeric pcc-hide-sm"><?= e((string) ($row['average_cost'] ?? '—')) ?></td>
                         <td class="pcc-col-numeric pcc-hide-sm"><?= e((string) ($row['owner_stock'] ?? '—')) ?></td>
-                        <td><span class="badge badge-<?= e($row['vendor_stock_class'] ?? 'muted') ?>"><?= e($row['vendor_stock_label'] ?? 'Not Set') ?></span></td>
-                        <td><span class="badge badge-<?= e($healthClass) ?>"><?= e($healthLabel) ?></span></td>
+                        <td class="pcc-col-numeric"><span class="badge pc-cell-badge badge-<?= e($row['vendor_stock_class'] ?? 'muted') ?>"><?= e($row['vendor_stock_label'] ?? 'Not Set') ?></span></td>
+                        <td class="pcc-col-health"><span class="badge pc-cell-badge badge-<?= e($healthClass) ?>"><?= e($healthLabel) ?></span></td>
                         <td class="pcc-col-actions">
-                            <div class="pcc-row-actions">
+                            <div class="pcc-row-actions pc-row-actions">
                                 <button type="button" class="btn btn-primary btn-sm pcc-open-btn" data-product-id="<?= e((string) $productId) ?>" data-pcc-open="details"><?= e($actionLabel) ?></button>
-                                <button type="button" class="btn btn-secondary btn-sm pcc-history-btn" data-product-id="<?= e((string) $productId) ?>" data-pcc-open="history">History</button>
+                                <button type="button" class="btn btn-ghost btn-sm pcc-history-btn pc-btn-muted" data-product-id="<?= e((string) $productId) ?>" data-pcc-open="history">History</button>
                             </div>
                         </td>
                     </tr>

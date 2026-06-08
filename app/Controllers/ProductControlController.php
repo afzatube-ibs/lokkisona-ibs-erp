@@ -57,15 +57,18 @@ class ProductControlController extends Controller
             'product_name' => $_GET['product_name'] ?? '',
             'model' => $_GET['model'] ?? '',
             'supplier_model' => $_GET['supplier_model'] ?? '',
+            'category' => $_GET['category'] ?? '',
             'type' => $_GET['type'] ?? 'all',
             'sort' => $_GET['sort'] ?? 'product_id_asc',
             'chip' => $_GET['chip'] ?? 'all',
+            'per_page' => $_GET['per_page'] ?? ProductControlListReadService::PER_PAGE,
         ];
         $catalogPage = max(1, (int) ($_GET['page'] ?? 1));
 
         $productCatalog = $listService->listPage($catalogFilters, $catalogPage, $supplierId, $isSupplierView, $timer);
         $summaryKpis = $productCatalog['summary_kpis'] ?? [];
         $freshness = $listService->snapshotFreshness($supplierId);
+        $categoryOptions = $listService->listCategoryOptions($supplierId);
         $timer->lap('total');
         $timer->log('product-control index');
 
@@ -91,6 +94,7 @@ class ProductControlController extends Controller
             'snapshotIsStale' => !empty($freshness['is_stale']),
             'sourceSyncLabel' => $this->productSyncSourceLabelConfigOnly(),
             'catalogFilters' => $productCatalog['filters'] ?? [],
+            'categoryOptions' => $categoryOptions,
             'catalogPagination' => $productCatalog['pagination'] ?? [],
             'defaultBusinessSourceId' => (int) config('opencart.business_source_id', 1),
             'canManage' => Permission::can('product_control.manage'),
