@@ -606,7 +606,12 @@ class SyncPreviewController extends Controller
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $result = (new SyncPreviewWriteService())->previewProducts($_POST);
-        $this->redirectWithWriteResult('/product-control?product_page=' . $page, $result);
+        $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
+        if (!in_array($redirect, ['/sync-preview', '/product-control', '/sync-api-settings'], true)) {
+            $redirect = '/product-control';
+        }
+        $suffix = $redirect === '/sync-api-settings' ? '' : '?product_page=' . $page;
+        $this->redirectWithWriteResult($redirect . $suffix, $result);
     }
 
     public function importProducts()

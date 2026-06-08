@@ -14,21 +14,30 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
         'q' => $filters['q'] ?? '',
         'product_name' => $filters['product_name'] ?? '',
         'supplier_model' => $filters['supplier_model'] ?? '',
+        'category' => ($filters['category'] ?? '') !== '' ? ($filters['category'] ?? null) : null,
         'type' => ($filters['type'] ?? 'all') !== 'all' ? ($filters['type'] ?? null) : null,
         'sort' => ($filters['sort'] ?? 'product_id_asc') !== 'product_id_asc' ? ($filters['sort'] ?? null) : null,
-        'chip' => $chipKey,
+        'per_page' => (int) ($filters['per_page'] ?? 20) !== 20 ? ($filters['per_page'] ?? null) : null,
+        'chip' => $chipKey !== 'all' ? $chipKey : null,
     ], static fn ($v) => $v !== '' && $v !== null && $v !== 'all');
 
-    return url('/product-control') . '?' . http_build_query($query);
+    return url('/product-control') . ($query !== [] ? '?' . http_build_query($query) : '');
 };
 ?>
-<div class="page-header page-header-compact product-control-header">
+<div class="product-control-release">
+<div class="page-header page-header-compact product-control-header pc-page-header">
     <div class="product-control-header-main">
         <div>
             <h1 class="page-title">Product Control</h1>
-            <p class="ops-page-subtitle">Local ERP product snapshot — loaded from the database only. Click <strong>Refresh Products</strong> when you need the latest Lokkisona warehouse catalog.</p>
+            <p class="ops-page-subtitle pc-page-subtitle">Local ERP product snapshot. Click <strong>Refresh Products</strong> only when you need latest Lokkisona catalog.</p>
+            <p class="pc-snapshot-inline<?= $snapshotStale ? ' pc-snapshot-inline-stale' : '' ?>">
+                Snapshot last refreshed: <?= $lastSync !== '' ? e($lastSync) : '—' ?>
+                <?php if ($snapshotStale): ?>
+                <span class="pc-snapshot-stale-note">· older than 24h</span>
+                <?php endif; ?>
+            </p>
         </div>
-        <div class="product-control-header-actions">
+        <div class="product-control-header-actions pc-header-actions">
             <?php if (!empty($canViewHealth)): ?>
             <a href="<?= e(url('/health')) ?>" class="btn btn-secondary btn-sm">Catalog Health</a>
             <?php endif; ?>
@@ -50,65 +59,33 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
-<div class="card mb-15 pcc-snapshot-bar <?= $snapshotStale ? 'pcc-snapshot-bar-stale' : '' ?>">
-    <div class="card-body pcc-snapshot-bar-body">
-        <div>
-            <strong>Snapshot last refreshed:</strong>
-            <?= $lastSync !== '' ? e($lastSync) : '—' ?>
-            <?php if (!empty($sourceSyncLabel)): ?>
-            <span class="pcc-snapshot-source">· <?= e((string) $sourceSyncLabel) ?></span>
-            <?php endif; ?>
-        </div>
-        <?php if ($snapshotStale): ?>
-        <p class="page-description mb-0 pcc-snapshot-warn">Catalog snapshot is older than 24 hours. Refresh when needed.</p>
-        <?php endif; ?>
-    </div>
-</div>
-
-<div class="card mb-15 pcc-hero-card">
-    <div class="card-body pcc-hero-card-body">
-        <div class="pcc-hero-main">
-            <h2 class="pcc-hero-title">Product Control</h2>
-            <p class="page-description mb-0">Saved ERP catalog snapshot — the list is read-only; edits live inside Product Control Center when you click Manage. No automatic API refresh on page load.</p>
-        </div>
-        <div class="pcc-hero-pills">
-            <span class="workflow-chip">Supplier fields preserved on re-sync</span>
-            <span class="workflow-chip is-active">Local snapshot view</span>
-        </div>
-    </div>
-</div>
-
-<div class="kpi-grid kpi-grid-inline product-control-kpis product-control-kpis-filter mb-15">
-    <a href="<?= e($chipUrl('ready')) ?>" class="kpi-card kpi-accent-success">
+<div class="kpi-grid kpi-grid-inline product-control-kpis product-control-kpis-filter pc-kpi-grid">
+    <a href="<?= e($chipUrl('ready')) ?>" class="kpi-card kpi-accent-success pc-kpi-card">
         <span class="kpi-label">Ready</span>
         <span class="kpi-value"><?= e((string) ($summary['ready'] ?? 0)) ?></span>
-        <span class="kpi-sub">model + rate complete</span>
     </a>
-    <a href="<?= e($chipUrl('needs_work')) ?>" class="kpi-card kpi-accent-warn">
+    <a href="<?= e($chipUrl('needs_work')) ?>" class="kpi-card kpi-accent-warn pc-kpi-card">
         <span class="kpi-label">Needs Work</span>
         <span class="kpi-value"><?= e((string) ($summary['needs_work'] ?? 0)) ?></span>
-        <span class="kpi-sub">missing model or rate</span>
     </a>
-    <a href="<?= e($chipUrl('missing_cost')) ?>" class="kpi-card kpi-accent-warn">
+    <a href="<?= e($chipUrl('missing_cost')) ?>" class="kpi-card kpi-accent-warn pc-kpi-card">
         <span class="kpi-label"><?= e($missingRateLabel) ?></span>
         <span class="kpi-value"><?= e((string) ($summary['missing_cost'] ?? 0)) ?></span>
-        <span class="kpi-sub">click to filter</span>
     </a>
-    <a href="<?= e($chipUrl('missing_model')) ?>" class="kpi-card kpi-accent-warn">
+    <a href="<?= e($chipUrl('missing_model')) ?>" class="kpi-card kpi-accent-warn pc-kpi-card">
         <span class="kpi-label">Missing Model</span>
         <span class="kpi-value"><?= e((string) ($summary['missing_model'] ?? 0)) ?></span>
-        <span class="kpi-sub">click to filter</span>
     </a>
-    <a href="<?= e($chipUrl('low_stock')) ?>" class="kpi-card kpi-accent-info">
+    <a href="<?= e($chipUrl('low_stock')) ?>" class="kpi-card kpi-accent-info pc-kpi-card">
         <span class="kpi-label">Low Stock</span>
         <span class="kpi-value"><?= e((string) ($summary['low_stock'] ?? 0)) ?></span>
-        <span class="kpi-sub">at or below warning</span>
     </a>
 </div>
 
 <?php view('partials.product-control-filters', [
     'catalogFilters' => $filters,
     'missingRateLabel' => $missingRateLabel,
+    'categoryOptions' => $categoryOptions ?? [],
 ]); ?>
 
 <?php view('partials.product-control-product-list', [
@@ -140,12 +117,4 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
     'historyUrl' => url('/product-control/history'),
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>
 <script src="<?= e(asset('js/product-control.js')) ?>"></script>
-<?php if (!empty($timingDiagnostics)): ?>
-<p class="page-description pcc-timing-diagnostics mb-15">Timing (local): <?php
-    $parts = [];
-    foreach ($timingDiagnostics as $label => $ms) {
-        $parts[] = e((string) $label) . ' ' . e((string) $ms) . 'ms';
-    }
-    echo implode(' · ', $parts);
-?></p>
-<?php endif; ?>
+</div>

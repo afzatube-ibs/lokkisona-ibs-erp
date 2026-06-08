@@ -221,7 +221,9 @@ class OrderWorkflowRowPresenter
             $primary = self::actionMeta('hold', OrderWorkflowStatus::RESUME_ACTION, true);
         } else {
             $primaryCode = self::primaryActionCode($normalized, $dispatchModuleReady);
-            if ($primaryCode !== null && $primaryCode !== 'bulk_dispatch') {
+            if ($primaryCode === 'create_dispatch_report') {
+                $primary = self::dispatchCreateActionMeta();
+            } elseif ($primaryCode !== null && $primaryCode !== 'bulk_dispatch') {
                 $primary = self::actionMeta($normalized, $primaryCode, true);
             }
         }
@@ -273,10 +275,30 @@ class OrderWorkflowRowPresenter
             'new_order' => 'order_received',
             'order_received' => 'packaging',
             'packaging' => 'shipped',
-            'shipped' => $dispatchModuleReady ? null : 'dispatch_report_created',
+            'shipped' => $dispatchModuleReady ? 'create_dispatch_report' : 'dispatch_report_created',
             'delivery_stop' => 'hub_return',
             default => null,
         };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function dispatchCreateActionMeta(): array
+    {
+        return [
+            'code' => 'create_dispatch_report',
+            'label' => 'Create Dispatch Report',
+            'requires_note' => false,
+            'requires_checkbox' => false,
+            'checkbox_label' => null,
+            'requires_confirm' => true,
+            'is_delivery_stop' => false,
+            'is_hub_return' => false,
+            'is_dispatch_create' => true,
+            'is_menu_action' => false,
+            'menu_only' => false,
+        ];
     }
 
     private static function isBulkEligible(string $status, bool $dispatchModuleReady): bool

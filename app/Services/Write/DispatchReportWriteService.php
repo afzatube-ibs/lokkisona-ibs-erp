@@ -169,9 +169,11 @@ class DispatchReportWriteService
             $payableResult = (new PayableLedgerWriteService())->createDraftFromDispatch($reportId);
             if ($payableResult->success) {
                 $payableNote = ' Product Cost Payable draft created — awaiting owner approval.';
+            } else {
+                $payableNote = ' Warning: ' . $payableResult->message;
             }
         } catch (\Throwable $e) {
-            // Payable draft is optional when ledger table is unavailable.
+            $payableNote = ' Warning: Payable ledger unavailable — dispatch report still created.';
         }
 
         ActivityLog::record('dispatch_report_created', 'Daily dispatch report created (locked snapshot)', [

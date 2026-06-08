@@ -14,15 +14,15 @@ class SyncApiSettingsController extends Controller
     public function index()
     {
         $this->authorize('sync_api_settings.view');
-        ActivityLog::record('sync_api_settings_access', 'Sync/API Settings page viewed');
+        ActivityLog::record('sync_api_settings_access', 'Sync Settings page viewed');
 
         $read = new SyncApiSettingsReadService();
 
         $this->render('sync-api-settings.index', [
-            'pageTitle' => 'Sync/API Settings',
+            'pageTitle' => 'Sync Settings',
             'breadcrumbs' => [
-                ['label' => 'System', 'active' => false],
-                ['label' => 'Sync/API Settings', 'active' => true],
+                ['label' => 'Settings', 'active' => false],
+                ['label' => 'Sync Settings', 'active' => true],
             ],
             'accessMode' => Permission::accessMode(),
             'settings' => $read->formState(),

@@ -49,9 +49,19 @@
         }
         pending = config;
         qs('#vfActionModalTitle', modal).textContent = config.label || 'Confirm action';
-        qs('#vfActionModalDesc', modal).textContent = config.isBulk
-            ? 'Apply "' + (config.label || '') + '" to ' + (config.orderIds ? config.orderIds.length : 0) + ' selected order(s)?'
-            : 'Confirm workflow action for order #' + (config.orderId || '') + '. IBS status only — OpenCart order status is not changed.';
+        var desc = '';
+        if (config.isBulk) {
+            desc = 'Apply "' + (config.label || '') + '" to ' + (config.orderIds ? config.orderIds.length : 0) + ' selected order(s)?';
+        } else if (config.actionCode === 'order_received') {
+            desc = 'Receive this order into Iqbal & Brothers fulfillment? IBS status only — OpenCart order status is not changed.';
+        } else if (config.actionCode === 'shipped') {
+            desc = 'Confirm parcel is packed and ready to ship. IBS status only — OpenCart order status is not changed.';
+        } else if (config.isDispatchCreate) {
+            desc = 'Create a dispatch report batch for this shipped order? Selected rows will be locked with an immutable cost snapshot.';
+        } else {
+            desc = 'Confirm workflow action for order #' + (config.orderId || '') + '. IBS status only — OpenCart order status is not changed.';
+        }
+        qs('#vfActionModalDesc', modal).textContent = desc;
         var checkboxWrap = qs('#vfCheckboxWrap', modal);
         var staffCheck = qs('#vfModalStaffCheck', modal);
         if (config.requiresCheckbox) {
@@ -369,6 +379,10 @@
                 openHubReturnModal(orderId);
                 return;
             }
+            if (code === 'create_dispatch_report') {
+                openDispatchConfirmModal([orderId]);
+                return;
+            }
             openModal({
                 orderId: orderId,
                 actionCode: code,
@@ -377,6 +391,7 @@
                 requiresCheckbox: btn.getAttribute('data-requires-checkbox') === '1',
                 checkboxLabel: btn.getAttribute('data-checkbox-label') || '',
                 isDeliveryStop: btn.getAttribute('data-is-delivery-stop') === '1',
+                isDispatchCreate: btn.getAttribute('data-is-dispatch-create') === '1',
                 isBulkDispatch: false
             });
         });

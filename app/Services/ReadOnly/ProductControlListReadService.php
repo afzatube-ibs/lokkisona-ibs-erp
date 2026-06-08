@@ -7,6 +7,7 @@ use App\Database\QueryGuard;
 use App\Database\TableName;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\ReadFoundation\WriteGate;
 use App\Repositories\ProductVariantRepository;
 use App\Support\RequestTimer;
 use App\Support\SimpleFileCache;
@@ -19,6 +20,8 @@ class ProductControlListReadService
 {
     public const PER_PAGE = 20;
 
+    public const MAX_PER_PAGE = 50;
+
     private const CACHE_TTL = 60;
 
     private ProductControlCatalogReadService $catalog;
@@ -28,6 +31,8 @@ class ProductControlListReadService
     private ProductVariantRepository $variantRepository;
 
     private SimpleFileCache $cache;
+
+    private ?bool $categoryColumnReady = null;
 
     public function __construct(
         ?ProductControlCatalogReadService $catalog = null,
@@ -58,7 +63,7 @@ class ProductControlListReadService
     {
         $normalized = $this->filters->normalizedFilters($filters);
         $page = max(1, $page);
-        $perPage = self::PER_PAGE;
+        $perPage = $this->resolvePerPage($normalized);
         $offset = ($page - 1) * $perPage;
 
         if (!$this->tableExists()) {
@@ -232,6 +237,41 @@ class ProductControlListReadService
         }
     }
 
+    /**
+     * Distinct supplier product categories for filter dropdown (local snapshot only).
+     *
+     * @return array<int, string>
+     */
+    public function listCategoryOptions(int $supplierId): array
+    {
+        if (!$this->tableExists() || !$this->categoryColumnReady()) {
+            return [];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $productsTable = TableName::forModel(Product::class);
+            $where = $this->baseWhereSql($supplierId);
+            $params = $this->baseWhereParams($supplierId);
+            $sql = 'SELECT DISTINCT TRIM(p.supplier_product_category) AS category '
+                . 'FROM `' . $this->esc($productsTable) . '` p '
+                . 'WHERE ' . $where . ' AND p.supplier_product_category IS NOT NULL '
+                . 'AND TRIM(p.supplier_product_category) != \'\' '
+                . 'ORDER BY category ASC LIMIT 200';
+            QueryGuard::assertReadOnly($sql);
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            return array_values(array_filter(array_map(
+                static fn (array $row): string => trim((string) ($row['category'] ?? '')),
+                $rows
+            )));
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public static function invalidateCache(): void
     {
         (new SimpleFileCache('product-control'))->flush();
@@ -243,7 +283,11 @@ class ProductControlListReadService
     private function appendFilterSql(array $normalized, string &$where, array &$params): void
     {
         if ($normalized['q'] !== '') {
-            $where .= ' AND (p.product_name LIKE :q OR p.source_model LIKE :q OR p.supplier_model LIKE :q OR p.source_product_id LIKE :q OR CAST(p.product_id AS CHAR) LIKE :q)';
+            $qClause = '(p.product_name LIKE :q OR p.source_model LIKE :q OR p.supplier_model LIKE :q OR p.source_product_id LIKE :q OR CAST(p.product_id AS CHAR) LIKE :q';
+            if ($this->categoryColumnReady()) {
+                $qClause .= ' OR p.supplier_product_category LIKE :q';
+            }
+            $where .= ' AND ' . $qClause . ')';
             $params['q'] = '%' . $normalized['q'] . '%';
         }
         if ($normalized['product_name'] !== '') {
@@ -257,6 +301,10 @@ class ProductControlListReadService
         if ($normalized['supplier_model'] !== '') {
             $where .= ' AND p.supplier_model LIKE :supplier_model';
             $params['supplier_model'] = '%' . $normalized['supplier_model'] . '%';
+        }
+        if ($normalized['category'] !== '' && $this->categoryColumnReady()) {
+            $where .= ' AND TRIM(p.supplier_product_category) = :category';
+            $params['category'] = $normalized['category'];
         }
 
         if ($normalized['type'] === 'simple') {
@@ -277,6 +325,27 @@ class ProductControlListReadService
         } elseif ($chip === 'low_stock') {
             $where .= ' AND ' . $this->lowStockSql('p', 'vagg');
         }
+    }
+
+    /**
+     * @param array<string, mixed> $normalized
+     */
+    private function resolvePerPage(array $normalized): int
+    {
+        $perPage = (int) ($normalized['per_page'] ?? self::PER_PAGE);
+
+        return in_array($perPage, [self::PER_PAGE, self::MAX_PER_PAGE], true) ? $perPage : self::PER_PAGE;
+    }
+
+    private function categoryColumnReady(): bool
+    {
+        if ($this->categoryColumnReady !== null) {
+            return $this->categoryColumnReady;
+        }
+
+        $this->categoryColumnReady = (bool) (WriteGate::supplierProductCategoryColumn()['ready'] ?? false);
+
+        return $this->categoryColumnReady;
     }
 
     private function baseWhereSql(int $supplierId): string

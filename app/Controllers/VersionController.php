@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-08',
+            'release_date' => '2026-06-09',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,8 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v1.9.4 Navigation Release Structure Cleanup: sidebar regrouped into Dashboard + Fulfillment (Order, Manual Order, Dispatched Total, Return List, Payables, Product Control) + Finance (Balance Sheet, Payable & Settlement, Opening Balance, Supplier Account / Ledger) + Reports tier + Settings + Future Modules; Sync Settings shows saved URL, masked token hint, connection/API/bridge status, last test and sync timestamps; buttons Save API Settings, Test Connection, Refresh Products, Sync Log — no route deletion, no workflow logic change',
+                'v1.9.5 Vendor Fulfillment Workflow Release Foundation: /order-workflow operational release for first real testing — New Order → Receive → Order Received → Start Packaging → Packaging → Mark Shipped → Shipped → Create Dispatch Report → Created Report (locked View Report only); release status cards (5 main + Delivery Stop / Hub Return / Customer Return chips); row + bulk actions with Receive Order, Print & Start Packaging, Mark as Shipped, Create Dispatch Report modals; DDMMYYYY-P1/P2 batch reference; immutable dispatch snapshot; payable draft hook with warning when ledger table missing; audit log on every action; default 20 / max 50 rows; no OpenCart writes or page-load API — no new workflow stages or future modules',
                 'v1.9.3 Vendor Fulfillment IBS-LK Parity: /order-workflow aligned to old IBS-LK extension — compact status cards + exception chips, unified toolbar (search, single status-aware bulk action, Hold/Cancel, per-page 20/50, Clear, owner Test Sync link); founder modals (Print & Move to Processing, Dispatch Report Created, Confirm Hub Return Receive); 3-dot menu (View timeline, Add note, Hold, Cancel, Delivery Stop); Created Report View Report + locked message; GET /order-workflow/history + POST /order-workflow/note + selection-preview JSON; homogeneous bulk validation server-side; green success toast — no OpenCart writes',
                 'v1.9.2 Vendor Fulfillment Workflow Foundation: /order-workflow becomes compact Vendor Fulfillment SaaS table (cost-only product cards, SQL pagination 20–50 rows, filters, bulk Receive/Packaging/Shipped/Dispatch Batch); OrderWorkflowListReadService + row presenter; lazy action modal via order-workflow.js; IBS workflow independent from OpenCart OC status badge (read-only); dispatch batch from table when migration 0006 ready; no OpenCart writes — order sync remains on hidden /sync-preview',
                 'v1.9.1 Product Control Performance: SQL-paginated listing (20 rows per page from local ERP snapshot only — no 200/500 row preload); KPI summary via aggregate SQL with 60s file cache; lazy AJAX modal via GET /product-control/workspace and GET /product-control/history; snapshot freshness strip with 24h stale warning; no OpenCart API on page load; dev-only timing diagnostics; migration 0013 optional list indexes — sync import and supplier field preservation unchanged',

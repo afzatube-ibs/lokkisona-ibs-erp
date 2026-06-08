@@ -48,7 +48,7 @@ class OrderWorkflowStatus
         'new_order|order_received' => 'Receive Order',
         'order_received|packaging' => 'Print & Start Packaging',
         'packaging|shipped' => 'Mark as Shipped',
-        'shipped|dispatch_report_created' => 'Create Dispatch Batch',
+        'shipped|dispatch_report_created' => 'Create Dispatch Report',
         'shipped|delivery_stop' => 'Delivery Stop',
         'delivery_stop|hub_return' => 'Confirm Hub Return',
         'hold|cancelled' => 'Cancelled',
@@ -125,11 +125,39 @@ class OrderWorkflowStatus
 
     public static function groupDisplayLabel(string $code): string
     {
-        if (self::normalize($code) === 'dispatch_report_created') {
+        $normalized = self::normalize($code);
+
+        if ($normalized === 'dispatch_report_created') {
             return 'Created Report';
         }
 
+        if ($normalized === 'order_returning') {
+            return 'Customer Return';
+        }
+
         return self::label($code);
+    }
+
+    /** Status cards shown on /order-workflow release UI (operational flow only). */
+    public static function releaseStatusCards(): array
+    {
+        return [
+            ['code' => 'new_order', 'label' => 'New Order'],
+            ['code' => 'order_received', 'label' => 'Order Received'],
+            ['code' => 'packaging', 'label' => 'Packaging'],
+            ['code' => 'shipped', 'label' => 'Shipped'],
+            ['code' => 'dispatch_report_created', 'label' => 'Created Report'],
+        ];
+    }
+
+    /** Exception chips on /order-workflow release UI. */
+    public static function releaseExceptionChips(): array
+    {
+        return [
+            ['code' => 'delivery_stop', 'label' => 'Delivery Stop'],
+            ['code' => 'hub_return', 'label' => 'Hub Return'],
+            ['code' => 'order_returning', 'label' => 'Customer Return'],
+        ];
     }
 
     public static function isKnown(string $code): bool
@@ -230,6 +258,10 @@ class OrderWorkflowStatus
 
         if ($from === 'packaging' && $to === 'shipped') {
             return 'Mark Shipped';
+        }
+
+        if ($from === 'shipped' && $to === 'dispatch_report_created') {
+            return 'Create Dispatch Report';
         }
 
         if ($from === 'delivery_stop' && $to === 'hub_return') {
