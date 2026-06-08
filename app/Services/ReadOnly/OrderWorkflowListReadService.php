@@ -87,7 +87,11 @@ class OrderWorkflowListReadService
             ];
         }
 
-        $dispatchReferences = $this->dispatchReports->findIncludedOrderReferences(500);
+        $dispatchMeta = $this->dispatchReports->findIncludedOrderMeta(500);
+        $dispatchReferences = [];
+        foreach ($dispatchMeta as $orderId => $meta) {
+            $dispatchReferences[$orderId] = $meta['dispatch_reference'];
+        }
         if ($timer !== null) {
             $timer->lap('dispatch_refs');
         }
@@ -124,6 +128,9 @@ class OrderWorkflowListReadService
             $orderId = (int) ($order['order_id'] ?? 0);
             $rawStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
             $dispatchReference = $dispatchReferences[$orderId] ?? null;
+            $dispatchReportId = isset($dispatchMeta[$orderId])
+                ? (int) ($dispatchMeta[$orderId]['dispatch_report_id'] ?? 0)
+                : null;
             $batchLocked = $dispatchReference !== null && $dispatchReference !== '';
             $displayStatus = ($batchLocked || $rawStatus === 'dispatch_report_created')
                 ? 'dispatch_report_created'
@@ -139,6 +146,7 @@ class OrderWorkflowListReadService
                 $order,
                 $displayStatus,
                 $dispatchReference,
+                ($dispatchReportId ?? 0) > 0 ? $dispatchReportId : null,
                 $batchLocked,
                 $productLines,
                 OrderWorkflowRowPresenter::resolveSourceOrderStatus($order, $importHistories[$orderId] ?? null)

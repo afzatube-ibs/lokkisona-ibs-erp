@@ -70,24 +70,30 @@
                 <thead>
                     <tr>
                         <th>Reference</th>
+                        <th>Vendor</th>
                         <th>Date</th>
                         <th>Orders</th>
-                        <th><?= !empty($isSupplierView) ? e(SupplierTerminology::totalSaleSnapshot()) : 'Total Cost Snapshot' ?></th>
+                        <th>Qty</th>
+                        <th><?= !empty($isSupplierView) ? e(SupplierTerminology::totalSaleSnapshot()) : 'Total Vendor Cost' ?></th>
                         <th>Status</th>
-                        <th>Created</th>
-                        <th>View</th>
+                        <th>Print</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($latestReports as $report): ?>
+                    <?php $reportId = (int) ($report['dispatch_report_id'] ?? 0); ?>
                     <tr>
                         <td><strong><?= e((string) ($report['dispatch_reference'] ?? '')) ?></strong></td>
+                        <td><?= e((string) ($report['vendor_name'] ?? '—')) ?></td>
                         <td><?= e((string) ($report['dispatch_date'] ?? '')) ?></td>
                         <td><?= e((string) ($report['total_orders'] ?? '0')) ?></td>
+                        <td><?= e((string) ($report['total_qty'] ?? '0')) ?></td>
                         <td><?= e((string) ($report['total_product_cost'] ?? '0.00')) ?></td>
                         <td><span class="badge <?= ($report['status'] ?? '') === 'locked' ? 'badge-ok' : 'badge-warn' ?>"><?= e((string) ($report['status_label'] ?? $report['status'] ?? '')) ?></span></td>
-                        <td><?= e((string) ($report['created_at'] ?? '')) ?></td>
-                        <td><a href="<?= e(url('/dispatch-reports?report_id=' . (int) ($report['dispatch_report_id'] ?? 0))) ?>">Detail</a></td>
+                        <td>
+                            <a href="<?= e(url('/dispatch-reports?report_id=' . $reportId . '&print=1')) ?>" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">Print</a>
+                            <a href="<?= e(url('/dispatch-reports?report_id=' . $reportId)) ?>" class="btn btn-sm btn-ghost">View</a>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

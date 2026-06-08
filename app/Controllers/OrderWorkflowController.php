@@ -14,6 +14,7 @@ use App\Models\OrderWorkflowHistory;
 use App\Permission;
 use App\SupplierContext;
 use App\Repositories\DispatchReportRepository;
+use App\Repositories\Write\DispatchReportWriteRepository;
 use App\Services\ReadOnly\OrderItemReadService;
 use App\Services\ReadOnly\OrderReadService;
 use App\Csrf;
@@ -106,6 +107,9 @@ class OrderWorkflowController extends Controller
             'syncImportRuleNote' => OrderWorkflowStatus::SYNC_IMPORT_RULE_NOTE,
             'vendorReturnFuture' => $this->vendorReturnFuture(),
             'fulfillmentTableColumns' => $this->fulfillmentTableColumns(),
+            'bulkActionForFilter' => $this->resolveBulkActionForFilter($statusFilter),
+            'canShowTestSync' => !SupplierContext::isSupplier(),
+            'dispatchFlash' => $this->resolveDispatchFlashFromQuery(),
             'requestTiming' => $timer !== null ? $timer->laps() : null,
             'appVersion' => config('app.version'),
             'releaseLabel' => config('app.release_label'),
@@ -185,10 +189,156 @@ class OrderWorkflowController extends Controller
         if ($result->success) {
             (new OrderWorkflowListReadService())->invalidateCache();
         }
-        $this->redirectWithWriteResult(
-            $this->workflowRedirectPath(),
-            $result
-        );
+
+        $redirectPath = $this->workflowRedirectPath();
+        if ($result->success && $action === 'bulk_dispatch' && ($result->id ?? 0) > 0) {
+            $redirectPath = $this->appendDispatchFlashQuery($redirectPath, (int) $result->id);
+        }
+
+        $this->redirectWithWriteResult($redirectPath, $result);
+    }
+
+    public function historyJson()
+    {
+        $this->authorize('order_workflow.view');
+        $orderId = (int) ($_GET['id'] ?? 0);
+        if ($orderId <= 0) {
+            $this->jsonResponse(['error' => 'Order id required.'], 422);
+        }
+
+        $historyService = new OrderWorkflowHistoryReadService();
+        if (!$historyService->tableExists()) {
+            $this->jsonResponse(['rows' => []]);
+        }
+
+        $orderService = new OrderReadService();
+        $orderRef = '#' . $orderId;
+        if ($orderService->tableExists()) {
+            $order = $orderService->findById($orderId);
+            if ($order !== null) {
+                $orderRef = (string) ($order['order_reference'] ?? $orderRef);
+            }
+        }
+
+        $rows = [];
+        foreach ($historyService->findByOrderId($orderId, 50) as $row) {
+            $rows[] = [
+                'from_label' => OrderWorkflowStatus::label((string) ($row['from_status'] ?? '')),
+                'to_label' => OrderWorkflowStatus::label((string) ($row['to_status'] ?? '')),
+                'action_note' => (string) ($row['action_note'] ?? ''),
+                'changed_by' => (string) ($row['changed_by'] ?? ''),
+                'changed_at' => (string) ($row['changed_at'] ?? ''),
+            ];
+        }
+
+        $this->jsonResponse([
+            'order_id' => $orderId,
+            'order_reference' => $orderRef,
+            'rows' => $rows,
+        ]);
+    }
+
+    public function note()
+    {
+        $this->authorize('order_workflow.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect($this->workflowRedirectPath());
+        }
+
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $note = trim((string) ($_POST['action_note'] ?? ''));
+        $result = (new OrderWorkflowWriteService())->recordNote($orderId, $note);
+        if ($result->success) {
+            (new OrderWorkflowListReadService())->invalidateCache();
+        }
+        $this->redirectWithWriteResult($this->workflowRedirectPath(), $result);
+    }
+
+    public function selectionPreview()
+    {
+        $this->authorize('order_workflow.view');
+        $raw = $_GET['ids'] ?? '';
+        $orderIds = [];
+        if (is_string($raw) && $raw !== '') {
+            foreach (explode(',', $raw) as $part) {
+                $id = (int) trim($part);
+                if ($id > 0) {
+                    $orderIds[] = $id;
+                }
+            }
+        }
+
+        $totals = (new OrderWorkflowBulkWriteService())->selectionTotals($orderIds);
+        $this->jsonResponse($totals);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function jsonResponse(array $payload, int $status = 200): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private function resolveBulkActionForFilter(?string $statusFilter): ?string
+    {
+        if ($statusFilter === null) {
+            return null;
+        }
+
+        $dispatchReady = WriteGate::dispatchReports()['ready'] ?? false;
+
+        return match (OrderWorkflowStatus::normalize($statusFilter)) {
+            'new_order' => 'bulk_receive',
+            'order_received' => 'bulk_packaging',
+            'packaging' => 'bulk_shipped',
+            'shipped' => $dispatchReady ? 'bulk_dispatch' : null,
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveDispatchFlashFromQuery(): ?array
+    {
+        if (empty($_GET['vf_dispatch']) || empty($_GET['report_id'])) {
+            return null;
+        }
+
+        $reportId = (int) $_GET['report_id'];
+        if ($reportId <= 0) {
+            return null;
+        }
+
+        try {
+            $report = (new DispatchReportWriteRepository())->find($reportId);
+            if ($report === null) {
+                return null;
+            }
+
+            return [
+                'report_id' => $reportId,
+                'reference' => (string) ($report['dispatch_reference'] ?? ''),
+                'total_orders' => (int) ($report['total_orders'] ?? 0),
+                'total_qty' => (new DispatchReportRepository())->sumItemCountsByReportIds([$reportId])[$reportId] ?? 0,
+                'total_product_cost' => (float) ($report['total_product_cost'] ?? 0),
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function appendDispatchFlashQuery(string $path, int $reportId): string
+    {
+        $separator = str_contains($path, '?') ? '&' : '?';
+
+        return $path . $separator . 'vf_dispatch=1&report_id=' . $reportId;
     }
 
     private function workflowRedirectPath(): string

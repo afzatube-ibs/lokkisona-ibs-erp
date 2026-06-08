@@ -47,7 +47,7 @@ class OrderWorkflowStatus
     private const ACTION_LABELS = [
         'new_order|order_received' => 'Receive Order',
         'order_received|packaging' => 'Print & Start Packaging',
-        'packaging|shipped' => 'Mark Shipped',
+        'packaging|shipped' => 'Mark as Shipped',
         'shipped|dispatch_report_created' => 'Create Dispatch Batch',
         'shipped|delivery_stop' => 'Delivery Stop',
         'delivery_stop|hub_return' => 'Confirm Hub Return',
@@ -208,6 +208,57 @@ class OrderWorkflowStatus
         }
 
         return self::label($to);
+    }
+
+    /** Single-row action button label (may differ from bulk label). */
+    public static function rowActionLabel(string $fromStatus, string $toStatus): string
+    {
+        if (self::isResumeAction($toStatus)) {
+            return 'Resume Order Received';
+        }
+
+        $from = self::normalize($fromStatus);
+        $to = self::normalize($toStatus);
+
+        if ($from === 'new_order' && $to === 'order_received') {
+            return 'Receive Order';
+        }
+
+        if ($from === 'order_received' && $to === 'packaging') {
+            return 'Start Packaging';
+        }
+
+        if ($from === 'packaging' && $to === 'shipped') {
+            return 'Mark Shipped';
+        }
+
+        if ($from === 'delivery_stop' && $to === 'hub_return') {
+            return 'Confirm Hub Return';
+        }
+
+        return self::actionLabel($fromStatus, $toStatus);
+    }
+
+    public static function bulkActionLabel(string $bulkKey): string
+    {
+        return match ($bulkKey) {
+            'bulk_receive' => 'Bulk Receive Order',
+            'bulk_packaging' => 'Print & Start Packaging',
+            'bulk_shipped' => 'Mark as Shipped',
+            'bulk_dispatch' => 'Create Dispatch Report',
+            default => 'Bulk action',
+        };
+    }
+
+    /** @return array<int, string> */
+    public static function holdCancelEligibleStatuses(): array
+    {
+        return ['new_order', 'order_received', 'packaging'];
+    }
+
+    public static function canHoldOrCancel(string $status): bool
+    {
+        return in_array(self::normalize($status), self::holdCancelEligibleStatuses(), true);
     }
 
     public static function allowedTransitions(string $fromStatus): array

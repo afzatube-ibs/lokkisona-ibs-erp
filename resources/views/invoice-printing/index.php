@@ -5,6 +5,35 @@
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
 
+<?php if (!empty($batchPackOrders['orders'])): ?>
+<div class="card mb-15 vf-invoice-batch-card" id="vfInvoiceBatch">
+    <div class="card-header">
+        <h2 class="card-title">Batch Packing — <?= e((string) count($batchPackOrders['orders'])) ?> orders</h2>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print();">Print All</button>
+    </div>
+    <div class="card-body card-body-flush">
+        <p class="page-description"><?= e((string) ($batchPackOrders['message'] ?? '')) ?></p>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Status</th><th>Qty</th><th>Cost Snapshot</th></tr></thead>
+                <tbody>
+                    <?php foreach ($batchPackOrders['orders'] as $row): ?>
+                    <tr>
+                        <td><?= e((string) ($row['order_reference'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['customer_name'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['customer_phone'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['ibs_status'] ?? '')) ?></td>
+                        <td><?= e((string) ($row['total_qty'] ?? '0')) ?></td>
+                        <td><?= e((string) ($row['cost_snapshot_total'] ?? '0.00')) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php
 view('partials.write-gate-warning', [
     'writeGateReady' => $writeGateReady ?? false,

@@ -44,18 +44,7 @@ $rangeLabel = $total > 0
             <?php endif; ?>
         </p>
         <?php else: ?>
-        <?php if ($canManage): ?>
-        <div class="vf-bulk-bar" id="vfBulkBar" hidden>
-            <span class="vf-bulk-count"><strong id="vfBulkCount">0</strong> selected</span>
-            <button type="button" class="btn btn-secondary btn-sm js-vf-bulk" data-bulk-action="bulk_receive">Bulk Receive Order</button>
-            <button type="button" class="btn btn-secondary btn-sm js-vf-bulk" data-bulk-action="bulk_packaging">Bulk Print &amp; Start Packaging</button>
-            <button type="button" class="btn btn-secondary btn-sm js-vf-bulk" data-bulk-action="bulk_shipped">Bulk Mark Shipped</button>
-            <?php if (!empty($dispatchGateReady)): ?>
-            <button type="button" class="btn btn-primary btn-sm js-vf-bulk" data-bulk-action="bulk_dispatch">Bulk Create Dispatch Batch</button>
-            <?php endif; ?>
-        </div>
-        <?php endif; ?>
-        <div class="table-scroll vf-table-scroll">
+        <div class="table-scroll vf-table-scroll vf-table-tight">
             <table class="data-table vf-fulfillment-table">
                 <thead>
                     <tr>
@@ -78,9 +67,10 @@ $rangeLabel = $total > 0
                     $orderId = (int) ($row['order_id'] ?? 0);
                     $selectable = !empty($row['selectable']);
                     $primary = $row['primary_action'] ?? null;
-                    $secondary = $row['secondary_actions'] ?? [];
+                    $menuItems = $row['menu_items'] ?? [];
+                    $ibsStatus = (string) ($row['ibs_status_raw'] ?? ($row['fulfillment_status'] ?? ''));
                     ?>
-                    <tr class="vf-row" data-order-id="<?= e((string) $orderId) ?>" data-bulk-key="<?= e((string) ($row['bulk_action_key'] ?? '')) ?>">
+                    <tr class="vf-row" data-order-id="<?= e((string) $orderId) ?>" data-bulk-key="<?= e((string) ($row['bulk_action_key'] ?? '')) ?>" data-ibs-status="<?= e($ibsStatus) ?>" data-can-hold-cancel="<?= !empty($row['can_hold_cancel']) ? '1' : '0' ?>">
                         <?php if ($canManage): ?>
                         <td class="vf-col-check">
                             <?php if ($selectable): ?>
@@ -92,6 +82,9 @@ $rangeLabel = $total > 0
                             <strong class="vf-order-no"><?= e((string) ($row['order_no'] ?? '')) ?></strong>
                             <?php if (!empty($row['dispatch_report_reference'])): ?>
                             <span class="vf-batch-ref"><?= e((string) $row['dispatch_report_reference']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($row['created_report_note'])): ?>
+                            <span class="vf-created-report-note"><?= e((string) $row['created_report_note']) ?></span>
                             <?php endif; ?>
                         </td>
                         <td class="vf-col-customer">
@@ -114,7 +107,7 @@ $rangeLabel = $total > 0
                                     <strong class="vf-product-model"><?= e((string) ($line['model'] ?? '')) ?></strong>
                                     <span class="vf-product-cost-line">x<?= e((string) ($line['quantity'] ?? 0)) ?> = <?= e(number_format((float) ($line['cost_snapshot'] ?? 0), 2)) ?></span>
                                     <?php foreach (($line['option_chips'] ?? []) as $chip): ?>
-                                    <span class="vf-option-chip">
+                                    <span class="vf-option-chip<?= !empty($chip['empty_option']) ? ' vf-option-chip-empty' : '' ?>">
                                         <?= e((string) ($chip['label'] ?? '')) ?>
                                         <?php if (!empty($chip['meta'])): ?>
                                         <em>[<?= e((string) $chip['meta']) ?>]</em>
@@ -148,7 +141,9 @@ $rangeLabel = $total > 0
                             <?php endif; ?>
                         </td>
                         <td class="vf-col-actions">
-                            <?php if ($canManage && ($primary !== null || $secondary !== [])): ?>
+                            <?php if (!empty($row['view_report_url'])): ?>
+                            <a href="<?= e((string) $row['view_report_url']) ?>" class="btn btn-secondary btn-sm">View Report</a>
+                            <?php elseif ($canManage && ($primary !== null || $menuItems !== [])): ?>
                             <div class="vf-row-actions">
                                 <?php if ($primary !== null): ?>
                                 <button type="button"
@@ -160,15 +155,15 @@ $rangeLabel = $total > 0
                                     data-requires-checkbox="<?= !empty($primary['requires_checkbox']) ? '1' : '0' ?>"
                                     data-checkbox-label="<?= e((string) ($primary['checkbox_label'] ?? '')) ?>"
                                     data-is-delivery-stop="<?= !empty($primary['is_delivery_stop']) ? '1' : '0' ?>"
-                                    data-is-bulk-dispatch="<?= !empty($primary['is_bulk_dispatch']) ? '1' : '0' ?>">
+                                    data-is-hub-return="<?= !empty($primary['is_hub_return']) ? '1' : '0' ?>">
                                     <?= e((string) ($primary['label'] ?? 'Action')) ?>
                                 </button>
                                 <?php endif; ?>
-                                <?php if ($secondary !== []): ?>
+                                <?php if ($menuItems !== []): ?>
                                 <div class="vf-action-menu">
                                     <button type="button" class="btn btn-ghost btn-sm vf-action-menu-toggle" aria-label="More actions">⋯</button>
                                     <div class="vf-action-menu-panel" hidden>
-                                        <?php foreach ($secondary as $action): ?>
+                                        <?php foreach ($menuItems as $action): ?>
                                         <button type="button"
                                             class="vf-action-menu-item js-vf-row-action"
                                             data-order-id="<?= e((string) $orderId) ?>"
@@ -178,7 +173,8 @@ $rangeLabel = $total > 0
                                             data-requires-checkbox="<?= !empty($action['requires_checkbox']) ? '1' : '0' ?>"
                                             data-checkbox-label="<?= e((string) ($action['checkbox_label'] ?? '')) ?>"
                                             data-is-delivery-stop="<?= !empty($action['is_delivery_stop']) ? '1' : '0' ?>"
-                                            data-is-bulk-dispatch="<?= !empty($action['is_bulk_dispatch']) ? '1' : '0' ?>">
+                                            data-is-hub-return="<?= !empty($action['is_hub_return']) ? '1' : '0' ?>"
+                                            data-is-menu-only="<?= !empty($action['menu_only']) ? '1' : '0' ?>">
                                             <?= e((string) ($action['label'] ?? '')) ?>
                                         </button>
                                         <?php endforeach; ?>
@@ -227,40 +223,9 @@ $rangeLabel = $total > 0
     <input type="hidden" name="action_confirmed" id="vfBulkConfirmed" value="0">
     <input type="hidden" name="batch_confirmed" id="vfBatchConfirmed" value="">
     <input type="hidden" name="staff_confirmation" id="vfBulkStaffConfirmation" value="">
+    <input type="hidden" name="action_note" id="vfBulkActionNote" value="">
     <div id="vfBulkOrderIds"></div>
     <?php if ($statusFilter !== null): ?>
     <input type="hidden" name="return_status" value="<?= e($statusFilter) ?>">
     <?php endif; ?>
 </form>
-
-<div class="modal-overlay" id="vfActionModal" hidden>
-    <div class="modal-card vf-action-modal">
-        <div class="modal-header">
-            <h3 class="modal-title" id="vfActionModalTitle">Confirm action</h3>
-            <button type="button" class="modal-close js-vf-modal-close" aria-label="Close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p class="page-description" id="vfActionModalDesc"></p>
-            <label id="vfCheckboxWrap" class="workflow-confirm-checkbox" hidden>
-                <input type="checkbox" id="vfModalStaffCheck">
-                <span id="vfCheckboxLabel"></span>
-            </label>
-            <div id="vfDeliveryStopWrap" hidden>
-                <?php view('partials.choice-cards', [
-                    'name' => 'vf_delivery_stop_reason_ui',
-                    'legend' => 'Delivery Stop reason',
-                    'options' => $deliveryStopReasonOptions ?? [],
-                    'required' => false,
-                ]); ?>
-            </div>
-            <label class="vf-note-label">
-                Note <span id="vfNoteRequiredMark" hidden>*</span>
-                <textarea id="vfModalNote" class="form-input" rows="3"></textarea>
-            </label>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary js-vf-modal-close">Cancel</button>
-            <button type="button" class="btn btn-primary" id="vfActionModalSubmit">Confirm</button>
-        </div>
-    </div>
-</div>

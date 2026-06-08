@@ -13,6 +13,7 @@ use App\SupplierContext;
 use App\Csrf;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderItemRepository;
+use App\Repositories\SupplierRepository;
 use App\Repositories\Write\OrderWriteRepository;
 use App\Services\ReadOnly\DispatchReportReadService;
 use App\ReadFoundation\WriteGate;
@@ -114,14 +115,52 @@ class DispatchReportsController extends Controller
     private function buildLatestReports(int $supplierId = 0): array
     {
         try {
-            $reports = (new DispatchReportRepository())->latestForSupplier($supplierId, 20);
+            $repository = new DispatchReportRepository();
+            $reports = $repository->latestForSupplier($supplierId, 20);
+            if ($reports === []) {
+                return [];
+            }
+
+            $reportIds = array_map(static fn (array $row): int => (int) ($row['dispatch_report_id'] ?? 0), $reports);
+            $qtyByReport = $repository->sumItemCountsByReportIds($reportIds);
+            $supplierNames = $this->supplierNameMap();
+
             foreach ($reports as $index => $report) {
+                $reportId = (int) ($report['dispatch_report_id'] ?? 0);
+                $supplierKey = (int) ($report['supplier_id'] ?? 0);
                 $reports[$index]['status_label'] = DispatchReportReference::statusLabel(
                     (string) ($report['status'] ?? '')
                 );
+                $reports[$index]['vendor_name'] = $supplierNames[$supplierKey] ?? '—';
+                $reports[$index]['total_qty'] = $qtyByReport[$reportId] ?? 0;
             }
 
             return $reports;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function supplierNameMap(): array
+    {
+        try {
+            $repo = new SupplierRepository();
+            if (!$repo->tableExists()) {
+                return [];
+            }
+
+            $map = [];
+            foreach ($repo->all(100, 0) as $row) {
+                $id = (int) ($row['supplier_id'] ?? 0);
+                if ($id > 0) {
+                    $map[$id] = (string) ($row['supplier_name'] ?? '');
+                }
+            }
+
+            return $map;
         } catch (\Throwable $e) {
             return [];
         }

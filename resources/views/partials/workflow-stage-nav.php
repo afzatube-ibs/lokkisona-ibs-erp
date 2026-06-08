@@ -5,13 +5,13 @@ $workflowStageNav = $workflowStageNav ?? [];
 $statusFilter = $statusFilter ?? null;
 ?>
 <?php if (!empty($workflowStageNav)): ?>
-<div class="card workflow-stages-panel" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Workflow Stages</h2></div>
-    <div class="card-body">
+<div class="card workflow-stages-panel vf-status-cards-panel" style="margin-bottom: 1rem;">
+    <div class="card-header vf-status-cards-header"><h2 class="card-title">Fulfillment stages</h2></div>
+    <div class="card-body vf-status-cards-body">
         <div class="workflow-filter-row">
-            <a href="<?= e(url($workflowStageNav['all_url'] ?? '/order-workflow')) ?>" class="workflow-filter-pill<?= !empty($workflowStageNav['all_active']) ? ' is-active' : '' ?>">All stages</a>
+            <a href="<?= e(url($workflowStageNav['all_url'] ?? '/order-workflow')) ?>" class="workflow-filter-pill<?= !empty($workflowStageNav['all_active']) ? ' is-active' : '' ?>">All</a>
         </div>
-        <div class="workflow-stage-grid">
+        <div class="workflow-stage-grid vf-status-cards">
             <?php foreach ($workflowStageNav['main'] ?? [] as $stage): ?>
             <?php
             $count = (int) ($stage['count'] ?? 0);
@@ -24,7 +24,7 @@ $statusFilter = $statusFilter ?? null;
             <?php endforeach; ?>
         </div>
         <?php if (!empty($workflowStageNav['exceptions'])): ?>
-        <div class="workflow-chip-row">
+        <div class="workflow-chip-row vf-exception-chips">
             <?php foreach ($workflowStageNav['exceptions'] as $stage): ?>
             <?php $code = (string) ($stage['code'] ?? ''); ?>
             <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-chip workflow-chip-link <?= e(OrderWorkflowStatus::stageAccentClass($code)) ?><?= !empty($stage['active']) ? ' is-active' : '' ?>"><?= e($stage['label']) ?> <strong><?= e((string) ((int) ($stage['count'] ?? 0))) ?></strong></a>

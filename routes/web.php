@@ -53,8 +53,11 @@ $router->post('/product-control/refresh-products', 'ProductControlController@ref
 $router->post('/product-control/variant/create', 'ProductControlController@createVariant');
 $router->post('/product-control/cost-stock', 'ProductControlController@updateCostStock');
 $router->get('/order-workflow', 'OrderWorkflowController@index');
+$router->get('/order-workflow/history', 'OrderWorkflowController@historyJson');
+$router->get('/order-workflow/selection-preview', 'OrderWorkflowController@selectionPreview');
 $router->post('/order-workflow/action', 'OrderWorkflowController@action');
 $router->post('/order-workflow/bulk-action', 'OrderWorkflowController@bulkAction');
+$router->post('/order-workflow/note', 'OrderWorkflowController@note');
 $router->post('/order-workflow/create', 'OrderWorkflowController@create');
 $router->get('/dispatch-reports', 'DispatchReportsController@index');
 $router->post('/dispatch-reports/create', 'DispatchReportsController@create');

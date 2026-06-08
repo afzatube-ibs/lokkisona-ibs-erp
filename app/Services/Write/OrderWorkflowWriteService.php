@@ -81,6 +81,18 @@ class OrderWorkflowWriteService
                     . '.'
                 );
             }
+
+            if (in_array($toStatus, ['hold', 'cancelled'], true)) {
+                $holdCancelAllowed = OrderWorkflowStatus::canHoldOrCancel($fromStatus)
+                    || ($fromStatus === 'hold' && $toStatus === 'cancelled');
+                if (!$holdCancelAllowed) {
+                    return WriteResult::fail(
+                        'Hold and Cancel are not allowed after Created Report for '
+                        . OrderWorkflowStatus::label($fromStatus)
+                        . '.'
+                    );
+                }
+            }
         }
 
         if (OrderWorkflowStatus::requiresConfirmDialog($fromStatus, $rawToStatus) && !$actionConfirmed) {
@@ -99,7 +111,10 @@ class OrderWorkflowWriteService
             );
         }
 
-        $historyNote = $this->buildHistoryNote($note, $resumeAdjustmentNote);
+        $actionKey = OrderWorkflowStatus::isResumeAction($rawToStatus)
+            ? 'resume'
+            : ($fromStatus . '|' . $toStatus);
+        $historyNote = $this->buildHistoryNote($note, $resumeAdjustmentNote, $actionKey);
 
         $this->orders->updateStatus($orderId, $toStatus);
 
@@ -123,6 +138,7 @@ class OrderWorkflowWriteService
             'from' => $fromStatus,
             'to' => $toStatus,
             'action' => $actionLabel,
+            'action_key' => $actionKey,
             'changed_by' => $changedBy,
             'user' => Auth::user(),
         ]);
@@ -216,6 +232,41 @@ class OrderWorkflowWriteService
         return WriteResult::ok('Return receive recorded in workflow history.', $orderId);
     }
 
+    public function recordNote(int $orderId, string $note): WriteResult
+    {
+        if (!$this->orders->tableExists()) {
+            return WriteResult::fail('Orders table not available.');
+        }
+
+        $order = $this->orders->find($orderId);
+        if ($order === null) {
+            return WriteResult::fail('Order not found.');
+        }
+
+        $note = trim($note);
+        if ($note === '') {
+            return WriteResult::fail('Note text is required.');
+        }
+
+        $currentStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
+        $historyNote = '[note] ' . $note;
+        $changedBy = $this->resolveChangedById();
+
+        if ($this->history->tableExists()) {
+            $this->history->insert($orderId, null, $currentStatus, $currentStatus, $historyNote, $changedBy);
+        }
+
+        ActivityLog::record('order_workflow_note', 'Order workflow note added', [
+            'order_id' => $orderId,
+            'status' => $currentStatus,
+            'action_key' => 'add_note',
+            'changed_by' => $changedBy,
+            'user' => Auth::user(),
+        ]);
+
+        return WriteResult::ok('Note added to workflow history.', $orderId);
+    }
+
     /**
      * @return array{status: string, adjustment_note: ?string}|null
      */
@@ -257,9 +308,12 @@ class OrderWorkflowWriteService
         return null;
     }
 
-    private function buildHistoryNote(?string $note, ?string $adjustmentNote): ?string
+    private function buildHistoryNote(?string $note, ?string $adjustmentNote, ?string $actionKey = null): ?string
     {
         $parts = [];
+        if ($actionKey !== null && trim($actionKey) !== '') {
+            $parts[] = '[action:' . trim($actionKey) . ']';
+        }
         $note = trim((string) $note);
         if ($note !== '') {
             $parts[] = $note;

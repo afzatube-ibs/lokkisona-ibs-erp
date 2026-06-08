@@ -22,6 +22,14 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
     'statusFilter' => $statusFilter,
 ]); ?>
 
+<?php view('partials.vendor-fulfillment-toolbar', [
+    'fulfillmentFilters' => $fulfillmentFilters ?? [],
+    'statusFilter' => $statusFilter,
+    'canManageWorkflow' => $canManageWorkflow ?? false,
+    'bulkActionForFilter' => $bulkActionForFilter ?? null,
+    'canShowTestSync' => $canShowTestSync ?? false,
+]); ?>
+
 <?php view('partials.vendor-fulfillment-filters', [
     'fulfillmentFilters' => $fulfillmentFilters ?? [],
     'statusFilter' => $statusFilter,
@@ -29,7 +37,7 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
     'isSupplierView' => !empty($isSupplierView),
 ]); ?>
 
-<div class="vf-toolbar">
+<div class="vf-toolbar-secondary">
     <?php if (!empty($canCreateOrders)): ?>
     <button type="button" class="btn btn-primary btn-sm" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
     <?php endif; ?>
@@ -46,6 +54,14 @@ $releaseLabel = $releaseLabel ?? config('app.release_label');
     'csrfField' => $csrfField ?? '',
     'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
     'isSupplierView' => !empty($isSupplierView),
+]); ?>
+
+<?php view('partials.vendor-fulfillment-modals', [
+    'csrfField' => $csrfField ?? '',
+    'statusFilter' => $statusFilter,
+    'deliveryStopReasonOptions' => $deliveryStopReasonOptions ?? [],
+    'dispatchFlash' => $dispatchFlash ?? null,
+    'flashSuccess' => $flashSuccess ?? null,
 ]); ?>
 
 <?php if (!empty($recentWorkflowHistory)): ?>

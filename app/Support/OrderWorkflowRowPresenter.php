@@ -19,6 +19,7 @@ class OrderWorkflowRowPresenter
         array $order,
         string $displayStatus,
         ?string $dispatchReference,
+        ?int $dispatchReportId,
         bool $batchLocked,
         array $productLines,
         ?string $sourceOrderStatus
@@ -33,7 +34,7 @@ class OrderWorkflowRowPresenter
         $missingCost = false;
         foreach ($productLines as $line) {
             $lineQty = max(1, (int) ($line['quantity'] ?? 0));
-            $lineCost = (float) ($line['supplier_cost_snapshot'] ?? 0);
+            $lineCost = (float) ($line['cost_snapshot'] ?? 0);
             $totalQty += $lineQty;
             $totalCost += $lineCost * $lineQty;
             if ($lineCost <= 0) {
@@ -43,6 +44,9 @@ class OrderWorkflowRowPresenter
 
         $actions = self::buildActions($displayStatus, $normalized, $batchLocked, $dispatchModuleReady);
         $orderNo = self::formatOrderNo($order);
+        $viewReportUrl = ($dispatchReportId ?? 0) > 0
+            ? url('/dispatch-reports?report_id=' . (int) $dispatchReportId)
+            : null;
 
         return [
             'order_id' => $orderId,
@@ -58,15 +62,22 @@ class OrderWorkflowRowPresenter
             'fulfillment_status' => $displayStatus,
             'fulfillment_status_label' => OrderWorkflowStatus::groupDisplayLabel($displayStatus),
             'fulfillment_status_class' => OrderWorkflowStatus::stageAccentClass($displayStatus),
+            'ibs_status_raw' => $normalized,
             'courier_status' => trim((string) ($order['courier_status'] ?? '')) ?: null,
-            'consignment_id' => trim((string) ($order['tracking_number'] ?? '')) ?: null,
+            'consignment_id' => trim((string) ($order['tracking_number'] ?? '')) ?: 'Not Assigned',
             'oc_order_status' => $sourceOrderStatus,
             'dispatch_report_reference' => $dispatchReference,
+            'dispatch_report_id' => $dispatchReportId,
+            'view_report_url' => $viewReportUrl,
+            'created_report_note' => $batchLocked || $displayStatus === 'dispatch_report_created'
+                ? 'Batched orders waiting for courier entry/sync. Normal workflow actions are locked.'
+                : null,
             'batch_locked' => $batchLocked,
             'primary_action' => $actions['primary'],
-            'secondary_actions' => $actions['secondary'],
+            'menu_items' => $actions['menu_items'],
             'selectable' => $actions['selectable'],
             'bulk_action_key' => $actions['bulk_action_key'],
+            'can_hold_cancel' => $actions['can_hold_cancel'],
         ];
     }
 
@@ -115,6 +126,9 @@ class OrderWorkflowRowPresenter
             }
             if ($variantLabel !== '' && ($chips === [] || !self::chipContainsLabel($chips, $variantLabel))) {
                 $chips[] = ['label' => $variantLabel, 'meta' => null];
+            }
+            if ($chips === [] && $variantId <= 0 && $variantLabel === '') {
+                $chips[] = ['label' => 'No option selected', 'meta' => null, 'empty_option' => true];
             }
 
             $lines[] = [
@@ -170,7 +184,7 @@ class OrderWorkflowRowPresenter
     }
 
     /**
-     * @return array{primary: ?array<string, mixed>, secondary: array<int, array<string, mixed>>, selectable: bool, bulk_action_key: ?string}
+     * @return array{primary: ?array<string, mixed>, menu_items: array<int, array<string, mixed>>, selectable: bool, bulk_action_key: ?string, can_hold_cancel: bool}
      */
     private static function buildActions(
         string $displayStatus,
@@ -181,64 +195,76 @@ class OrderWorkflowRowPresenter
         if ($batchLocked || $displayStatus === 'dispatch_report_created') {
             return [
                 'primary' => null,
-                'secondary' => [],
+                'menu_items' => self::baseMenuItems($normalized, true, false, false),
                 'selectable' => false,
                 'bulk_action_key' => null,
+                'can_hold_cancel' => false,
             ];
         }
 
         if (in_array($displayStatus, ['delivered', 'cancelled', 'hub_return', 'order_returning'], true)) {
             return [
                 'primary' => null,
-                'secondary' => [],
+                'menu_items' => self::baseMenuItems($normalized, true, false, false),
                 'selectable' => false,
                 'bulk_action_key' => null,
+                'can_hold_cancel' => false,
             ];
         }
 
-        $allowed = [];
-        foreach (OrderWorkflowStatus::allowedActionCodes($normalized) as $toStatus) {
-            if ($dispatchModuleReady && $normalized === 'shipped' && $toStatus === 'dispatch_report_created') {
-                continue;
-            }
-            $allowed[] = self::actionMeta($normalized, $toStatus);
-        }
-
-        if ($dispatchModuleReady && $normalized === 'shipped') {
-            $allowed[] = [
-                'code' => 'bulk_dispatch',
-                'label' => 'Create Dispatch Batch',
-                'requires_note' => false,
-                'requires_checkbox' => false,
-                'requires_confirm' => true,
-                'is_delivery_stop' => false,
-                'is_bulk_dispatch' => true,
-            ];
-        }
-
-        $primaryCode = self::primaryActionCode($normalized, $dispatchModuleReady);
         $primary = null;
-        $secondary = [];
+        $canHoldCancel = OrderWorkflowStatus::canHoldOrCancel($normalized);
+        $canCancelFromHold = $normalized === 'hold';
+        $canDeliveryStop = in_array($normalized, ['shipped', 'out_for_delivery'], true);
 
-        foreach ($allowed as $action) {
-            if ($primary === null && ($action['code'] === $primaryCode || ($primaryCode === 'bulk_dispatch' && !empty($action['is_bulk_dispatch'])))) {
-                $primary = $action;
-            } else {
-                $secondary[] = $action;
+        if ($normalized === 'hold') {
+            $primary = self::actionMeta('hold', OrderWorkflowStatus::RESUME_ACTION, true);
+        } else {
+            $primaryCode = self::primaryActionCode($normalized, $dispatchModuleReady);
+            if ($primaryCode !== null && $primaryCode !== 'bulk_dispatch') {
+                $primary = self::actionMeta($normalized, $primaryCode, true);
             }
-        }
-
-        if ($primary === null && $allowed !== []) {
-            $primary = array_shift($allowed);
-            $secondary = $allowed;
         }
 
         return [
             'primary' => $primary,
-            'secondary' => $secondary,
+            'menu_items' => self::baseMenuItems($normalized, true, $canHoldCancel, $canDeliveryStop, $canCancelFromHold),
             'selectable' => self::isBulkEligible($normalized, $dispatchModuleReady),
             'bulk_action_key' => self::bulkActionKey($normalized, $dispatchModuleReady),
+            'can_hold_cancel' => $canHoldCancel,
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function baseMenuItems(string $fromStatus, bool $includeTimeline, bool $includeHoldCancel, bool $includeDeliveryStop, bool $includeCancelOnly = false): array
+    {
+        $items = [];
+        if ($includeTimeline) {
+            $items[] = [
+                'code' => 'view_timeline',
+                'label' => 'View timeline',
+                'menu_only' => true,
+            ];
+            $items[] = [
+                'code' => 'add_note',
+                'label' => 'Add note',
+                'requires_note' => true,
+                'menu_only' => true,
+            ];
+        }
+        if ($includeHoldCancel) {
+            $items[] = self::actionMeta($fromStatus, 'hold', false);
+            $items[] = self::actionMeta($fromStatus, 'cancelled', false);
+        } elseif ($includeCancelOnly) {
+            $items[] = self::actionMeta('hold', 'cancelled', false);
+        }
+        if ($includeDeliveryStop) {
+            $items[] = self::actionMeta($fromStatus === 'out_for_delivery' ? 'out_for_delivery' : 'shipped', 'delivery_stop', false);
+        }
+
+        return $items;
     }
 
     private static function primaryActionCode(string $status, bool $dispatchModuleReady): ?string
@@ -247,7 +273,7 @@ class OrderWorkflowRowPresenter
             'new_order' => 'order_received',
             'order_received' => 'packaging',
             'packaging' => 'shipped',
-            'shipped' => $dispatchModuleReady ? 'bulk_dispatch' : 'dispatch_report_created',
+            'shipped' => $dispatchModuleReady ? null : 'dispatch_report_created',
             'delivery_stop' => 'hub_return',
             default => null,
         };
@@ -276,17 +302,23 @@ class OrderWorkflowRowPresenter
     /**
      * @return array<string, mixed>
      */
-    private static function actionMeta(string $fromStatus, string $toStatus): array
+    private static function actionMeta(string $fromStatus, string $toStatus, bool $useRowLabel): array
     {
+        $normalizedTo = OrderWorkflowStatus::normalize($toStatus);
+
         return [
             'code' => $toStatus,
-            'label' => OrderWorkflowStatus::actionLabel($fromStatus, $toStatus),
+            'label' => $useRowLabel
+                ? OrderWorkflowStatus::rowActionLabel($fromStatus, $toStatus)
+                : OrderWorkflowStatus::actionLabel($fromStatus, $toStatus),
             'requires_note' => OrderWorkflowStatus::requiresNoteForTransition($fromStatus, $toStatus),
             'requires_checkbox' => OrderWorkflowStatus::requiresCheckbox($fromStatus, $toStatus),
             'checkbox_label' => OrderWorkflowStatus::checkboxLabel($fromStatus, $toStatus),
             'requires_confirm' => OrderWorkflowStatus::requiresConfirmDialog($fromStatus, $toStatus),
-            'is_delivery_stop' => OrderWorkflowStatus::normalize($toStatus) === 'delivery_stop',
-            'is_bulk_dispatch' => false,
+            'is_delivery_stop' => $normalizedTo === 'delivery_stop',
+            'is_hub_return' => $normalizedTo === 'hub_return',
+            'is_menu_action' => in_array($toStatus, ['view_timeline', 'add_note'], true),
+            'menu_only' => false,
         ];
     }
 

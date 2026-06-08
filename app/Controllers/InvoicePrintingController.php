@@ -24,6 +24,9 @@ class InvoicePrintingController extends Controller
         $this->authorize('invoice_printing.view');
         ActivityLog::record('invoice_printing_access', 'ERP Invoice and Packing Print read foundation page viewed');
 
+        $batchOrderIds = $this->parseOrderIdsParam($_GET['order_ids'] ?? null);
+        $batchPackOrders = (new InvoicePrintPreviewService())->batchByOrderIds($batchOrderIds);
+
         $this->render('invoice-printing.index', [
             'pageTitle' => 'Invoice Printing',
             'breadcrumbs' => [
@@ -45,6 +48,7 @@ class InvoicePrintingController extends Controller
             'plannedPrintLogFields' => $this->plannedPrintLogFields(),
             'plannedInvoiceTemplateFields' => $this->plannedInvoiceTemplateFields(),
             'packingPreview' => (new InvoicePrintPreviewService())->packagingPreview(10),
+            'batchPackOrders' => $batchPackOrders,
             'generatedInvoices' => $this->loadGeneratedInvoices(),
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
@@ -75,6 +79,32 @@ class InvoicePrintingController extends Controller
             redirect('/invoice-printing');
         }
         $this->redirectWithWriteResult('/invoice-printing', (new PrintLogWriteService())->record($_POST));
+    }
+
+    /**
+     * @param mixed $raw
+     * @return array<int, int>
+     */
+    private function parseOrderIdsParam($raw): array
+    {
+        if (is_array($raw)) {
+            return array_values(array_filter(array_map('intval', $raw), static fn (int $id): bool => $id > 0));
+        }
+
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return [];
+        }
+
+        $ids = [];
+        foreach (explode(',', $raw) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
     }
 
     private function loadGeneratedInvoices(): array
