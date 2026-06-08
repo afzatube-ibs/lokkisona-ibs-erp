@@ -215,9 +215,11 @@
             } else {
                 setBulkButtonState(forwardBtn, false, false);
             }
-            setBulkButtonState(holdBtn, holdCancelEligible && statusFilter !== 'hold', holdCancelEligible && statusFilter !== 'hold');
-            setBulkButtonState(cancelBtn, holdCancelEligible, holdCancelEligible);
-            if (hint) hint.hidden = true;
+            setBulkButtonState(holdBtn, holdCancelEligible && statusFilter !== 'hold', false);
+            setBulkButtonState(cancelBtn, holdCancelEligible, false);
+            if (hint) {
+                hint.hidden = true;
+            }
             return;
         }
 
@@ -246,19 +248,27 @@
             setBulkButtonState(forwardBtn, true, true);
             forwardBtn.setAttribute('data-bulk-action', activeBulk);
             forwardBtn.textContent = (homogeneous && bulkKey ? BULK_LABELS[bulkKey] : null) || filterLabel || BULK_LABELS[activeBulk] || 'Bulk action';
-            if (hint) hint.hidden = true;
+            if (hint) {
+                hint.hidden = true;
+            }
         } else if (filterBulk) {
             setBulkButtonState(forwardBtn, true, false);
             forwardBtn.setAttribute('data-bulk-action', filterBulk);
             forwardBtn.textContent = filterLabel || BULK_LABELS[filterBulk] || 'Bulk action';
-            if (hint) hint.hidden = !homogeneous;
+            if (hint) {
+                hint.hidden = homogeneous;
+                hint.textContent = 'Mixed statuses — select rows in one stage only.';
+            }
         } else {
             setBulkButtonState(forwardBtn, false, false);
-            if (hint) hint.hidden = !homogeneous;
+            if (hint) {
+                hint.hidden = homogeneous;
+                hint.textContent = 'Mixed statuses — select rows in one stage only.';
+            }
         }
 
         var showHoldCancel = homogeneous && (allHoldCancel || statusKeys[0] === 'hold');
-        setBulkButtonState(holdBtn, showHoldCancel && allHoldCancel, showHoldCancel && allHoldCancel);
+        setBulkButtonState(holdBtn, showHoldCancel, showHoldCancel && allHoldCancel);
         setBulkButtonState(cancelBtn, showHoldCancel, showHoldCancel);
     }
 
@@ -363,7 +373,13 @@
                 qs('#vfTimelineTitle', timelineModal).textContent = (data.order_reference || ('#' + orderId)) + ' timeline';
                 (data.rows || []).forEach(function (row) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + (row.from_label || '') + '</td><td>' + (row.to_label || '') + '</td><td>' + (row.action_note || '—') + '</td><td>' + (row.changed_by || '—') + '</td><td>' + (row.changed_at || '') + '</td>';
+                    tr.innerHTML = '<td>' + (row.from_label || '') + '</td>'
+                        + '<td>' + (row.to_label || '') + '</td>'
+                        + '<td>' + (row.action_label || '—') + '</td>'
+                        + '<td>' + (row.action_note || '—') + '</td>'
+                        + '<td>' + (row.batch_reference || '—') + '</td>'
+                        + '<td>' + (row.changed_by || '—') + '</td>'
+                        + '<td>' + (row.changed_at || '') + '</td>';
                     body.appendChild(tr);
                 });
                 qs('#vfTimelineTableWrap', timelineModal).hidden = false;
@@ -383,6 +399,12 @@
         qs('#vfNoteModalText', noteModal).value = '';
         noteModal.hidden = false;
     }
+
+    qsa('.js-vf-timeline-open').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openTimelineModal(btn.getAttribute('data-order-id'));
+        });
+    });
 
     qsa('.js-vf-row-action').forEach(function (btn) {
         btn.addEventListener('click', function () {

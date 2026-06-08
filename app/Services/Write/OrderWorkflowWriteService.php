@@ -5,6 +5,7 @@ namespace App\Services\Write;
 use App\ActivityLog;
 use App\Auth;
 use App\Domain\OrderWorkflowStatus;
+use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderWorkflowHistoryRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\Write\OrderWorkflowHistoryWriteRepository;
@@ -16,17 +17,20 @@ class OrderWorkflowWriteService
     private OrderWorkflowHistoryWriteRepository $history;
     private OrderWorkflowHistoryRepository $historyRead;
     private UserRepository $users;
+    private DispatchReportRepository $dispatchReports;
 
     public function __construct(
         ?OrderWriteRepository $orders = null,
         ?OrderWorkflowHistoryWriteRepository $history = null,
         ?OrderWorkflowHistoryRepository $historyRead = null,
-        ?UserRepository $users = null
+        ?UserRepository $users = null,
+        ?DispatchReportRepository $dispatchReports = null
     ) {
         $this->orders = $orders ?? new OrderWriteRepository();
         $this->history = $history ?? new OrderWorkflowHistoryWriteRepository();
         $this->historyRead = $historyRead ?? new OrderWorkflowHistoryRepository();
         $this->users = $users ?? new UserRepository();
+        $this->dispatchReports = $dispatchReports ?? new DispatchReportRepository();
     }
 
     public function transition(
@@ -46,6 +50,14 @@ class OrderWorkflowWriteService
         }
 
         $fromStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
+        if ($this->isBatchLocked($orderId, $fromStatus)) {
+            return WriteResult::fail('Created Report orders are locked from normal workflow actions.');
+        }
+
+        if (in_array($fromStatus, ['delivered', 'cancelled', 'hub_return', 'order_returning'], true)) {
+            return WriteResult::fail('No workflow action is allowed for ' . OrderWorkflowStatus::label($fromStatus) . ' orders.');
+        }
+
         $rawToStatus = trim($toStatus);
         $resumeAdjustmentNote = null;
 
@@ -326,6 +338,21 @@ class OrderWorkflowWriteService
         }
 
         return implode(' ', $parts);
+    }
+
+    private function isBatchLocked(int $orderId, string $fromStatus): bool
+    {
+        if ($fromStatus === 'dispatch_report_created') {
+            return true;
+        }
+
+        if (!$this->dispatchReports->tableExists()) {
+            return false;
+        }
+
+        $meta = $this->dispatchReports->findIncludedOrderMeta(500);
+
+        return isset($meta[$orderId]);
     }
 
     private function resolveChangedById(): ?int

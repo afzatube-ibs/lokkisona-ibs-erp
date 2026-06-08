@@ -67,9 +67,13 @@ class OrderWorkflowStatus
 
     private const LEGACY_ALIASES = [
         'confirmed' => 'order_received',
+        'ready' => 'order_received',
         'processing' => 'packaging',
         'ready_for_dispatch' => 'shipped',
+        'dispatch_ready' => 'dispatch_report_created',
+        'created_report' => 'dispatch_report_created',
         'courier_return' => 'hub_return',
+        'customer_return' => 'order_returning',
     ];
 
     private const NOTES_REQUIRED_TO = [
@@ -119,15 +123,51 @@ class OrderWorkflowStatus
      */
     public static function statusCodesIncludingLegacy(string $canonical): array
     {
-        $canonical = self::normalize($canonical);
-        $codes = [$canonical];
+        return self::statusCodesForBucket($canonical);
+    }
+
+    /**
+     * All raw ibs_status values that belong to a filter/display bucket.
+     *
+     * @return array<int, string>
+     */
+    public static function statusCodesForBucket(string $bucket): array
+    {
+        $bucket = self::normalize($bucket);
+        $codes = [$bucket];
         foreach (self::LEGACY_ALIASES as $legacy => $mapped) {
-            if ($mapped === $canonical) {
+            if ($mapped === $bucket) {
                 $codes[] = $legacy;
             }
         }
 
         return array_values(array_unique($codes));
+    }
+
+    /** Resolve list/card filter bucket for an order row. */
+    public static function filterBucket(string $rawStatus, bool $inIncludedDispatch): string
+    {
+        $normalized = self::normalize($rawStatus);
+        if ($inIncludedDispatch || $normalized === 'dispatch_report_created') {
+            return 'dispatch_report_created';
+        }
+
+        return $normalized;
+    }
+
+    public static function isKnownBucket(string $bucket): bool
+    {
+        $bucket = self::normalize($bucket);
+        if ($bucket === '') {
+            return false;
+        }
+
+        $known = array_merge(
+            self::groupOrder(),
+            array_column(self::exceptionStages(), 'code')
+        );
+
+        return in_array($bucket, $known, true);
     }
 
     /** Target list filter after a successful bulk action. */

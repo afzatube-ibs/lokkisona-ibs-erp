@@ -27,6 +27,16 @@ $exceptionIcons = [
 <?php if (!empty($workflowStageNav)): ?>
 <div class="vf-stages-section">
 <div class="workflow-stages-panel vf-status-cards-panel">
+    <section class="vf-stage-group vf-stage-group--all">
+        <span class="vf-stage-group-legend">Overview</span>
+        <div class="workflow-stage-grid vf-status-cards vf-status-cards--group vf-status-cards--all">
+            <a href="<?= e(url($workflowStageNav['all_url'] ?? '/order-workflow?from_card=1')) ?>" class="workflow-stage-card workflow-stage-link vf-stage-kpi-card workflow-accent-muted<?= !empty($workflowStageNav['all_active']) ? ' is-active' : '' ?>">
+                <span class="workflow-stage-label kpi-label">All</span>
+                <span class="workflow-stage-value kpi-value"><?= e((string) ((int) ($workflowStageNav['all_count'] ?? 0))) ?></span>
+                <span class="workflow-stage-hint kpi-hint">Every workflow status</span>
+            </a>
+        </div>
+    </section>
     <?php foreach (OrderWorkflowStatus::releaseStatusCardGroups() as $group): ?>
     <?php
     $groupKey = (string) ($group['key'] ?? '');

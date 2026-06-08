@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.9.7',
-    'release_label' => 'Vendor Fulfillment Workflow Completion Foundation',
+    'version' => '1.9.8',
+    'release_label' => 'Vendor Fulfillment Release Completion',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

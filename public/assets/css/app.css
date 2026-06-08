@@ -5200,11 +5200,11 @@ body.modal-open { overflow: hidden; }
 .vf-fulfillment-table th,
 .vf-fulfillment-table td {
     vertical-align: top;
-    padding: 0.625rem 0.75rem;
+    padding: 0.5rem 0.625rem;
 }
 
 .vf-fulfillment-table tbody tr {
-    min-height: 3.5rem;
+    min-height: 3rem;
 }
 
 .vf-col-check {
@@ -5228,7 +5228,8 @@ body.modal-open { overflow: hidden; }
 .vf-batch-ref {
     display: block;
     font-size: 0.6875rem;
-    color: var(--color-text-muted);
+    font-weight: 600;
+    color: var(--color-warning, #b45309);
 }
 
 .vf-customer-name {
@@ -5343,6 +5344,28 @@ body.modal-open { overflow: hidden; }
     gap: 0.25rem;
     align-items: center;
     justify-content: flex-end;
+}
+
+.vf-timeline-btn {
+    min-width: 2rem;
+    padding-inline: 0.35rem;
+    font-size: 0.875rem;
+    line-height: 1;
+    opacity: 0.85;
+}
+
+.vf-timeline-btn:hover {
+    opacity: 1;
+}
+
+.vf-bulk-hint {
+    color: var(--color-warning, #b45309);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.vf-status-cards--all {
+    margin-bottom: 0.5rem;
 }
 
 .vf-action-menu {

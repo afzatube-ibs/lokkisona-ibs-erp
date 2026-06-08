@@ -96,7 +96,8 @@ class OrderWorkflowListReadService
             $timer->lap('dispatch_refs');
         }
 
-        [$whereSql, $params, $joinSql] = $this->buildWhere($normalized, $supplierId);
+        $includedOrderIds = array_map('intval', array_keys($dispatchMeta));
+        [$whereSql, $params, $joinSql] = $this->buildWhere($normalized, $supplierId, $includedOrderIds);
         $total = $this->countOrders($joinSql, $whereSql, $params, $timer);
         $orders = $this->fetchOrderPage($joinSql, $whereSql, $params, $offset, $perPage, $timer);
 
@@ -126,15 +127,11 @@ class OrderWorkflowListReadService
         $rows = [];
         foreach ($orders as $order) {
             $orderId = (int) ($order['order_id'] ?? 0);
-            $rawStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
             $dispatchReference = $dispatchReferences[$orderId] ?? null;
             $dispatchReportId = isset($dispatchMeta[$orderId])
                 ? (int) ($dispatchMeta[$orderId]['dispatch_report_id'] ?? 0)
                 : null;
             $batchLocked = $dispatchReference !== null && $dispatchReference !== '';
-            $displayStatus = ($batchLocked || $rawStatus === 'dispatch_report_created')
-                ? 'dispatch_report_created'
-                : $rawStatus;
 
             $productLines = OrderWorkflowRowPresenter::formatProductLines(
                 $itemsByOrder[$orderId] ?? [],
@@ -144,7 +141,6 @@ class OrderWorkflowListReadService
 
             $rows[] = OrderWorkflowRowPresenter::buildRow(
                 $order,
-                $displayStatus,
                 $dispatchReference,
                 ($dispatchReportId ?? 0) > 0 ? $dispatchReportId : null,
                 $batchLocked,
@@ -180,13 +176,13 @@ class OrderWorkflowListReadService
      */
     public function stageCounts(int $supplierId, array $dispatchReferences = [], ?RequestTimer $timer = null): array
     {
-        $cacheKey = 'stage_counts_' . $supplierId;
+        $cacheKey = 'stage_counts_v2_' . $supplierId;
         $cached = $this->cache->get($cacheKey, self::CACHE_TTL);
         if (is_array($cached)) {
             return $cached;
         }
 
-        if ($dispatchReferences === [] && $this->dispatchReports->tableExists()) {
+        if ($dispatchReferences === [] && $this->dispatchTablesReady()) {
             $dispatchReferences = $this->dispatchReports->findIncludedOrderReferences(500);
         }
 
@@ -214,10 +210,10 @@ class OrderWorkflowListReadService
             $statement->execute($params);
             foreach ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
                 $orderId = (int) ($row['order_id'] ?? 0);
-                $normalized = OrderWorkflowStatus::normalize((string) ($row['ibs_status'] ?? 'new_order'));
-                $group = isset($dispatchReferences[$orderId]) || $normalized === 'dispatch_report_created'
-                    ? 'dispatch_report_created'
-                    : $normalized;
+                $group = OrderWorkflowStatus::filterBucket(
+                    (string) ($row['ibs_status'] ?? 'new_order'),
+                    isset($dispatchReferences[$orderId])
+                );
                 if (isset($counts[$group])) {
                     $counts[$group]++;
                 } else {
@@ -240,6 +236,87 @@ class OrderWorkflowListReadService
     public function invalidateCache(): void
     {
         $this->cache->flush();
+    }
+
+    public function dispatchTablesReady(): bool
+    {
+        return $this->tryDispatchTablesExist();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function loadIncludedDispatchOrderIds(int $limit = 500): array
+    {
+        $ids = [];
+        foreach (array_keys($this->dispatchReports->findIncludedOrderMeta($limit)) as $orderId) {
+            $ids[(int) $orderId] = (int) $orderId;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Raw ibs_status histogram for dev debug (supplier-scoped).
+     *
+     * @return array<string, int>
+     */
+    public function rawStatusHistogram(int $supplierId = 0, int $limit = 10): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        try {
+            $orderTable = TableName::forModel(Order::class);
+            $where = 'WHERE 1=1';
+            $params = [];
+            if ($supplierId > 0) {
+                $where .= ' AND supplier_id = :supplier_id';
+                $params['supplier_id'] = $supplierId;
+            }
+
+            $sql = 'SELECT ibs_status, COUNT(*) AS row_count FROM `' . $this->escapeIdentifier($orderTable) . '` '
+                . $where . ' GROUP BY ibs_status ORDER BY row_count DESC LIMIT ' . max(1, min($limit, 50));
+            QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo()->prepare($sql);
+            $statement->execute($params);
+            $histogram = [];
+            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $key = trim((string) ($row['ibs_status'] ?? ''));
+                if ($key === '') {
+                    $key = '(empty)';
+                }
+                $histogram[$key] = (int) ($row['row_count'] ?? 0);
+            }
+
+            return $histogram;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    private function tryDispatchTablesExist(): bool
+    {
+        try {
+            $database = config('database.database', '');
+            $prefix = config('database.prefix', 'ibs_');
+            $tables = [$prefix . 'dispatch_reports', $prefix . 'dispatch_report_items'];
+            $check = $this->pdo()->prepare(
+                'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table'
+            );
+            foreach ($tables as $tableName) {
+                $check->execute(['schema' => $database, 'table' => $tableName]);
+                $row = $check->fetch(PDO::FETCH_ASSOC);
+                if (((int) ($row['table_count'] ?? 0)) === 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -308,12 +385,10 @@ class OrderWorkflowListReadService
     private function normalizeFilters(array $filters): array
     {
         $status = trim((string) ($filters['status'] ?? ''));
-        if ($status !== '') {
+        if ($status !== '' && !OrderWorkflowStatus::isKnownBucket($status)) {
+            $status = '';
+        } elseif ($status !== '') {
             $status = OrderWorkflowStatus::normalize($status);
-            $known = array_merge(OrderWorkflowStatus::groupOrder(), array_column(OrderWorkflowStatus::exceptionStages(), 'code'));
-            if (!in_array($status, $known, true)) {
-                $status = '';
-            }
         }
 
         $perPage = (int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE);
@@ -331,9 +406,10 @@ class OrderWorkflowListReadService
     }
 
     /**
+     * @param array<int, int> $includedOrderIds
      * @return array{0: string, 1: array<string, mixed>, 2: string}
      */
-    private function buildWhere(array $filters, int $supplierId): array
+    private function buildWhere(array $filters, int $supplierId, array $includedOrderIds = []): array
     {
         $joinSql = '';
         $where = 'WHERE 1=1';
@@ -346,19 +422,7 @@ class OrderWorkflowListReadService
         }
 
         if ($filters['status'] !== '') {
-            if ($filters['status'] === 'dispatch_report_created' && $this->dispatchReports->tableExists()) {
-                [$statusSql, $statusParams] = $this->statusMatchClause('dispatch_report_created', 'dispatch_status');
-                $where .= ' AND (' . $statusSql . ' OR o.order_id IN (SELECT order_id FROM dispatch_items_sub))';
-                $params = array_merge($params, $statusParams);
-            } elseif ($filters['status'] === 'shipped' && $this->dispatchReports->tableExists()) {
-                [$statusSql, $statusParams] = $this->statusMatchClause('shipped', 'ibs_status');
-                $where .= ' AND ' . $statusSql . ' AND o.order_id NOT IN (SELECT order_id FROM dispatch_items_sub)';
-                $params = array_merge($params, $statusParams);
-            } else {
-                [$statusSql, $statusParams] = $this->statusMatchClause($filters['status'], 'ibs_status');
-                $where .= ' AND ' . $statusSql;
-                $params = array_merge($params, $statusParams);
-            }
+            $this->appendStatusBucketFilter($where, $params, (string) $filters['status'], $includedOrderIds);
         }
 
         if ($filters['courier_status'] !== '') {
@@ -396,7 +460,6 @@ class OrderWorkflowListReadService
     {
         try {
             $orderTable = TableName::forModel(Order::class);
-            $whereSql = $this->replaceDispatchSubquery($whereSql);
             $sql = 'SELECT COUNT(DISTINCT o.order_id) AS row_count FROM `' . $this->escapeIdentifier($orderTable) . '` o'
                 . $joinSql . ' ' . $whereSql;
             QueryGuard::assertReadOnly($sql);
@@ -421,7 +484,6 @@ class OrderWorkflowListReadService
     {
         try {
             $orderTable = TableName::forModel(Order::class);
-            $whereSql = $this->replaceDispatchSubquery($whereSql);
             $groupBy = $joinSql !== '' ? ' GROUP BY o.order_id' : '';
             $sql = 'SELECT o.* FROM `' . $this->escapeIdentifier($orderTable) . '` o'
                 . $joinSql . ' ' . $whereSql . $groupBy
@@ -440,11 +502,48 @@ class OrderWorkflowListReadService
     }
 
     /**
+     * @param array<int, int> $includedOrderIds
+     */
+    private function appendStatusBucketFilter(string &$where, array &$params, string $filterBucket, array $includedOrderIds): void
+    {
+        $filterBucket = OrderWorkflowStatus::normalize($filterBucket);
+        [$statusSql, $statusParams] = $this->statusMatchClause($filterBucket, 'ibs_status');
+
+        if ($filterBucket === 'shipped') {
+            $where .= ' AND ' . $statusSql;
+            $params = array_merge($params, $statusParams);
+            if ($includedOrderIds !== []) {
+                [$idSql, $idParams] = $this->orderIdNotInClause($includedOrderIds, 'ship_excl');
+                $where .= ' AND ' . $idSql;
+                $params = array_merge($params, $idParams);
+            }
+
+            return;
+        }
+
+        if ($filterBucket === 'dispatch_report_created') {
+            $params = array_merge($params, $statusParams);
+            if ($includedOrderIds !== []) {
+                [$idSql, $idParams] = $this->orderIdInClause($includedOrderIds, 'cre_incl');
+                $where .= ' AND (' . $statusSql . ' OR ' . $idSql . ')';
+                $params = array_merge($params, $idParams);
+            } else {
+                $where .= ' AND ' . $statusSql;
+            }
+
+            return;
+        }
+
+        $where .= ' AND ' . $statusSql;
+        $params = array_merge($params, $statusParams);
+    }
+
+    /**
      * @return array{0: string, 1: array<string, string>}
      */
-    private function statusMatchClause(string $canonicalStatus, string $paramPrefix): array
+    private function statusMatchClause(string $bucket, string $paramPrefix): array
     {
-        $codes = OrderWorkflowStatus::statusCodesIncludingLegacy($canonicalStatus);
+        $codes = OrderWorkflowStatus::statusCodesForBucket($bucket);
         if (count($codes) === 1) {
             return ['o.ibs_status = :' . $paramPrefix, [$paramPrefix => $codes[0]]];
         }
@@ -460,32 +559,40 @@ class OrderWorkflowListReadService
         return ['o.ibs_status IN (' . implode(', ', $placeholders) . ')', $params];
     }
 
-    private function replaceDispatchSubquery(string $whereSql): string
+    /**
+     * @param array<int, int> $orderIds
+     * @return array{0: string, 1: array<string, int>}
+     */
+    private function orderIdInClause(array $orderIds, string $paramPrefix): array
     {
-        if (!str_contains($whereSql, 'dispatch_items_sub')) {
-            return $whereSql;
+        $orderIds = array_values(array_filter(array_map('intval', $orderIds), static fn (int $id): bool => $id > 0));
+        $placeholders = [];
+        $params = [];
+        foreach ($orderIds as $index => $orderId) {
+            $key = $paramPrefix . '_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $orderId;
         }
 
-        if (!$this->dispatchReports->tableExists()) {
-            return str_replace(
-                ' IN (SELECT order_id FROM dispatch_items_sub)',
-                ' IN (SELECT NULL WHERE 1 = 0)',
-                str_replace(
-                    ' NOT IN (SELECT order_id FROM dispatch_items_sub)',
-                    '',
-                    $whereSql
-                )
-            );
+        return ['o.order_id IN (' . implode(', ', $placeholders) . ')', $params];
+    }
+
+    /**
+     * @param array<int, int> $orderIds
+     * @return array{0: string, 1: array<string, int>}
+     */
+    private function orderIdNotInClause(array $orderIds, string $paramPrefix): array
+    {
+        $orderIds = array_values(array_filter(array_map('intval', $orderIds), static fn (int $id): bool => $id > 0));
+        $placeholders = [];
+        $params = [];
+        foreach ($orderIds as $index => $orderId) {
+            $key = $paramPrefix . '_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $orderId;
         }
 
-        $prefix = config('database.prefix', 'ibs_');
-        $itemsTable = $prefix . 'dispatch_report_items';
-
-        return str_replace(
-            'dispatch_items_sub',
-            '(SELECT DISTINCT order_id FROM `' . str_replace('`', '``', $itemsTable) . '` WHERE order_id IS NOT NULL)',
-            $whereSql
-        );
+        return ['o.order_id NOT IN (' . implode(', ', $placeholders) . ')', $params];
     }
 
     /**

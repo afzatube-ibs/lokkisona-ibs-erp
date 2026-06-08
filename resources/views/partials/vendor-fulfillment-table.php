@@ -130,8 +130,13 @@ $pageQuery = array_filter([
                             <?php endif; ?>
                         </td>
                         <td class="vf-col-actions">
-                            <?php if ($canManage && ($primary !== null || $menuItems !== [])): ?>
                             <div class="vf-row-actions">
+                                <button type="button"
+                                    class="btn btn-ghost btn-sm vf-timeline-btn js-vf-timeline-open"
+                                    data-order-id="<?= e((string) $orderId) ?>"
+                                    title="Workflow timeline"
+                                    aria-label="Workflow timeline">⏱</button>
+                            <?php if ($canManage && ($primary !== null || $menuItems !== [])): ?>
                                 <?php if ($primary !== null && !empty($primary['is_link']) && !empty($primary['url'])): ?>
                                 <a href="<?= e((string) $primary['url']) ?>" class="btn btn-primary btn-sm"><?= e((string) ($primary['label'] ?? 'View Report')) ?></a>
                                 <?php elseif ($primary !== null): ?>
@@ -171,10 +176,10 @@ $pageQuery = array_filter([
                                     </div>
                                 </div>
                                 <?php endif; ?>
-                            </div>
-                            <?php else: ?>
+                            <?php elseif (!$canManage): ?>
                             <span class="page-description">—</span>
                             <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>

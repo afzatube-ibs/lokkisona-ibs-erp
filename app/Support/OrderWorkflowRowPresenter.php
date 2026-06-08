@@ -17,7 +17,6 @@ class OrderWorkflowRowPresenter
      */
     public static function buildRow(
         array $order,
-        string $displayStatus,
         ?string $dispatchReference,
         ?int $dispatchReportId,
         bool $batchLocked,
@@ -26,6 +25,7 @@ class OrderWorkflowRowPresenter
     ): array {
         $orderId = (int) ($order['order_id'] ?? 0);
         $rawStatus = (string) ($order['ibs_status'] ?? 'new_order');
+        $displayStatus = OrderWorkflowStatus::filterBucket($rawStatus, $batchLocked);
         $normalized = OrderWorkflowStatus::normalize($rawStatus);
         $dispatchModuleReady = WriteGate::dispatchReports()['ready'] ?? false;
 
@@ -220,7 +220,7 @@ class OrderWorkflowRowPresenter
 
             return [
                 'primary' => $primary,
-                'menu_items' => self::baseMenuItems($normalized, true, false, false),
+                'menu_items' => self::lockedMenuItems(),
                 'selectable' => false,
                 'bulk_action_key' => null,
                 'can_hold_cancel' => false,
@@ -259,6 +259,26 @@ class OrderWorkflowRowPresenter
             'selectable' => self::isBulkEligible($normalized, $dispatchModuleReady),
             'bulk_action_key' => self::bulkActionKey($normalized, $dispatchModuleReady),
             'can_hold_cancel' => $canHoldCancel,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function lockedMenuItems(): array
+    {
+        return [
+            [
+                'code' => 'view_timeline',
+                'label' => 'View timeline',
+                'menu_only' => true,
+            ],
+            [
+                'code' => 'add_note',
+                'label' => 'Add note',
+                'requires_note' => true,
+                'menu_only' => true,
+            ],
         ];
     }
 

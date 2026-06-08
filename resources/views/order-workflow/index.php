@@ -6,7 +6,7 @@ $displayActionNote = static function (?string $note): string {
 };
 $statusFilter = $statusFilter ?? null;
 $recentWorkflowHistory = $recentWorkflowHistory ?? [];
-$showDeveloperContent = ($appEnv ?? 'local') !== 'production';
+$showDeveloperContent = !empty($vfDebugMode);
 ?>
 <div class="vf-ops-page">
 <div class="page-header page-header-compact vf-page-header">
@@ -28,6 +28,43 @@ $showDeveloperContent = ($appEnv ?? 'local') !== 'production';
     'workflowStageNav' => $workflowStageNav ?? [],
     'statusFilter' => $statusFilter,
 ]); ?>
+
+<?php if (!empty($vfDebugPanel)): ?>
+<details class="planning-collapsible vf-debug-panel" open>
+    <summary class="planning-collapsible-summary">VF status filter debug (local ?debug=1)</summary>
+    <div class="planning-collapsible-body">
+        <dl class="vf-debug-dl">
+            <dt>Active filter bucket</dt>
+            <dd><?= e((string) ($vfDebugPanel['active_filter'] ?? '')) ?></dd>
+            <dt>SQL IN status codes</dt>
+            <dd><code><?= e(implode(', ', $vfDebugPanel['sql_status_codes'] ?? [])) ?></code></dd>
+            <dt>Included dispatch order IDs (first 20)</dt>
+            <dd><code><?= e(implode(', ', array_map('strval', $vfDebugPanel['included_dispatch_order_ids'] ?? []))) ?></code>
+                <?php if (($vfDebugPanel['included_dispatch_total'] ?? 0) > 20): ?>
+                <span class="text-muted">(<?= e((string) ($vfDebugPanel['included_dispatch_total'] ?? 0)) ?> total)</span>
+                <?php endif; ?>
+            </dd>
+            <dt>Raw ibs_status histogram (top 10)</dt>
+            <dd>
+                <?php foreach (($vfDebugPanel['raw_status_histogram'] ?? []) as $status => $count): ?>
+                <span class="vf-debug-hist-item"><code><?= e((string) $status) ?></code>=<?= e((string) $count) ?></span>
+                <?php endforeach; ?>
+            </dd>
+            <dt>stageCounts[filter] vs list total</dt>
+            <dd>
+                <?= e((string) ($vfDebugPanel['stage_count_for_filter'] ?? 0)) ?>
+                vs
+                <?= e((string) ($vfDebugPanel['list_total_for_filter'] ?? 0)) ?>
+                <?php if (!empty($vfDebugPanel['counts_match'])): ?>
+                <span class="vf-debug-match-ok">✓ match</span>
+                <?php else: ?>
+                <span class="vf-debug-match-bad">✗ mismatch</span>
+                <?php endif; ?>
+            </dd>
+        </dl>
+    </div>
+</details>
+<?php endif; ?>
 
 <?php view('partials.vendor-fulfillment-toolbar', [
     'fulfillmentFilters' => $fulfillmentFilters ?? [],
@@ -70,9 +107,11 @@ $showDeveloperContent = ($appEnv ?? 'local') !== 'production';
                         <th>Order</th>
                         <th>From</th>
                         <th>To</th>
+                        <th>Action</th>
                         <th>Note</th>
-                        <th>Changed By</th>
-                        <th>Changed At</th>
+                        <th>Batch</th>
+                        <th>User</th>
+                        <th>At</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,8 +120,10 @@ $showDeveloperContent = ($appEnv ?? 'local') !== 'production';
                         <td><?= e($row['order_reference']) ?></td>
                         <td><?= e($row['from_label']) ?></td>
                         <td><?= e($row['to_label']) ?></td>
+                        <td><?= e($row['action_label'] ?? '—') ?></td>
                         <td><?= e($displayActionNote($row['action_note'] ?? null)) ?></td>
-                        <td><?= e($row['changed_by'] !== '' ? $row['changed_by'] : '-') ?></td>
+                        <td><?= e($row['batch_reference'] ?? '—') ?></td>
+                        <td><?= e($row['changed_by'] !== '' ? $row['changed_by'] : '—') ?></td>
                         <td><?= e($row['changed_at']) ?></td>
                     </tr>
                     <?php endforeach; ?>

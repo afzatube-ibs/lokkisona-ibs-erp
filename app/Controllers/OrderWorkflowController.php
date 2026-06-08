@@ -26,6 +26,7 @@ use App\Services\ReadOnly\OrderWorkflowListReadService;
 use App\Services\Write\OrderWorkflowBulkWriteService;
 use App\Support\ManualOrderFormOptions;
 use App\Support\RequestTimer;
+use App\Support\WorkflowHistoryPresenter;
 
 class OrderWorkflowController extends Controller
 {
@@ -41,19 +42,40 @@ class OrderWorkflowController extends Controller
         $timer = config('app.env') === 'local' ? new RequestTimer() : null;
         $listService = new OrderWorkflowListReadService();
 
-        $filters = [
-            'status' => $statusFilter ?? '',
-            'supplier_id' => $supplierId,
-            'courier_status' => $_GET['courier_status'] ?? '',
-            'date_from' => $_GET['date_from'] ?? '',
-            'date_to' => $_GET['date_to'] ?? '',
-            'q' => $_GET['q'] ?? '',
-            'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
-        ];
+        $fromCard = !empty($_GET['from_card']);
+        $filters = $fromCard
+            ? [
+                'status' => $statusFilter ?? '',
+                'supplier_id' => $supplierId,
+                'courier_status' => '',
+                'date_from' => '',
+                'date_to' => '',
+                'q' => '',
+                'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
+            ]
+            : [
+                'status' => $statusFilter ?? '',
+                'supplier_id' => $supplierId,
+                'courier_status' => $_GET['courier_status'] ?? '',
+                'date_from' => $_GET['date_from'] ?? '',
+                'date_to' => $_GET['date_to'] ?? '',
+                'q' => $_GET['q'] ?? '',
+                'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
+            ];
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $fulfillmentList = $listService->listPage($filters, $page, $supplierId, $timer);
         $stageCounts = $fulfillmentList['stage_counts'] ?? [];
         $operationalSummary = $listService->operationalSummary($stageCounts, $supplierId);
+        $vfDebugMode = $this->isVendorFulfillmentDebugMode();
+        $vfDebugPanel = $vfDebugMode
+            ? $this->buildVendorFulfillmentDebugPanel(
+                $listService,
+                $statusFilter,
+                $fulfillmentList,
+                $stageCounts,
+                $supplierId
+            )
+            : null;
 
         $this->render('order-workflow.index', [
             'pageTitle' => 'Vendor Fulfillment',
@@ -115,7 +137,9 @@ class OrderWorkflowController extends Controller
             'statusFilterOptions' => OrderWorkflowStatus::filterStatusOptions(),
             'canShowTestSync' => !SupplierContext::isSupplier(),
             'dispatchFlash' => $this->resolveDispatchFlashFromQuery(),
-            'requestTiming' => config('app.env', 'local') !== 'production' && $timer !== null ? $timer->laps() : null,
+            'vfDebugMode' => $vfDebugMode,
+            'vfDebugPanel' => $vfDebugPanel,
+            'requestTiming' => $vfDebugMode && $timer !== null ? $timer->laps() : null,
             'appVersion' => config('app.version'),
             'releaseLabel' => config('app.release_label'),
         ]);
@@ -237,13 +261,7 @@ class OrderWorkflowController extends Controller
 
         $rows = [];
         foreach ($historyService->findByOrderId($orderId, 50) as $row) {
-            $rows[] = [
-                'from_label' => OrderWorkflowStatus::label((string) ($row['from_status'] ?? '')),
-                'to_label' => OrderWorkflowStatus::label((string) ($row['to_status'] ?? '')),
-                'action_note' => (string) ($row['action_note'] ?? ''),
-                'changed_by' => (string) ($row['changed_by'] ?? ''),
-                'changed_at' => (string) ($row['changed_at'] ?? ''),
-            ];
+            $rows[] = WorkflowHistoryPresenter::formatRow($row);
         }
 
         $this->jsonResponse([
@@ -443,12 +461,7 @@ class OrderWorkflowController extends Controller
             return null;
         }
 
-        $known = array_merge(
-            OrderWorkflowStatus::groupOrder(),
-            array_column(OrderWorkflowStatus::exceptionStages(), 'code')
-        );
-
-        return in_array($normalized, $known, true) ? $normalized : null;
+        return OrderWorkflowStatus::isKnownBucket($normalized) ? $normalized : null;
     }
 
     private function buildWorkflowBoard(?string $statusFilter = null): array
@@ -550,7 +563,7 @@ class OrderWorkflowController extends Controller
                 'code' => $code,
                 'label' => $stage['label'],
                 'count' => $counts[$code] ?? 0,
-                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'url' => '/order-workflow?status=' . rawurlencode($code) . '&from_card=1',
                 'active' => $activeStatus === $code,
             ];
         }
@@ -562,17 +575,55 @@ class OrderWorkflowController extends Controller
                 'code' => $code,
                 'label' => $stage['label'],
                 'count' => $counts[$code] ?? 0,
-                'url' => '/order-workflow?status=' . rawurlencode($code),
+                'url' => '/order-workflow?status=' . rawurlencode($code) . '&from_card=1',
                 'active' => $activeStatus === $code,
             ];
         }
 
         return [
-            'all_url' => '/order-workflow',
+            'all_url' => '/order-workflow?from_card=1',
             'all_active' => $activeStatus === null,
+            'all_count' => array_sum($counts),
             'main' => $mainStages,
             'exceptions' => $exceptionStages,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $fulfillmentList
+     * @param array<string, int> $stageCounts
+     * @return array<string, mixed>
+     */
+    private function buildVendorFulfillmentDebugPanel(
+        OrderWorkflowListReadService $listService,
+        ?string $statusFilter,
+        array $fulfillmentList,
+        array $stageCounts,
+        int $supplierId
+    ): array {
+        $activeBucket = $statusFilter ?? '(all)';
+        $listTotal = (int) ($fulfillmentList['pagination']['total'] ?? 0);
+        $cardCount = $statusFilter !== null ? (int) ($stageCounts[$statusFilter] ?? 0) : array_sum($stageCounts);
+        $includedIds = array_values($listService->loadIncludedDispatchOrderIds(500));
+        $sqlCodes = $statusFilter !== null
+            ? OrderWorkflowStatus::statusCodesForBucket($statusFilter)
+            : [];
+
+        return [
+            'active_filter' => $activeBucket,
+            'sql_status_codes' => $sqlCodes,
+            'included_dispatch_order_ids' => array_slice($includedIds, 0, 20),
+            'included_dispatch_total' => count($includedIds),
+            'raw_status_histogram' => $listService->rawStatusHistogram($supplierId, 10),
+            'stage_count_for_filter' => $cardCount,
+            'list_total_for_filter' => $listTotal,
+            'counts_match' => $statusFilter === null || $cardCount === $listTotal,
+        ];
+    }
+
+    private function isVendorFulfillmentDebugMode(): bool
+    {
+        return !empty($_GET['debug']) && config('app.env', 'local') === 'local';
     }
 
     private function buildWorkflowStageNav(?string $activeStatus = null): array
@@ -618,6 +669,7 @@ class OrderWorkflowController extends Controller
         return [
             'all_url' => '/order-workflow',
             'all_active' => $activeStatus === null,
+            'all_count' => array_sum($counts),
             'main' => $mainStages,
             'exceptions' => $exceptionStages,
         ];
@@ -654,14 +706,17 @@ class OrderWorkflowController extends Controller
             $history = [];
             foreach ($rows as $row) {
                 $orderId = (int) ($row['order_id'] ?? 0);
+                $formatted = WorkflowHistoryPresenter::formatRow($row);
                 $history[] = [
                     'order_id' => $orderId,
                     'order_reference' => $orderRefs[$orderId] ?? ('#' . $orderId),
-                    'from_label' => OrderWorkflowStatus::label((string) ($row['from_status'] ?? '')),
-                    'to_label' => OrderWorkflowStatus::label((string) ($row['to_status'] ?? '')),
-                    'action_note' => (string) ($row['action_note'] ?? ''),
-                    'changed_by' => (string) ($row['changed_by'] ?? ''),
-                    'changed_at' => (string) ($row['changed_at'] ?? ''),
+                    'from_label' => $formatted['from_label'],
+                    'to_label' => $formatted['to_label'],
+                    'action_label' => $formatted['action_label'],
+                    'action_note' => $formatted['action_note'],
+                    'batch_reference' => $formatted['batch_reference'],
+                    'changed_by' => $formatted['changed_by'],
+                    'changed_at' => $formatted['changed_at'],
                 ];
             }
 

@@ -105,8 +105,10 @@ $dispatchFlash = $dispatchFlash ?? null;
                         <tr>
                             <th>From</th>
                             <th>To</th>
+                            <th>Action</th>
                             <th>Note</th>
-                            <th>By</th>
+                            <th>Batch</th>
+                            <th>User</th>
                             <th>At</th>
                         </tr>
                     </thead>
