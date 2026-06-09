@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v2.1.6 Navigation Organization Foundation: sidebar regrouped into Operations, Supplier Management (Products label), Reports, System (Settings + Version), Admin Tools, and Future Plans; all sections expanded by default except Future Plans; no route or permission changes',
                 'v2.1.5 Login Page Final Dark SaaS Centered Design: single centered dark glass login card with bottom-corner glow/mesh, IBS branding, icon inputs, password toggle, Remember me (visual only), trust badge and page footer — no split layout, no KPI/demo cards; UI only, no auth/route changes',
                 'v2.1.4 Modern SaaS Login Page Revamp: split hero + login card layout, supplier portal branding, password visibility toggle, clean error styling, mobile-first responsive login — UI only, no auth/route changes',
                 'v2.1.3 Navigation Organization Foundation: sidebar regrouped into Operations, Supplier Management (Products label), Reports, System (Settings + Version), Admin Tools, and Future Plans; all sections expanded by default except Future Plans; no route or permission changes',

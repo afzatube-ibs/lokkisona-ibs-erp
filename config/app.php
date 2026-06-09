@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.1.5',
-    'release_label' => 'Login Page Final Dark SaaS Centered Design',
+    'version' => '2.1.6',
+    'release_label' => 'Navigation Organization Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

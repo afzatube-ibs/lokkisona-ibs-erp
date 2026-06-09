@@ -56,6 +56,39 @@
         }
     } catch (e) { /* storage blocked */ }
 
+    /* ── Sidebar tier expand/collapse persistence ── */
+    var NAV_TIER_PREFIX = 'ibs-nav-';
+
+    document.querySelectorAll('details[data-nav-tier]').forEach(function (detailsEl) {
+        var key = detailsEl.getAttribute('data-nav-tier');
+        if (!key) {
+            return;
+        }
+
+        var storageKey = NAV_TIER_PREFIX + key;
+        var hasActiveChild = !!detailsEl.querySelector('.nav-item.active, .nav-item-button.active');
+
+        try {
+            var saved = localStorage.getItem(storageKey);
+            var defaultOpen = detailsEl.getAttribute('data-nav-default-open') === '1';
+            if (saved === 'open') {
+                detailsEl.open = true;
+            } else if (saved === 'closed' && !hasActiveChild) {
+                detailsEl.open = false;
+            } else if (key === 'future-plans' && saved === null && !hasActiveChild) {
+                detailsEl.open = false;
+            } else if (defaultOpen && saved === null && !hasActiveChild) {
+                detailsEl.open = true;
+            }
+        } catch (e) { /* storage blocked */ }
+
+        detailsEl.addEventListener('toggle', function () {
+            try {
+                localStorage.setItem(storageKey, detailsEl.open ? 'open' : 'closed');
+            } catch (e) { /* storage blocked */ }
+        });
+    });
+
     /* ── Dispatch batch selection summary ── */
     document.querySelectorAll('.js-dispatch-batch-form').forEach(function (form) {
         var summary = form.querySelector('.js-dispatch-batch-summary');
