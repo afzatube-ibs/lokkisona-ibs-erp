@@ -13,6 +13,7 @@ config/opencart.local.php
 # IDE & OS
 .idea/
 .vscode/
+.cursor/plans/
 *.swp
 *.swo
 Thumbs.db
