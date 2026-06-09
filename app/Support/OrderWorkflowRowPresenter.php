@@ -72,8 +72,8 @@ class OrderWorkflowRowPresenter
             'dispatch_report_reference' => $dispatchReference,
             'dispatch_report_id' => $dispatchReportId,
             'view_report_url' => $viewReportUrl,
-            'created_report_note' => $batchLocked || $displayStatus === 'dispatch_report_created'
-                ? 'Included in Dispatch Batch'
+            'created_report_note' => ($batchLocked || $displayStatus === 'dispatch_report_created') && $batchRef !== ''
+                ? 'Included in Dispatch Batch ' . $batchRef . '. Normal workflow actions are locked.'
                 : null,
             'batch_locked' => $batchLocked,
             'primary_action' => $actions['primary'],

@@ -210,11 +210,18 @@ class ProductControlController extends Controller
             $input['variants'] = [];
         }
 
+        foreach (['cost_meta', 'stock_meta'] as $metaKey) {
+            if (isset($input[$metaKey]) && is_string($input[$metaKey]) && trim($input[$metaKey]) !== '') {
+                $decodedMeta = json_decode($input[$metaKey], true);
+                $input[$metaKey] = is_array($decodedMeta) ? $decodedMeta : null;
+            }
+        }
+
         $result = (new ProductWorkspaceWriteService())->save($productId, $input);
         if ($result->success) {
             ProductControlListReadService::invalidateCache();
         }
-        $this->redirectWithWriteResult('/product-control', $result);
+        $this->redirectWithWriteResult('/product-control?saved_product_id=' . $productId, $result);
     }
 
     public function createProduct()

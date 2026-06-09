@@ -201,7 +201,8 @@ class DispatchReportRepository extends BaseReadOnlyRepository
                 }
             }
 
-            $sql = 'SELECT i.*, o.customer_name, o.customer_phone, o.ibs_status, o.order_reference AS erp_order_reference '
+            $sql = 'SELECT i.*, o.customer_name, o.customer_phone, o.ibs_status, o.order_reference AS erp_order_reference, '
+                . 'o.courier_status, o.tracking_number, o.source_order_status, o.origin_order_status_name '
                 . 'FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
                 . 'LEFT JOIN `' . $this->escapeIdentifier($ordersTable) . '` o ON o.order_id = i.order_id '
                 . 'WHERE i.dispatch_report_id = :dispatch_report_id '

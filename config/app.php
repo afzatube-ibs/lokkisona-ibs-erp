@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '1.9.9',
-    'release_label' => 'Dispatch Report Operational Foundation',
+    'version' => '2.0.2.2',
+    'release_label' => 'Product Control Center Compact Layout Fix',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
@@ -11,7 +11,7 @@ return [
         'password' => '',
     ],
     'timezone' => 'UTC',
-    'url' => '',
+    'url' => 'http://127.0.0.1:8017',
     'session_name' => 'lokkisona_ibs_erp_session',
     'auth' => [
         'username' => 'admin',

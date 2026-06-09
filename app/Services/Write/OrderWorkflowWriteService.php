@@ -184,7 +184,7 @@ class OrderWorkflowWriteService
         }
 
         $dispatchReference = trim($dispatchReference);
-        $historyNote = 'Dispatch Report ' . $dispatchReference;
+        $historyNote = '[action:create_dispatch_report] Dispatch Report ' . $dispatchReference;
 
         if (!$this->orders->updateStatus($orderId, $toStatus)) {
             return WriteResult::fail('Failed to update order status to Dispatch Report Created.');
@@ -201,10 +201,14 @@ class OrderWorkflowWriteService
             $this->history->insert($orderId, null, $fromStatus, $toStatus, $historyNote, $changedBy);
         }
 
-        ActivityLog::record('order_workflow_action', 'Order workflow: Dispatch Report inclusion', [
+        ActivityLog::record('order_workflow_action', 'Order workflow: Create Dispatch Report', [
+            'action' => 'create_dispatch_report',
             'order_id' => $orderId,
             'from' => $fromStatus,
             'to' => $toStatus,
+            'old_status' => $fromStatus,
+            'new_status' => $toStatus,
+            'batch_reference' => $dispatchReference,
             'dispatch_reference' => $dispatchReference,
             'changed_by' => $changedBy,
             'user' => Auth::user(),

@@ -22,4 +22,21 @@ class DispatchCostSnapshot
             'item_count' => $itemCount,
         ];
     }
+
+    /**
+     * Count order lines with missing supplier cost (<= 0).
+     *
+     * @param array<int, array<string, mixed>> $lines
+     */
+    public static function countMissingLineItems(array $lines): int
+    {
+        $missing = 0;
+        foreach ($lines as $line) {
+            if ((float) ($line['supplier_cost_snapshot'] ?? 0) <= 0) {
+                $missing++;
+            }
+        }
+
+        return $missing;
+    }
 }

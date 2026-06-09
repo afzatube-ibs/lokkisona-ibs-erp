@@ -14,10 +14,18 @@ class ProductCostHistoryWriteRepository extends BaseWriteRepository
     public function insert(array $data): int
     {
         $sql = 'INSERT INTO `' . $this->escapeIdentifier($this->table()) . '` '
-            . '(product_id, product_variant_id, supplier_id, old_cost, new_cost, note, created_at) '
-            . 'VALUES (:product_id, :product_variant_id, :supplier_id, :old_cost, :new_cost, :note, NOW())';
+            . '(product_id, product_variant_id, supplier_id, old_cost, new_cost, changed_by, note, created_at) '
+            . 'VALUES (:product_id, :product_variant_id, :supplier_id, :old_cost, :new_cost, :changed_by, :note, NOW())';
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($data);
+        $statement->execute([
+            'product_id' => $data['product_id'],
+            'product_variant_id' => $data['product_variant_id'] ?? null,
+            'supplier_id' => $data['supplier_id'] ?? null,
+            'old_cost' => $data['old_cost'],
+            'new_cost' => $data['new_cost'],
+            'changed_by' => $data['changed_by'] ?? null,
+            'note' => $data['note'] ?? null,
+        ]);
 
         return (int) $this->pdo->lastInsertId();
     }

@@ -242,10 +242,10 @@ All migration files remain manual drafts (`DRAFT ONLY` / `DO NOT AUTO RUN`) and 
 From the project root:
 
 ```bash
-php -S localhost:8080 -t public public/router.php
+php -S 127.0.0.1:8017 -t public public/router.php
 ```
 
-Open [http://localhost:8080](http://localhost:8080)
+Open [http://127.0.0.1:8017](http://127.0.0.1:8017)
 
 ### Apache
 

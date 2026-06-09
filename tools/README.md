@@ -24,7 +24,7 @@ The checkpoint:
 
 - Auto-detects PHP, checking `D:\xampp\php\php.exe` (Office PC), `E:\xampp\php\php.exe` (Home PC), `C:\xampp\php\php.exe`, then `php` from PATH.
 - Lints PHP files in `app`, `config`, `public`, `resources`, and `routes`.
-- Starts a temporary PHP server on `127.0.0.1:8020` when needed.
+- Starts a temporary PHP server on `127.0.0.1:8017` when needed.
 - Smoke tests all planned foundation routes.
 - Confirms `/version` contains the current release version.
 - Checks for forbidden legacy branding/runtime text.

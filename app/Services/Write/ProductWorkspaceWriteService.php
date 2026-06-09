@@ -3,6 +3,10 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
+use App\Auth;
+use App\Domain\ProductControlAdjustment;
+use App\Domain\ProductControlHistoryNote;
+use App\Repositories\UserRepository;
 use App\Repositories\Write\ProductCostHistoryWriteRepository;
 use App\Repositories\Write\ProductStockHistoryWriteRepository;
 use App\Repositories\Write\ProductVariantWriteRepository;
@@ -14,17 +18,20 @@ class ProductWorkspaceWriteService
     private ProductVariantWriteRepository $variants;
     private ProductCostHistoryWriteRepository $costHistory;
     private ProductStockHistoryWriteRepository $stockHistory;
+    private UserRepository $users;
 
     public function __construct(
         ?ProductWriteRepository $products = null,
         ?ProductVariantWriteRepository $variants = null,
         ?ProductCostHistoryWriteRepository $costHistory = null,
-        ?ProductStockHistoryWriteRepository $stockHistory = null
+        ?ProductStockHistoryWriteRepository $stockHistory = null,
+        ?UserRepository $users = null
     ) {
         $this->products = $products ?? new ProductWriteRepository();
         $this->variants = $variants ?? new ProductVariantWriteRepository();
         $this->costHistory = $costHistory ?? new ProductCostHistoryWriteRepository();
         $this->stockHistory = $stockHistory ?? new ProductStockHistoryWriteRepository();
+        $this->users = $users ?? new UserRepository();
     }
 
     public function save(int $productId, array $input): WriteResult
@@ -38,16 +45,30 @@ class ProductWorkspaceWriteService
             return WriteResult::fail('Product not found.');
         }
 
+        $variantRows = $input['variants'] ?? [];
+        if (is_string($variantRows)) {
+            $decoded = json_decode($variantRows, true);
+            $variantRows = is_array($decoded) ? $decoded : [];
+        }
+        $hasVariants = is_array($variantRows) && $variantRows !== [];
+
+        $productCost = $hasVariants
+            ? ($product['product_cost'] !== null ? (float) $product['product_cost'] : null)
+            : $this->resolveCostValue($product, $input, 'product_cost', 'cost_meta');
+        $productStock = $hasVariants
+            ? (int) ($product['vendor_stock'] ?? 0)
+            : $this->resolveStockValue($product, $input, 'vendor_stock', 'stock_meta');
+
+        if ($productStock < 0) {
+            return WriteResult::fail('Vendor stock cannot be negative.');
+        }
+
         $supplierFields = [
             'supplier_model' => array_key_exists('supplier_model', $input)
                 ? $this->nullableString($input, 'supplier_model')
                 : ($product['supplier_model'] ?? null),
-            'product_cost' => array_key_exists('product_cost', $input)
-                ? $this->nullableDecimal($input, 'product_cost', $product['product_cost'] ?? null)
-                : ($product['product_cost'] !== null ? (float) $product['product_cost'] : null),
-            'vendor_stock' => array_key_exists('vendor_stock', $input)
-                ? (int) ($input['vendor_stock'] ?? 0)
-                : (int) ($product['vendor_stock'] ?? 0),
+            'product_cost' => $productCost,
+            'vendor_stock' => $productStock,
             'low_warning_threshold' => array_key_exists('low_warning_threshold', $input)
                 ? $this->nullableInt($input, 'low_warning_threshold', $product['low_warning_threshold'] ?? null)
                 : ($product['low_warning_threshold'] !== null ? (int) $product['low_warning_threshold'] : null),
@@ -71,11 +92,16 @@ class ProductWorkspaceWriteService
             $this->products->updateSupplierAssignment($productId, $supplierId > 0 ? $supplierId : null);
         }
 
-        $this->recordProductHistoryIfChanged($productId, $product, $supplierFields);
+        $this->recordProductHistoryIfChanged(
+            $productId,
+            $product,
+            $supplierFields,
+            $this->metaFromInput($input, 'cost_meta'),
+            $this->metaFromInput($input, 'stock_meta')
+        );
 
-        $variantRows = $input['variants'] ?? [];
         $updatedVariants = 0;
-        if (is_array($variantRows) && $this->variants->tableExists()) {
+        if ($hasVariants && $this->variants->tableExists()) {
             foreach ($variantRows as $row) {
                 if (!is_array($row)) {
                     continue;
@@ -89,16 +115,18 @@ class ProductWorkspaceWriteService
                     continue;
                 }
 
+                $newCost = $this->resolveCostValue($existing, $row, 'product_cost', 'cost_meta');
+                $newStock = $this->resolveStockValue($existing, $row, 'vendor_stock', 'stock_meta');
+                if ($newStock < 0) {
+                    return WriteResult::fail('Vendor stock cannot be negative for variant #' . $variantId . '.');
+                }
+
                 $variantFields = [
                     'supplier_model' => array_key_exists('supplier_model', $row)
                         ? $this->nullableString($row, 'supplier_model')
                         : ($existing['supplier_model'] ?? null),
-                    'product_cost' => array_key_exists('product_cost', $row)
-                        ? $this->nullableDecimal($row, 'product_cost', $existing['product_cost'] ?? null)
-                        : ($existing['product_cost'] !== null ? (float) $existing['product_cost'] : null),
-                    'vendor_stock' => array_key_exists('vendor_stock', $row)
-                        ? (int) ($row['vendor_stock'] ?? 0)
-                        : (int) ($existing['vendor_stock'] ?? 0),
+                    'product_cost' => $newCost,
+                    'vendor_stock' => $newStock,
                     'status' => $this->status($row, (string) ($existing['status'] ?? 'active')),
                 ];
 
@@ -107,7 +135,14 @@ class ProductWorkspaceWriteService
                 }
 
                 $this->variants->updateSupplierControlFields($variantId, $variantFields);
-                $this->recordVariantHistoryIfChanged($productId, $variantId, $existing, $variantFields);
+                $this->recordVariantHistoryIfChanged(
+                    $productId,
+                    $variantId,
+                    $existing,
+                    $variantFields,
+                    $this->metaFromRow($row, 'cost_meta'),
+                    $this->metaFromRow($row, 'stock_meta')
+                );
                 $updatedVariants++;
             }
         }
@@ -124,87 +159,246 @@ class ProductWorkspaceWriteService
         return WriteResult::ok($message, $productId);
     }
 
-    private function recordProductHistoryIfChanged(int $productId, array $product, array $newFields): void
+    /**
+     * @param array<string, mixed> $existing
+     * @param array<string, mixed> $input
+     */
+    private function resolveCostValue(array $existing, array $input, string $valueKey, string $metaKey): ?float
     {
+        $meta = $this->metaFromRow($input, $metaKey);
+        $old = $existing['product_cost'] !== null && $existing['product_cost'] !== ''
+            ? (float) $existing['product_cost']
+            : null;
+
+        if ($meta !== null) {
+            $type = (string) ($meta['type'] ?? 'direct');
+            $amount = (float) ($meta['amount'] ?? 0);
+
+            return ProductControlAdjustment::applyCost($old, $type, $amount);
+        }
+
+        if (!array_key_exists($valueKey, $input)) {
+            return $old;
+        }
+
+        return $this->nullableDecimal($input, $valueKey, $old);
+    }
+
+    /**
+     * @param array<string, mixed> $existing
+     * @param array<string, mixed> $input
+     */
+    private function resolveStockValue(array $existing, array $input, string $valueKey, string $metaKey): int
+    {
+        $meta = $this->metaFromRow($input, $metaKey);
+        $old = (int) ($existing['vendor_stock'] ?? 0);
+
+        if ($meta !== null) {
+            $type = (string) ($meta['type'] ?? 'direct');
+            $amount = (int) ($meta['amount'] ?? 0);
+
+            return ProductControlAdjustment::applyStock($old, $type, $amount);
+        }
+
+        if (!array_key_exists($valueKey, $input)) {
+            return $old;
+        }
+
+        return max(0, (int) ($input[$valueKey] ?? 0));
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{type: string, amount: float|int, note: string}|null
+     */
+    private function metaFromInput(array $input, string $key): ?array
+    {
+        return $this->metaFromRow($input, $key);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array{type: string, amount: float|int, note: string}|null
+     */
+    private function metaFromRow(array $row, string $key): ?array
+    {
+        if (!isset($row[$key])) {
+            return null;
+        }
+
+        $meta = $row[$key];
+        if (is_string($meta)) {
+            $decoded = json_decode($meta, true);
+            $meta = is_array($decoded) ? $decoded : null;
+        }
+
+        if (!is_array($meta) || empty($meta['type'])) {
+            return null;
+        }
+
+        return [
+            'type' => (string) $meta['type'],
+            'amount' => $meta['amount'] ?? 0,
+            'note' => trim((string) ($meta['note'] ?? '')),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $product
+     * @param array<string, mixed> $newFields
+     * @param array{type: string, amount: float|int, note: string}|null $costMeta
+     * @param array{type: string, amount: float|int, note: string}|null $stockMeta
+     */
+    private function recordProductHistoryIfChanged(
+        int $productId,
+        array $product,
+        array $newFields,
+        ?array $costMeta,
+        ?array $stockMeta
+    ): void {
         if (!$this->costHistory->tableExists() || !$this->stockHistory->tableExists()) {
             return;
         }
 
-        $oldCost = $product['product_cost'] !== null ? (float) $product['product_cost'] : null;
+        $oldCost = $product['product_cost'] !== null && $product['product_cost'] !== ''
+            ? (float) $product['product_cost']
+            : null;
         $newCost = $newFields['product_cost'] ?? $oldCost;
         $oldStock = (int) ($product['vendor_stock'] ?? 0);
         $newStock = (int) ($newFields['vendor_stock'] ?? $oldStock);
         $supplierId = $product['supplier_id'] !== null ? (int) $product['supplier_id'] : null;
+        $changedBy = $this->resolveChangedById();
 
-        $costChanged = $oldCost === null && $newCost !== null
-            || ($oldCost !== null && $newCost !== null && abs((float) $newCost - (float) $oldCost) > 0.0001)
-            || ($oldCost !== null && $newCost === null);
-
-        $stockChanged = $newStock !== $oldStock;
-
-        if ($costChanged) {
-            $this->costHistory->insert([
-                'product_id' => $productId,
-                'product_variant_id' => null,
-                'supplier_id' => $supplierId,
-                'old_cost' => $oldCost,
-                'new_cost' => $newCost,
-                'note' => 'Workspace save',
-            ]);
-        }
-
-        if ($stockChanged) {
-            $this->stockHistory->insert([
-                'product_id' => $productId,
-                'product_variant_id' => null,
-                'supplier_id' => $supplierId,
-                'old_stock' => $oldStock,
-                'new_stock' => $newStock,
-                'change_type' => 'workspace_save',
-                'note' => 'Workspace save',
-            ]);
-        }
+        $this->insertCostHistoryIfChanged(
+            $productId,
+            null,
+            $supplierId,
+            $oldCost,
+            $newCost,
+            $costMeta,
+            $changedBy
+        );
+        $this->insertStockHistoryIfChanged(
+            $productId,
+            null,
+            $supplierId,
+            $oldStock,
+            $newStock,
+            $stockMeta,
+            $changedBy
+        );
     }
 
-    private function recordVariantHistoryIfChanged(int $productId, int $variantId, array $existing, array $newFields): void
-    {
+    /**
+     * @param array<string, mixed> $existing
+     * @param array<string, mixed> $newFields
+     * @param array{type: string, amount: float|int, note: string}|null $costMeta
+     * @param array{type: string, amount: float|int, note: string}|null $stockMeta
+     */
+    private function recordVariantHistoryIfChanged(
+        int $productId,
+        int $variantId,
+        array $existing,
+        array $newFields,
+        ?array $costMeta,
+        ?array $stockMeta
+    ): void {
         if (!$this->costHistory->tableExists() || !$this->stockHistory->tableExists()) {
             return;
         }
 
-        $oldCost = $existing['product_cost'] !== null ? (float) $existing['product_cost'] : null;
+        $oldCost = $existing['product_cost'] !== null && $existing['product_cost'] !== ''
+            ? (float) $existing['product_cost']
+            : null;
         $newCost = $newFields['product_cost'] ?? $oldCost;
         $oldStock = (int) ($existing['vendor_stock'] ?? 0);
         $newStock = (int) ($newFields['vendor_stock'] ?? $oldStock);
+        $changedBy = $this->resolveChangedById();
 
+        $this->insertCostHistoryIfChanged($productId, $variantId, null, $oldCost, $newCost, $costMeta, $changedBy);
+        $this->insertStockHistoryIfChanged($productId, $variantId, null, $oldStock, $newStock, $stockMeta, $changedBy);
+    }
+
+    private function insertCostHistoryIfChanged(
+        int $productId,
+        ?int $variantId,
+        ?int $supplierId,
+        ?float $oldCost,
+        ?float $newCost,
+        ?array $meta,
+        ?int $changedBy
+    ): void {
         $costChanged = $oldCost === null && $newCost !== null
             || ($oldCost !== null && $newCost !== null && abs((float) $newCost - (float) $oldCost) > 0.0001)
             || ($oldCost !== null && $newCost === null);
 
-        $stockChanged = $newStock !== $oldStock;
-
-        if ($costChanged) {
-            $this->costHistory->insert([
-                'product_id' => $productId,
-                'product_variant_id' => $variantId,
-                'supplier_id' => null,
-                'old_cost' => $oldCost,
-                'new_cost' => $newCost,
-                'note' => 'Workspace save (variant)',
-            ]);
+        if (!$costChanged) {
+            return;
         }
 
-        if ($stockChanged) {
-            $this->stockHistory->insert([
-                'product_id' => $productId,
-                'product_variant_id' => $variantId,
-                'supplier_id' => null,
-                'old_stock' => $oldStock,
-                'new_stock' => $newStock,
-                'change_type' => 'workspace_save',
-                'note' => 'Workspace save (variant)',
-            ]);
+        $type = $meta['type'] ?? 'direct';
+        $delta = (string) ProductControlAdjustment::costDelta($oldCost, $newCost);
+        $userNote = $meta['note'] ?? '';
+
+        $this->costHistory->insert([
+            'product_id' => $productId,
+            'product_variant_id' => $variantId,
+            'supplier_id' => $supplierId,
+            'old_cost' => $oldCost,
+            'new_cost' => $newCost,
+            'changed_by' => $changedBy,
+            'note' => ProductControlHistoryNote::format('supplier_cost', (string) $type, $delta, (string) $userNote),
+        ]);
+    }
+
+    private function insertStockHistoryIfChanged(
+        int $productId,
+        ?int $variantId,
+        ?int $supplierId,
+        int $oldStock,
+        int $newStock,
+        ?array $meta,
+        ?int $changedBy
+    ): void {
+        if ($newStock === $oldStock) {
+            return;
         }
+
+        $type = $meta['type'] ?? 'direct';
+        $delta = (string) ProductControlAdjustment::stockDelta($oldStock, $newStock);
+        $userNote = $meta['note'] ?? '';
+
+        $this->stockHistory->insert([
+            'product_id' => $productId,
+            'product_variant_id' => $variantId,
+            'supplier_id' => $supplierId,
+            'old_stock' => $oldStock,
+            'new_stock' => $newStock,
+            'change_type' => (string) $type,
+            'changed_by' => $changedBy,
+            'note' => ProductControlHistoryNote::format('vendor_stock', (string) $type, $delta, (string) $userNote),
+        ]);
+    }
+
+    private function resolveChangedById(): ?int
+    {
+        $username = Auth::user();
+        if ($username === null || $username === '') {
+            return null;
+        }
+
+        if (!$this->users->tableExists()) {
+            return null;
+        }
+
+        $user = $this->users->findByUsername((string) $username);
+        if ($user === null) {
+            return null;
+        }
+
+        $userId = (int) ($user['user_id'] ?? 0);
+
+        return $userId > 0 ? $userId : null;
     }
 
     private function nullableInt(array $input, string $key, $fallback = null): ?int
@@ -250,4 +444,3 @@ class ProductWorkspaceWriteService
         return in_array($status, ['active', 'inactive'], true) ? $status : $fallback;
     }
 }
-

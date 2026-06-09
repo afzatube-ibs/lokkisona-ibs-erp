@@ -65,6 +65,7 @@ class DispatchReportWriteService
         $validatedOrders = [];
         $supplierId = null;
         $businessSourceId = null;
+        $totalMissingLines = 0;
 
         foreach ($orderIds as $orderId) {
             $order = $this->orders->find($orderId);
@@ -95,6 +96,10 @@ class DispatchReportWriteService
                 return WriteResult::fail('All selected orders must belong to the same supplier.');
             }
 
+            $orderLines = $this->orderItems->findByOrderId($orderId);
+            $missingLines = DispatchCostSnapshot::countMissingLineItems($orderLines);
+            $totalMissingLines += $missingLines;
+
             $lineCost = $this->orderItems->sumSupplierCostByOrderId($orderId);
             $lineQty = $this->orderItems->sumQuantityByOrderId($orderId);
             $snapshot = DispatchCostSnapshot::forOrder($order, $lineCost, $lineQty);
@@ -103,6 +108,18 @@ class DispatchReportWriteService
                 'order' => $order,
                 'snapshot' => $snapshot,
             ];
+        }
+
+        if ($totalMissingLines > 0) {
+            $itemWord = $totalMissingLines === 1 ? 'item' : 'items';
+
+            return WriteResult::fail(
+                'Cannot create dispatch report: product cost missing for '
+                . $totalMissingLines
+                . ' '
+                . $itemWord
+                . '. Update Product Control first.'
+            );
         }
 
         $dispatchDate = DispatchReportReference::dispatchDate();
@@ -177,8 +194,12 @@ class DispatchReportWriteService
         }
 
         ActivityLog::record('dispatch_report_created', 'Daily dispatch report created (locked snapshot)', [
+            'action' => 'create_dispatch_report',
             'dispatch_report_id' => $reportId,
+            'batch_reference' => $reference,
             'dispatch_reference' => $reference,
+            'old_status' => 'shipped',
+            'new_status' => 'dispatch_report_created',
             'total_orders' => count($validatedOrders),
             'total_product_cost' => $totalCost,
             'user' => Auth::user(),

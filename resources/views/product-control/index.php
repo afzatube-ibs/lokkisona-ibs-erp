@@ -115,6 +115,7 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
     'isSupplierView' => !empty($isSupplierView),
     'workspaceUrl' => url('/product-control/workspace'),
     'historyUrl' => url('/product-control/history'),
+    'savedProductId' => (int) ($_GET['saved_product_id'] ?? 0),
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>
 <script src="<?= e(asset('js/product-control.js')) ?>"></script>
 </div>

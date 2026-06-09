@@ -15,7 +15,11 @@ class DispatchReportReference
         $normalized = strtolower(trim($status));
 
         if ($normalized === self::STATUS_LOCKED) {
-            return 'Locked Snapshot';
+            return 'Created / Locked';
+        }
+
+        if ($normalized === 'created') {
+            return 'Created';
         }
 
         if ($normalized === 'draft') {

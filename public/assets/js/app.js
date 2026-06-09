@@ -59,6 +59,8 @@
     /* ── Dispatch batch selection summary ── */
     document.querySelectorAll('.js-dispatch-batch-form').forEach(function (form) {
         var summary = form.querySelector('.js-dispatch-batch-summary');
+        var missingWarning = form.querySelector('.js-dispatch-missing-cost-warning');
+        var submitBtn = form.querySelector('.js-dispatch-submit-btn');
         var selects = form.querySelectorAll('.js-dispatch-order-select');
 
         function refreshDispatchSummary() {
@@ -68,6 +70,7 @@
             var orderCount = 0;
             var totalQty = 0;
             var totalCost = 0;
+            var missingCount = 0;
             var couriers = {};
             selects.forEach(function (checkbox) {
                 if (!checkbox.checked) {
@@ -80,6 +83,9 @@
                 orderCount += 1;
                 totalQty += parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
                 totalCost += parseFloat(row.getAttribute('data-cost') || '0') || 0;
+                if (row.getAttribute('data-missing-cost') === '1') {
+                    missingCount += 1;
+                }
                 var courier = (row.getAttribute('data-courier') || '').trim();
                 if (courier !== '') {
                     couriers[courier] = true;
@@ -91,6 +97,21 @@
             }
             summary.textContent = 'Batch summary: ' + orderCount + ' orders · ' + totalQty + ' qty · '
                 + totalCost.toFixed(2) + ' product cost · courier: ' + courierLabel;
+
+            if (missingWarning) {
+                if (missingCount > 0) {
+                    var itemWord = missingCount === 1 ? 'item' : 'items';
+                    missingWarning.style.display = 'block';
+                    missingWarning.textContent = 'Cannot create dispatch report: product cost missing for '
+                        + missingCount + ' ' + itemWord + '. Update Product Control first.';
+                } else {
+                    missingWarning.style.display = 'none';
+                    missingWarning.textContent = '';
+                }
+            }
+            if (submitBtn) {
+                submitBtn.disabled = missingCount > 0;
+            }
         }
 
         selects.forEach(function (checkbox) {

@@ -4,25 +4,21 @@ $supplierCostLabel = !empty($isSupplierView) ? 'Supplier Sale' : 'Supplier Cost'
 $defaultSupplierId = (int) (config('auth.supplier_id', 1));
 ?>
 <div class="modal-overlay" id="productControlCenterModal" hidden aria-hidden="true">
-    <div class="modal-panel modal-panel-product-control" role="dialog" aria-labelledby="pccModalTitle" aria-modal="true">
-        <div class="pcc-modal-header">
-            <div>
-                <h2 class="pcc-modal-title" id="pccModalTitle">Product Control Center</h2>
-                <p class="pcc-modal-subtitle" id="pccModalSubtitle">Controlled product workspace</p>
-                <div class="pcc-badge-row" id="pccCompletenessBadges"></div>
-            </div>
+    <div class="modal-panel modal-panel-product-control pcc-v202-panel" role="dialog" aria-labelledby="pccModalTitle" aria-modal="true">
+        <div class="pcc-v202-header">
+            <h2 class="pcc-modal-title" id="pccModalTitle">Product Control Center</h2>
             <button type="button" class="modal-close" data-modal-close="productControlCenterModal" aria-label="Close product workspace">&times;</button>
         </div>
 
         <p class="pcc-modal-error page-description" id="pccModalError" hidden role="alert"></p>
         <p class="pcc-modal-loading page-description" id="pccModalLoading" hidden>Loading product workspace…</p>
 
-        <div class="pcc-tabs" role="tablist">
+        <div class="pcc-tabs pcc-v202-tabs" role="tablist">
             <button type="button" class="pcc-tab is-active" data-pcc-tab="details" role="tab" aria-selected="true">Product Details</button>
             <button type="button" class="pcc-tab" data-pcc-tab="history" role="tab" aria-selected="false"><?= e($costLabel) ?> / Stock History</button>
         </div>
 
-        <form method="post" action="<?= e(url('/product-control/workspace/save')) ?>" id="productControlCenterForm">
+        <form method="post" action="<?= e(url('/product-control/workspace/save')) ?>" id="productControlCenterForm" class="pcc-v202-form">
             <?= $csrfField ?? '' ?>
             <input type="hidden" name="product_id" id="pccProductId" value="">
             <?php if (!empty($isSupplierView) && !empty($boundSupplierId)): ?>
@@ -33,145 +29,171 @@ $defaultSupplierId = (int) (config('auth.supplier_id', 1));
             <input type="hidden" name="business_source_id" id="pccBusinessSourceId" value="<?= e((string) ($defaultBusinessSourceId ?? 1)) ?>">
             <input type="hidden" name="supplier_product_category" id="pccCategory" value="">
             <input type="hidden" name="variants" id="pccVariantsJson" value="">
+            <input type="hidden" name="cost_meta" id="pccCostMeta" value="">
+            <input type="hidden" name="stock_meta" id="pccStockMeta" value="">
 
-            <div class="pcc-tab-panel is-active" data-pcc-panel="details">
-                <div class="pcc-modal-hero-split">
-                    <div class="pcc-main-product-card">
-                        <div class="pcc-main-product-thumb" id="pccMainImageWrap">
-                            <div class="pcc-image-placeholder" id="pccImagePlaceholder">—</div>
-                            <img src="" alt="" class="pcc-product-image" id="pccProductImage" hidden>
-                        </div>
-                        <dl class="pcc-oc-facts-grid">
-                            <div class="pcc-oc-fact"><dt>OC ID</dt><dd id="pccOcProductId">—</dd></div>
-                            <div class="pcc-oc-fact"><dt>OC Model</dt><dd id="pccOcModel">—</dd></div>
-                            <div class="pcc-oc-fact"><dt>OC Stock</dt><dd id="pccOcStock">—</dd></div>
-                            <div class="pcc-oc-fact"><dt>OC Price</dt><dd id="pccOcPrice">Not stored in ERP</dd></div>
-                            <div class="pcc-oc-fact pcc-oc-fact-wide"><dt>Last synced</dt><dd id="pccLastSynced">—</dd></div>
-                        </dl>
-                    </div>
+            <div class="pcc-tab-panel is-active pcc-v202-tab-panel" data-pcc-panel="details">
+                <div class="pcc-v202-workspace">
+                    <div class="pcc-v202-top-split">
+                        <section class="pcc-v202-snapshot" aria-label="Product snapshot">
+                            <div class="pcc-v202-snapshot-image" id="pccMainImageWrap">
+                                <div class="pcc-image-placeholder-card pcc-v202-img-placeholder" id="pccImagePlaceholder"><span>No image</span></div>
+                                <img src="" alt="" class="pcc-product-image pcc-v202-product-image" id="pccProductImage" hidden>
+                            </div>
+                            <div class="pcc-v202-snapshot-body">
+                                <div class="pcc-v202-title-row">
+                                    <h3 class="pcc-v202-product-name" id="pccProductNameMuted">—</h3>
+                                    <span class="pcc-v202-inline-health" id="pccSnapshotHealth"></span>
+                                </div>
+                                <dl class="pcc-v202-facts">
+                                    <div class="pcc-v202-fact"><dt>Product ID</dt><dd id="pccOcProductId">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Model</dt><dd id="pccOcModel">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Type</dt><dd id="pccProductType">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Stock</dt><dd id="pccTotalStock">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Variants</dt><dd id="pccTotalVariants">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Last Sync</dt><dd id="pccLastSynced">—</dd></div>
+                                </dl>
+                            </div>
+                        </section>
 
-                    <div class="pcc-vendor-mapping-card" id="pccVendorMappingCard">
-                        <div class="pcc-vendor-mapping-header">
-                            <h3 class="pcc-vendor-mapping-title">Iqbal &amp; Brothers (IBS)</h3>
-                            <?php if (!empty($canManage) && !empty($writeGateProductEditReady)): ?>
-                            <button type="button" class="btn btn-secondary btn-sm" id="pccSupplierEditBtn">Edit</button>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="pcc-supplier-view" id="pccSupplierView">
-                            <div class="pcc-supplier-field-row">
-                                <span class="pcc-field-label">Supplier Product Name</span>
-                                <span class="pcc-field-chip" id="pccSupplierProductNameView">—</span>
+                        <section class="pcc-v202-supplier" id="pccVendorMappingCard" aria-label="Supplier control">
+                            <p class="pcc-v202-supplier-name">Iqbal &amp; Brothers (IBS)</p>
+                            <div class="pcc-v202-supplier-fields" id="pccSupplierFields">
+                                <div class="pcc-v202-field-row" data-supplier-field="supplier_model">
+                                    <span class="pcc-v202-field-label">Main Vendor Model</span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="supplier_model" data-input="pccSupplierModel" tabindex="0">—</span>
+                                    <input type="hidden" name="supplier_model" id="pccSupplierModel" value="">
+                                </div>
+                                <div class="pcc-v202-field-row" data-supplier-field="low_warning">
+                                    <span class="pcc-v202-field-label">Low Warning</span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="low_warning" data-input="pccLowWarning" tabindex="0">—</span>
+                                    <input type="hidden" name="low_warning_threshold" id="pccLowWarning" value="">
+                                </div>
+                                <div class="pcc-v202-field-row pcc-simple-supplier-field" data-supplier-field="product_cost">
+                                    <span class="pcc-v202-field-label"><?= e($supplierCostLabel) ?></span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="product_cost" data-input="pccProductCost" tabindex="0">—</span>
+                                    <input type="hidden" name="product_cost" id="pccProductCost" value="">
+                                </div>
+                                <div class="pcc-v202-field-row pcc-simple-supplier-field" data-supplier-field="vendor_stock">
+                                    <span class="pcc-v202-field-label">Vendor Stock</span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="vendor_stock" data-input="pccProductVendorStock" tabindex="0">—</span>
+                                    <input type="hidden" name="vendor_stock" id="pccProductVendorStock" value="">
+                                </div>
+                                <div class="pcc-v202-field-row" data-supplier-field="status">
+                                    <span class="pcc-v202-field-label">Status</span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="status" data-input="pccStatus" tabindex="0">—</span>
+                                    <input type="hidden" name="status" id="pccStatus" value="active">
+                                </div>
                             </div>
-                            <div class="pcc-supplier-field-row">
-                                <span class="pcc-field-label">Main Vendor Model</span>
-                                <span class="pcc-field-chip" id="pccSupplierModelView">—</span>
+                            <div class="pcc-v202-adjust-block pcc-simple-supplier-field" id="pccCostAdjustBlock">
+                                <span class="pcc-v202-adjust-label">Cost Adjustment</span>
+                                <div class="pcc-v202-adjust-btns">
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="fixed_plus" data-adjust-amount="100">+100</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="fixed_minus" data-adjust-amount="100">-100</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="percent_plus" data-adjust-amount="10">+10%</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="percent_minus" data-adjust-amount="10">-10%</button>
+                                </div>
                             </div>
-                            <div class="pcc-supplier-field-row">
-                                <span class="pcc-field-label">Low Stock</span>
-                                <span class="pcc-field-chip" id="pccLowWarningView">—</span>
+                            <div class="pcc-v202-adjust-block pcc-simple-supplier-field" id="pccStockAdjustBlock">
+                                <span class="pcc-v202-adjust-label">Stock Adjustment</span>
+                                <div class="pcc-v202-adjust-btns">
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="increase" data-adjust-amount="10">+10</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="decrease" data-adjust-amount="10">-10</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="increase" data-adjust-amount="100">+100</button>
+                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="decrease" data-adjust-amount="100">-100</button>
+                                </div>
                             </div>
-                            <div class="pcc-supplier-field-row pcc-simple-supplier-view" id="pccSimpleCostViewRow" hidden>
-                                <span class="pcc-field-label"><?= e($supplierCostLabel) ?></span>
-                                <span class="pcc-field-chip" id="pccProductCostView">—</span>
-                            </div>
-                            <div class="pcc-supplier-field-row pcc-simple-supplier-view" id="pccSimpleStockViewRow" hidden>
-                                <span class="pcc-field-label">Vendor stock</span>
-                                <span class="pcc-field-chip" id="pccProductVendorStockView">—</span>
-                            </div>
-                        </div>
-
-                        <div class="pcc-supplier-edit" id="pccSupplierEdit" hidden>
-                            <div class="pcc-supplier-field-row">
-                                <span class="pcc-field-label">Supplier Product Name</span>
-                                <span class="pcc-field-chip pcc-field-chip-muted" id="pccSupplierProductNameEdit">—</span>
-                            </div>
-                            <label class="pcc-field pcc-field-compact">Main Vendor Model
-                                <input type="text" name="supplier_model" id="pccSupplierModel" class="form-input" placeholder="Vendor model">
-                            </label>
-                            <label class="pcc-field pcc-field-compact">Low Stock
-                                <input type="number" name="low_warning_threshold" id="pccLowWarning" min="0" class="form-input">
-                            </label>
-                            <label class="pcc-field pcc-field-compact pcc-simple-supplier-edit" id="pccSimpleCostEditWrap"> <?= e($supplierCostLabel) ?>
-                                <input type="number" name="product_cost" id="pccProductCost" step="0.01" min="0" class="form-input">
-                            </label>
-                            <label class="pcc-field pcc-field-compact pcc-simple-supplier-edit" id="pccSimpleStockEditWrap">Vendor stock
-                                <input type="number" name="vendor_stock" id="pccProductVendorStock" min="0" class="form-input">
-                            </label>
-                            <label class="pcc-field pcc-field-compact">Status
-                                <select name="status" id="pccStatus" class="form-input">
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </label>
                             <?php if (!empty($writeGateSupplierNoteReady)): ?>
-                            <label class="pcc-field pcc-field-compact">Supplier note
-                                <textarea name="supplier_note" id="pccSupplierNote" class="form-input" rows="2" placeholder="Internal supplier note (ERP only)"></textarea>
+                            <label class="pcc-v202-note-field">
+                                <textarea name="supplier_note" id="pccSupplierNote" class="form-input form-input-compact" rows="1" placeholder="Supplier note (ERP only)"></textarea>
                             </label>
                             <?php elseif (!empty($writeGateSupplierNote)): ?>
-                            <p class="page-description pcc-field-hint"><?= e($writeGateSupplierNote['message'] ?? 'Supplier note unavailable until migration 0012 is applied manually.') ?></p>
+                            <p class="page-description pcc-field-hint pcc-v202-note-hint"><?= e($writeGateSupplierNote['message'] ?? 'Supplier note unavailable until migration 0012 is applied manually.') ?></p>
                             <?php endif; ?>
-                        </div>
+                        </section>
                     </div>
-                </div>
 
-                <div class="pcc-variant-section" id="pccVariantSection" hidden>
-                    <p class="page-description pcc-no-options-notice" id="pccNoOptionsNotice" hidden>No options synced yet. Refresh Products to pull option lines from Dispatch Location.</p>
-                    <div class="table-scroll pcc-variant-scroll">
-                        <table class="data-table pcc-variant-lines-table pcc-table-tight" id="pccVariantLinesTable">
-                            <thead>
-                                <tr>
-                                    <th class="pcc-vcol-line">Line</th>
-                                    <th class="pcc-vcol-image">Image</th>
-                                    <th class="pcc-vcol-model">Model</th>
-                                    <th class="pcc-vcol-vendor">Vendor Model</th>
-                                    <th class="pcc-vcol-price">OC Price</th>
-                                    <th class="pcc-vcol-cost">Average Cost</th>
-                                    <th class="pcc-vcol-owner">Owner Stock</th>
-                                    <th class="pcc-vcol-vstock">Vendor Stock</th>
-                                    <th class="pcc-vcol-warn">Warning</th>
-                                    <th class="pcc-vcol-health">Health</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pccVariantLinesBody"></tbody>
-                        </table>
-                    </div>
+                    <section class="pcc-v202-options" id="pccVariantSection" hidden>
+                        <div class="pcc-v202-options-head">
+                            <h3 class="pcc-v202-options-title">Option Lines</h3>
+                            <span class="pcc-v202-options-hint">Double-click cell to edit</span>
+                        </div>
+                        <p class="page-description pcc-no-options-notice" id="pccNoOptionsNotice" hidden>No options synced yet. Refresh Products to pull option lines.</p>
+                        <div class="pcc-v202-table-wrap">
+                            <table class="data-table pcc-variant-lines-table pcc-v202-table" id="pccVariantLinesTable">
+                                <thead>
+                                    <tr>
+                                        <th class="pcc-vcol-image">Image</th>
+                                        <th class="pcc-vcol-line">Option Value</th>
+                                        <th class="pcc-vcol-model">Model</th>
+                                        <th class="pcc-vcol-vendor">Vendor Model</th>
+                                        <th class="pcc-vcol-cost"><?= e($supplierCostLabel) ?></th>
+                                        <th class="pcc-vcol-stock">Stock</th>
+                                        <th class="pcc-vcol-vstock">Vendor Stock</th>
+                                        <th class="pcc-vcol-health">Health</th>
+                                        <th class="pcc-vcol-history" aria-label="History"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pccVariantLinesBody"></tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
 
                 <?php if (!empty($canManage) && !empty($writeGateProductEditReady)): ?>
-                <div class="pcc-save-bar pcc-save-bar-v874">
-                    <button type="submit" class="btn btn-primary" id="pccSaveBtn">Save All Changes</button>
-                    <button type="button" class="btn btn-secondary" data-modal-close="productControlCenterModal">Close</button>
+                <div class="pcc-v202-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" id="pccCancelBtn" hidden>Cancel Changes</button>
+                    <button type="submit" class="btn btn-primary" id="pccSaveBtn" disabled>Save All Changes</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-modal-close="productControlCenterModal">Close</button>
                 </div>
                 <?php else: ?>
-                <div class="pcc-save-bar pcc-save-bar-v874">
-                    <button type="button" class="btn btn-secondary" data-modal-close="productControlCenterModal">Close</button>
+                <div class="pcc-v202-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-modal-close="productControlCenterModal">Close</button>
                 </div>
                 <?php endif; ?>
             </div>
 
-            <div class="pcc-tab-panel" data-pcc-panel="history" hidden>
-                <div class="table-scroll">
-                    <table class="data-table">
+            <div class="pcc-tab-panel pcc-v202-tab-panel" data-pcc-panel="history" hidden>
+                <div class="pcc-v202-history-wrap">
+                    <table class="data-table pcc-history-table">
                         <thead>
                             <tr>
+                                <th>Date / Time</th>
                                 <th>Variant / Level</th>
-                                <th><?= e($costLabel) ?> Old → New</th>
-                                <th>Stock Old → New</th>
+                                <th>Field</th>
+                                <th>Old → New</th>
+                                <th>Change Type</th>
+                                <th>Delta</th>
                                 <th>Note</th>
-                                <th>Changed At</th>
+                                <th>User</th>
                             </tr>
                         </thead>
                         <tbody id="pccHistoryRows">
-                            <tr><td colspan="5" class="page-description">Select a product to view history.</td></tr>
+                            <tr><td colspan="8" class="page-description">Select a product to view history.</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="pcc-save-bar pcc-save-bar-v874">
-                    <button type="button" class="btn btn-secondary" data-modal-close="productControlCenterModal">Close</button>
+                <div class="pcc-v202-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-modal-close="productControlCenterModal">Close</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
-
+
+<div class="pcc-adjust-popover pcc-v202-adjust-modal" id="pccAdjustPopover" hidden>
+    <div class="pcc-adjust-popover-inner">
+        <p class="pcc-adjust-title" id="pccAdjustTitle">Adjustment</p>
+        <p class="pcc-v202-adjust-preset" id="pccAdjustPreset"></p>
+        <input type="hidden" id="pccAdjustType" value="">
+        <input type="hidden" id="pccAdjustAmount" value="">
+        <label class="pcc-field pcc-field-compact">Note / reason <span class="pcc-required">*</span>
+            <input type="text" id="pccAdjustNote" class="form-input" placeholder="Required for this adjustment" required>
+        </label>
+        <p class="pcc-adjust-preview" id="pccAdjustPreview"></p>
+        <div class="pcc-adjust-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="pccAdjustApply">Apply</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="pccAdjustCancel">Cancel</button>
+        </div>
+    </div>
+</div>

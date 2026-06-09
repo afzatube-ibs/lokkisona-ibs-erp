@@ -64,6 +64,10 @@ class WorkflowHistoryPresenter
 
     private static function actionLabel(string $fromStatus, string $toStatus, ?string $actionKey, string $rawNote = ''): string
     {
+        if ($actionKey === 'create_dispatch_report') {
+            return 'Create Dispatch Report';
+        }
+
         if ($actionKey === 'resume') {
             return 'Resume Order Received';
         }

@@ -3,36 +3,32 @@
 namespace App\Controllers;
 
 use App\ActivityLog;
-use App\Database;
-use App\Database\TableName;
+use App\Csrf;
 use App\Domain\DispatchCostSnapshot;
 use App\Domain\DispatchReportReference;
-use App\Models\DispatchReport;
 use App\Permission;
-use App\SupplierContext;
-use App\Csrf;
+use App\ReadFoundation\WriteGate;
+use App\Repositories\BusinessSourceRepository;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderItemRepository;
+use App\Repositories\OrderWorkflowHistoryRepository;
+use App\Repositories\ProductRepository;
+use App\Repositories\ProductVariantRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\Write\OrderWriteRepository;
-use App\Services\ReadOnly\DispatchReportReadService;
-use App\ReadFoundation\WriteGate;
 use App\Services\Write\DispatchReportWriteService;
+use App\Services\Write\PayableLedgerWriteService;
+use App\SupplierContext;
+use App\Support\OrderWorkflowRowPresenter;
 
 class DispatchReportsController extends Controller
 {
     public function index()
     {
         $this->authorize('dispatch_reports.view');
-        ActivityLog::record('dispatch_reports_access', 'Dispatch Report read foundation page viewed');
+        ActivityLog::record('dispatch_reports_access', 'Dispatch reports list viewed');
 
         $supplierId = SupplierContext::enforceSupplierId(0);
-        $latestReports = $this->buildLatestReports($supplierId);
-        $selectedReportId = (int) ($_GET['report_id'] ?? 0);
-        if ($selectedReportId <= 0 && !empty($latestReports[0]['dispatch_report_id'])) {
-            $selectedReportId = (int) $latestReports[0]['dispatch_report_id'];
-        }
-        $reportDetail = $this->buildReportDetail($selectedReportId > 0 ? $selectedReportId : null, $supplierId);
 
         $this->render('dispatch-reports.index', [
             'pageTitle' => 'Dispatch Reports',
@@ -40,29 +36,10 @@ class DispatchReportsController extends Controller
                 ['label' => 'Operations', 'active' => false],
                 ['label' => 'Dispatch Reports', 'active' => true],
             ],
-            'accessMode' => Permission::accessMode(),
             'eligibleOrders' => SupplierContext::isSupplier() ? [] : $this->buildEligibleOrders(),
-            'latestReports' => $latestReports,
-            'reportDetail' => $reportDetail,
-            'selectedReportId' => $selectedReportId,
+            'latestReports' => $this->buildLatestReports($supplierId),
             'canManageDispatch' => Permission::can('dispatch_reports.manage'),
             'isSupplierView' => SupplierContext::isSupplier(),
-            'productLineDevNote' => DispatchReportReference::PRODUCT_LINE_DEV_NOTE,
-            'payableCheckpointNote' => DispatchReportReference::PAYABLE_CHECKPOINT_NOTE,
-            'readInventory' => $this->buildReadInventory(),
-            'currentContext' => $this->currentContext(),
-            'purpose' => $this->purpose(),
-            'dispatchGate' => $this->dispatchGate(),
-            'eligibleRule' => $this->eligibleRule(),
-            'singleSupplierRule' => $this->singleSupplierRule(),
-            'batchLockRule' => $this->batchLockRule(),
-            'batchReferenceRule' => $this->batchReferenceRule(),
-            'costSnapshotRule' => $this->costSnapshotRule(),
-            'deliveryStopRule' => $this->deliveryStopRule(),
-            'reportOutputPlan' => $this->reportOutputPlan(),
-            'performanceRules' => $this->performanceRules(),
-            'plannedReportFields' => $this->plannedReportFields(),
-            'plannedItemFields' => $this->plannedItemFields(),
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
@@ -71,15 +48,49 @@ class DispatchReportsController extends Controller
         ]);
     }
 
+    public function view()
+    {
+        $this->authorize('dispatch_reports.view');
+
+        $reportId = (int) ($_GET['id'] ?? 0);
+        $reference = trim((string) ($_GET['ref'] ?? ''));
+
+        if ($reportId > 0) {
+            try {
+                $repository = new DispatchReportRepository();
+                if ($repository->tableExists()) {
+                    $report = $repository->findById($reportId);
+                    if ($report !== null && !empty($report['dispatch_reference'])) {
+                        redirect('/dispatch-report/' . rawurlencode((string) $report['dispatch_reference']));
+                    }
+                }
+            } catch (\Throwable $e) {
+                // fall through to not-found show
+            }
+        }
+
+        if ($reference !== '') {
+            redirect('/dispatch-report/' . rawurlencode($reference));
+        }
+
+        $this->show('');
+    }
+
     public function show($batch)
     {
         $this->authorize('dispatch_reports.view');
-        ActivityLog::record('dispatch_report_view', 'Dispatch report batch viewed: ' . (string) $batch);
 
         $supplierId = SupplierContext::enforceSupplierId(0);
         $batchReference = trim(rawurldecode((string) $batch));
         $printMode = !empty($_GET['print']);
-        $reportDetail = $this->buildReportDetailByReference($batchReference, $supplierId);
+
+        if ($batchReference !== '') {
+            ActivityLog::record('dispatch_report_view', 'Dispatch report batch viewed: ' . $batchReference);
+        }
+
+        $reportDetail = $batchReference !== ''
+            ? $this->buildReportDetailByReference($batchReference, $supplierId)
+            : null;
 
         $this->render('dispatch-reports.show', [
             'pageTitle' => $reportDetail !== null
@@ -87,13 +98,14 @@ class DispatchReportsController extends Controller
                 : 'Dispatch Report',
             'breadcrumbs' => [
                 ['label' => 'Operations', 'active' => false],
-                ['label' => 'Vendor Fulfillment', 'active' => false, 'url' => '/order-workflow'],
-                ['label' => 'Dispatch Report', 'active' => true],
+                ['label' => 'Dispatch Reports', 'active' => false, 'url' => '/dispatch-reports'],
+                ['label' => 'Report', 'active' => true],
             ],
             'reportDetail' => $reportDetail,
             'batchReference' => $batchReference,
             'printMode' => $printMode,
             'isSupplierView' => SupplierContext::isSupplier(),
+            'bodyClass' => $printMode ? 'admin-body--dispatch-print' : '',
         ]);
     }
 
@@ -125,6 +137,8 @@ class DispatchReportsController extends Controller
                 continue;
             }
 
+            $lines = $orderItems->findByOrderId($orderId);
+            $missingLines = DispatchCostSnapshot::countMissingLineItems($lines);
             $lineCost = $orderItems->sumSupplierCostByOrderId($orderId);
             $lineQty = $orderItems->sumQuantityByOrderId($orderId);
             $snapshot = DispatchCostSnapshot::forOrder($order, $lineCost, $lineQty);
@@ -132,6 +146,8 @@ class DispatchReportsController extends Controller
             $eligible[] = array_merge($order, [
                 'preview_cost_snapshot' => $snapshot['product_cost_snapshot'],
                 'preview_item_count' => $snapshot['item_count'],
+                'missing_cost' => $missingLines > 0,
+                'missing_line_count' => $missingLines,
             ]);
         }
 
@@ -142,7 +158,7 @@ class DispatchReportsController extends Controller
     {
         try {
             $repository = new DispatchReportRepository();
-            $reports = $repository->latestForSupplier($supplierId, 20);
+            $reports = $repository->latestForSupplier($supplierId, 50);
             if ($reports === []) {
                 return [];
             }
@@ -157,8 +173,9 @@ class DispatchReportsController extends Controller
                 $reports[$index]['status_label'] = DispatchReportReference::statusLabel(
                     (string) ($report['status'] ?? '')
                 );
-                $reports[$index]['vendor_name'] = $supplierNames[$supplierKey] ?? '—';
+                $reports[$index]['supplier_name'] = $supplierNames[$supplierKey] ?? '—';
                 $reports[$index]['total_qty'] = $qtyByReport[$reportId] ?? 0;
+                $reports[$index]['created_by_label'] = $this->resolvePreparedByLabel($report);
             }
 
             return $reports;
@@ -192,26 +209,28 @@ class DispatchReportsController extends Controller
         }
     }
 
-    private function buildReportDetail(?int $reportId, int $supplierId = 0): ?array
+    /**
+     * @return array<int, string>
+     */
+    private function businessSourceNameMap(): array
     {
-        if ($reportId === null || $reportId <= 0) {
-            return null;
-        }
-
         try {
-            $repository = new DispatchReportRepository();
-            if (!$repository->tableExists()) {
-                return null;
+            $repo = new BusinessSourceRepository();
+            if (!$repo->tableExists()) {
+                return [];
             }
 
-            $report = $repository->findById($reportId);
-            if ($report === null) {
-                return null;
+            $map = [];
+            foreach ($repo->all(100, 0) as $row) {
+                $id = (int) ($row['business_source_id'] ?? 0);
+                if ($id > 0) {
+                    $map[$id] = (string) ($row['source_name'] ?? '');
+                }
             }
 
-            return $this->enrichReportDetail($report, $supplierId);
+            return $map;
         } catch (\Throwable $e) {
-            return null;
+            return [];
         }
     }
 
@@ -240,7 +259,7 @@ class DispatchReportsController extends Controller
 
     /**
      * @param array<string, mixed> $report
-     * @return array{report: array<string, mixed>, items: array<int, array<string, mixed>>, total_quantity: int, supplier_name: string, prepared_by: string}
+     * @return array<string, mixed>|null
      */
     private function enrichReportDetail(array $report, int $supplierId = 0): ?array
     {
@@ -256,21 +275,79 @@ class DispatchReportsController extends Controller
         $repository = new DispatchReportRepository();
         $items = $repository->findItemsWithOrders($reportId);
         $orderItemRepo = new OrderItemRepository();
+        $productRepo = new ProductRepository();
+        $variantRepo = new ProductVariantRepository();
+        $historyRepo = new OrderWorkflowHistoryRepository();
+
+        $orderIds = array_values(array_filter(array_map(
+            static fn (array $row): int => (int) ($row['order_id'] ?? 0),
+            $items
+        ), static fn (int $id): bool => $id > 0));
+
+        $itemsByOrder = $orderItemRepo->groupedByOrderIds($orderIds);
+        $importHistories = $historyRepo->tableExists()
+            ? $historyRepo->findImportNotesByOrderIds($orderIds)
+            : [];
+
+        $productIds = [];
+        foreach ($itemsByOrder as $orderLines) {
+            foreach ($orderLines as $line) {
+                $pid = (int) ($line['product_id'] ?? 0);
+                if ($pid > 0) {
+                    $productIds[$pid] = $pid;
+                }
+            }
+        }
+        $productsById = $productRepo->indexedByIds(array_values($productIds));
+        $variantsByProduct = $variantRepo->groupedByProductIds(array_values($productIds));
+
         $totalQuantity = 0;
+        $flatProductRows = [];
 
         foreach ($items as $index => $item) {
             $orderId = (int) ($item['order_id'] ?? 0);
             $lineQty = (int) ($item['item_count'] ?? 0);
             $totalQuantity += $lineQty;
-            $productLines = $orderId > 0 ? $orderItemRepo->findByOrderId($orderId) : [];
-            $lineCost = 0.0;
-            foreach ($productLines as $line) {
-                $qty = max(1, (int) ($line['quantity'] ?? 0));
-                $lineCost += (float) ($line['supplier_cost_snapshot'] ?? 0) * $qty;
-            }
-            $items[$index]['product_lines'] = $productLines;
-            $items[$index]['line_cost_total'] = round($lineCost, 2);
+
+            $orderRow = [
+                'order_id' => $orderId,
+                'origin_order_status_name' => $item['origin_order_status_name'] ?? null,
+                'source_order_status' => $item['source_order_status'] ?? null,
+            ];
+            $ocStatus = OrderWorkflowRowPresenter::resolveSourceOrderStatus(
+                $orderRow,
+                $importHistories[$orderId] ?? null
+            );
+
+            $formattedLines = OrderWorkflowRowPresenter::formatProductLines(
+                $itemsByOrder[$orderId] ?? [],
+                $productsById,
+                $variantsByProduct
+            );
+
+            $items[$index]['product_lines'] = $formattedLines;
+            $items[$index]['line_cost_total'] = round((float) ($item['product_cost_snapshot'] ?? 0), 2);
             $items[$index]['order_no'] = $this->formatDispatchOrderNo($item);
+            $items[$index]['courier_status'] = trim((string) ($item['courier_status'] ?? '')) ?: '—';
+            $items[$index]['consignment_id'] = trim((string) ($item['tracking_number'] ?? '')) ?: 'Not Assigned';
+            $items[$index]['oc_order_status'] = $ocStatus ?? '—';
+
+            foreach ($formattedLines as $line) {
+                $flatProductRows[] = [
+                    'order_no' => $items[$index]['order_no'],
+                    'customer_name' => (string) ($item['customer_name'] ?? ''),
+                    'customer_phone' => trim((string) ($item['customer_phone'] ?? '')) ?: '—',
+                    'image_url' => $line['image_url'] ?? null,
+                    'model' => (string) ($line['model'] ?? ''),
+                    'option_chips' => $line['option_chips'] ?? [],
+                    'quantity' => (int) ($line['quantity'] ?? 0),
+                    'unit_cost_snapshot' => round((float) ($line['cost_snapshot'] ?? 0), 2),
+                    'line_cost_snapshot' => round((float) ($line['line_cost_total'] ?? 0), 2),
+                    'courier_status' => $items[$index]['courier_status'],
+                    'consignment_id' => $items[$index]['consignment_id'],
+                    'oc_order_status' => $items[$index]['oc_order_status'],
+                ];
+            }
         }
 
         $report['status_label'] = DispatchReportReference::statusLabel(
@@ -278,14 +355,33 @@ class DispatchReportsController extends Controller
         );
 
         $supplierNames = $this->supplierNameMap();
+        $sourceNames = $this->businessSourceNameMap();
         $supplierKey = (int) ($report['supplier_id'] ?? 0);
+        $sourceKey = (int) ($report['business_source_id'] ?? 0);
+        $dispatchReference = (string) ($report['dispatch_reference'] ?? '');
+
+        $payableNotice = 'Payable draft pending finance module completion.';
+        $payableDraftRef = null;
+        try {
+            $payable = (new PayableLedgerWriteService())->payableStatusForDispatch($dispatchReference);
+            if ($payable !== null) {
+                $payableDraftRef = (string) ($payable['ledger_reference'] ?? ('PCP-' . $dispatchReference));
+                $payableNotice = 'Payable draft ' . $payableDraftRef . ' recorded — settlement pending finance module completion.';
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
 
         return [
             'report' => $report,
             'items' => $items,
+            'product_rows' => $flatProductRows,
             'total_quantity' => $totalQuantity,
             'supplier_name' => $supplierNames[$supplierKey] ?? '—',
+            'business_source_name' => $sourceNames[$sourceKey] ?? '—',
             'prepared_by' => $this->resolvePreparedByLabel($report),
+            'payable_notice' => $payableNotice,
+            'payable_draft_ref' => $payableDraftRef,
         ];
     }
 
@@ -307,18 +403,16 @@ class DispatchReportsController extends Controller
      */
     private function resolvePreparedByLabel(array $report): string
     {
-        $createdBy = trim((string) ($report['created_by'] ?? ''));
-        if ($createdBy !== '') {
-            return $createdBy;
-        }
-
         $lockedBy = (int) ($report['locked_by'] ?? 0);
-        if ($lockedBy <= 0) {
+        $createdBy = (int) ($report['created_by'] ?? 0);
+        $userId = $createdBy > 0 ? $createdBy : $lockedBy;
+
+        if ($userId <= 0) {
             return '—';
         }
 
         try {
-            $user = (new \App\Repositories\UserRepository())->findById($lockedBy);
+            $user = (new \App\Repositories\UserRepository())->findById($userId);
 
             return trim((string) ($user['username'] ?? '')) !== ''
                 ? (string) $user['username']
@@ -326,241 +420,5 @@ class DispatchReportsController extends Controller
         } catch (\Throwable $e) {
             return '—';
         }
-    }
-
-    private function buildReadInventory()
-    {
-        $databaseStatus = Database::check();
-        $defaults = [
-            'database_connected' => (bool) ($databaseStatus['connected'] ?? false),
-            'service_ready' => false,
-            'logical_table' => DispatchReport::table(),
-            'prefixed_table' => TableName::forModel(DispatchReport::class),
-            'model_class' => 'DispatchReport',
-            'primary_key' => DispatchReport::primaryKey(),
-            'columns' => DispatchReport::columns(),
-            'read_service' => 'DispatchReportReadService',
-            'read_repository' => 'DispatchReportRepository',
-            'table_exists' => false,
-            'row_count' => 0,
-            'rows' => [],
-            'status' => 'error',
-            'status_message' => 'Read inventory could not be loaded safely.',
-        ];
-
-        try {
-            $service = new DispatchReportReadService();
-            $defaults['service_ready'] = true;
-
-            if (!$defaults['database_connected']) {
-                $defaults['status'] = 'not_connected';
-                $defaults['status_message'] = 'Database not connected. Read inventory unavailable.';
-
-                return $defaults;
-            }
-
-            $tableExists = $service->tableExists();
-            $defaults['table_exists'] = $tableExists;
-
-            if (!$tableExists) {
-                $defaults['status'] = 'table_missing';
-                $defaults['status_message'] = 'Table `' . $defaults['prefixed_table'] . '` not available — migration `0006_dispatch_returns_payables.sql` not applied yet. Apply manually with the `ibs_` table prefix from config/database.php.';
-
-                return $defaults;
-            }
-
-            $rowCount = $service->count();
-            $defaults['row_count'] = $rowCount;
-            $defaults['rows'] = $service->all(50, 0);
-
-            if ($rowCount === 0) {
-                $defaults['status'] = 'empty';
-                $defaults['status_message'] = 'Table ready. No dispatch report records yet (read-only; no writes in this release).';
-
-                return $defaults;
-            }
-
-            $defaults['status'] = 'ok';
-            $defaults['status_message'] = 'Showing up to 50 dispatch report records (SELECT only).';
-
-            return $defaults;
-        } catch (\Throwable $e) {
-            return $defaults;
-        }
-    }
-
-    private function currentContext()
-    {
-        return [
-            'supplier' => 'Iqbal & Brothers',
-            'source' => 'Lokkisona.com',
-            'summary' => 'Dispatch Report planning starts with Iqbal & Brothers supplier operations and the Lokkisona order workflow, but the dispatch batch model stays channel-neutral and ready for other suppliers, sales channels, manual/offline orders, payable/return handling, and future multi-business expansion.',
-        ];
-    }
-
-    private function purpose()
-    {
-        return [
-            'Define a safe dispatch batch / dispatch report model before any dispatch writes or order sync are enabled.',
-            'Document the locked gate between Shipped and the next delivery stages.',
-            'Plan single-supplier batches, batch locking, and batch reference formatting.',
-            'Prepare cost snapshots so Product Cost Payable can be created from the snapshot later.',
-            'Stay channel-neutral so manual, offline, ecommerce, and marketplace orders can share the same dispatch model.',
-        ];
-    }
-
-    private function dispatchGate()
-    {
-        return [
-            'title' => 'Dispatch Gate After Shipped',
-            'summary' => 'Dispatch Report Created is the required gate after Shipped. Shipped orders cannot move forward to the next delivery stages until a dispatch report/batch is created and locked.',
-            'points' => [
-                'Shipped → Dispatch Report Created is a locked gate, not an optional step.',
-                'Dispatch Report Created should display as a workflow stage after Shipped.',
-                'Report-created / batch-locked orders cannot change normal fulfillment status.',
-                'After dispatch report creation, normal manual action is blocked for those orders.',
-            ],
-        ];
-    }
-
-    private function eligibleRule()
-    {
-        return [
-            'title' => 'Eligible Order Rule',
-            'summary' => 'A dispatch report can only be built from eligible orders.',
-            'points' => [
-                'Dispatch report can only be created from Shipped orders.',
-                'Orders must be unlocked / not already batch_locked.',
-                'Orders already in a locked batch cannot be added to another report.',
-            ],
-        ];
-    }
-
-    private function singleSupplierRule()
-    {
-        return [
-            'title' => 'Single Supplier Rule',
-            'summary' => 'A dispatch batch belongs to exactly one supplier so payable and returns stay clean.',
-            'points' => [
-                'All selected orders in a dispatch report must belong to one supplier.',
-                'Mixed-supplier batches are not allowed.',
-                'Supplier and business source are captured on the report for payable and reconciliation.',
-            ],
-        ];
-    }
-
-    private function batchLockRule()
-    {
-        return [
-            'title' => 'Batch Lock Rule',
-            'summary' => 'Creating a dispatch report locks the selected orders into the batch.',
-            'points' => [
-                'Dispatch report creation locks selected orders (batch_locked).',
-                'Locked orders cannot change normal fulfillment status.',
-                'Locked orders cannot be moved into another dispatch report.',
-                'Only an allowed exception action may apply after locking.',
-            ],
-        ];
-    }
-
-    private function batchReferenceRule()
-    {
-        return [
-            'title' => 'Batch Reference Rule',
-            'summary' => 'Each dispatch report carries a readable batch reference for tracking.',
-            'points' => [
-                'Base reference format: DDMMYYYY (example: 06062026).',
-                'Additional same-day batches: DDMMYYYY-P1, DDMMYYYY-P2, DDMMYYYY-P3.',
-                'Order count is stored in total_orders — never embedded in the reference string.',
-                'Reference is channel-neutral and not hard-coded to any single source.',
-            ],
-        ];
-    }
-
-    private function costSnapshotRule()
-    {
-        return [
-            'title' => 'Cost Snapshot / Payable Rule',
-            'summary' => 'Dispatch Report is the official supplier payable checkpoint. v0.4.5.0 stores immutable snapshots only.',
-            'points' => [
-                'Snapshot supplier cost at dispatch report creation from orders.cost_snapshot_total and/or order_items.supplier_cost_snapshot.',
-                'Never use selling_price or order_total for supplier payable snapshot.',
-                'Old dispatch reports must never recalculate from latest product cost.',
-                DispatchReportReference::PAYABLE_CHECKPOINT_NOTE,
-                DispatchReportReference::PRODUCT_LINE_DEV_NOTE,
-            ],
-        ];
-    }
-
-    private function deliveryStopRule()
-    {
-        return [
-            'title' => 'Delivery Stop Exception Rule',
-            'summary' => 'After a batch is locked, only one exception action is allowed later.',
-            'points' => [
-                'The only exception action allowed after dispatch is Delivery Stop.',
-                'Delivery Stop can later lead to Hub Return.',
-                'Normal manual fulfillment actions stay blocked for locked orders.',
-                'Every dispatch action later must require confirmation, note, user, timestamp, and activity log.',
-            ],
-        ];
-    }
-
-    private function reportOutputPlan()
-    {
-        return [
-            'Dispatch reports should later support print, export, and download.',
-            'Dispatch reports later support supplier product summary output for packing and supplier review.',
-            'No real print, export, or download is implemented in this release.',
-            'Output will use stored snapshot values, not live changing cost or stock.',
-            'Output layout will stay channel-neutral and supplier-scoped.',
-            'Invoice Printing planning owns customer invoice, packing slip, dispatch batch report, and print log rules.',
-        ];
-    }
-
-    private function performanceRules()
-    {
-        return [
-            'No background auto loops for dispatch building.',
-            'No repeated fallback AJAX while creating a report.',
-            'One dispatch-build request at a time.',
-            'No auto retry storm.',
-            'Batch order selection will be bounded to a safe page size later.',
-        ];
-    }
-
-    private function plannedReportFields()
-    {
-        return [
-            'dispatch_report_id',
-            'batch_reference',
-            'supplier_id',
-            'business_source_id',
-            'total_orders',
-            'total_items',
-            'total_product_cost_payable',
-            'created_by',
-            'created_at',
-            'locked_at',
-            'status',
-        ];
-    }
-
-    private function plannedItemFields()
-    {
-        return [
-            'dispatch_report_item_id',
-            'dispatch_report_id',
-            'order_id',
-            'order_item_id',
-            'product_id',
-            'variant_id',
-            'quantity',
-            'cost_snapshot',
-            'supplier_model_snapshot',
-            'source_model_snapshot',
-            'payable_status',
-            'created_at',
-        ];
     }
 }

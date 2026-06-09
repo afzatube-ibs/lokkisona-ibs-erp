@@ -43,8 +43,8 @@ $actionLabel = $canManage ? 'Manage' : 'Open';
                         <th class="pcc-col-product">Product</th>
                         <th class="pcc-col-variable">Type / Variable</th>
                         <th class="pcc-col-vendor-model">Vendor Model</th>
-                        <th class="pcc-col-numeric pcc-hide-sm">Average Cost</th>
-                        <th class="pcc-col-numeric pcc-hide-sm">Owner Stock</th>
+                        <th class="pcc-col-numeric pcc-hide-sm">Supplier Cost</th>
+                        <th class="pcc-col-numeric pcc-hide-sm">Stock</th>
                         <th class="pcc-col-numeric">Vendor Stock</th>
                         <th class="pcc-col-health">Health</th>
                         <th class="pcc-col-actions">Actions</th>
@@ -74,7 +74,7 @@ $actionLabel = $canManage ? 'Manage' : 'Open';
                                 </div>
                                 <div class="pcc-product-cell-text">
                                     <span class="pcc-product-cell-model" title="<?= e($sourceModel !== '' ? $sourceModel : 'Product #' . $productId) ?>"><?= e($sourceModel !== '' ? $sourceModel : 'Product #' . $productId) ?></span>
-                                    <span class="pcc-product-cell-oc">OC ID: <?= e($ocId !== '' ? $ocId : '—') ?></span>
+                                    <span class="pcc-product-cell-oc">Product ID: <?= e($ocId !== '' ? $ocId : '—') ?></span>
                                 </div>
                             </div>
                         </td>
