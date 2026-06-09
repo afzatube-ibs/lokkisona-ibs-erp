@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.0.2.2',
-    'release_label' => 'Product Control Center Compact Layout Fix',
+    'version' => '2.1.5',
+    'release_label' => 'Login Page Final Dark SaaS Centered Design',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
