@@ -71,11 +71,11 @@
         try {
             var saved = localStorage.getItem(storageKey);
             var defaultOpen = detailsEl.getAttribute('data-nav-default-open') === '1';
-            if (saved === 'open') {
+            if (key === 'future-plans') {
+                detailsEl.open = hasActiveChild;
+            } else if (saved === 'open') {
                 detailsEl.open = true;
             } else if (saved === 'closed' && !hasActiveChild) {
-                detailsEl.open = false;
-            } else if (key === 'future-plans' && saved === null && !hasActiveChild) {
                 detailsEl.open = false;
             } else if (defaultOpen && saved === null && !hasActiveChild) {
                 detailsEl.open = true;

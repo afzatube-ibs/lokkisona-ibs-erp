@@ -199,11 +199,11 @@ class ProductControlCatalogReadService
     private function normalizeHealthLabel(string $label): string
     {
         return match ($label) {
-            'Ready', 'Complete', 'Healthy' => 'Ready',
-            'Needs Cost', 'Missing Cost', 'Missing Rate' => 'Missing Cost',
+            'Ready', 'Complete', 'Healthy' => 'Healthy',
+            'Needs Cost', 'Missing Cost', 'Missing Rate', 'Missing Sale' => 'Missing Cost',
             'Needs Model', 'Missing Supplier Model' => 'Missing Model',
-            'Low Stock' => 'Low',
-            'Out of Stock' => 'Out',
+            'Low Stock', 'Low' => 'Low Stock',
+            'Out of Stock', 'Out' => 'Out Of Stock',
             default => $label !== '' ? $label : '—',
         };
     }
@@ -230,29 +230,12 @@ class ProductControlCatalogReadService
             }
         }
 
-        $needsWork = $missingModel || $missingCost;
         $stockHealth = ProductControlVendorStockHealth::evaluate($vendorStock, $lowWarning);
-        $isReady = !$needsWork && $stockHealth['status'] === 'healthy';
-        $primaryLabel = $needsWork
-            ? $this->primaryHealthLabel($missingCost, $missingModel, $stockHealth['status'] === 'low_stock', $needsWork)
-            : $stockHealth['label'];
-        $healthClass = match ($primaryLabel) {
-            'Healthy', 'Complete' => 'ok',
-            'Low Stock' => 'warn',
-            'Out of Stock' => 'danger',
-            'Needs Cost', 'Needs Model', 'Needs Work' => 'warn',
-            default => 'muted',
-        };
-
-        $badges = [];
+        $primaryLabel = $this->resolvePrimaryHealthLabel($missingModel, $missingCost, $stockHealth);
         $displayLabel = $this->displayHealthLabel($primaryLabel, $isSupplierView);
-        $badges[] = ['label' => $displayLabel, 'class' => $healthClass];
-        if ($syncedToday && !in_array($primaryLabel, ['Complete', 'Healthy'], true)) {
-            $badges[] = ['label' => 'Synced Today', 'class' => 'ok'];
-        }
-        if ($syncRequired) {
-            $badges[] = ['label' => 'Sync Required', 'class' => 'info'];
-        }
+        $isReady = $displayLabel === 'Healthy';
+        $healthClass = $this->healthClassForLabel($displayLabel);
+        $badges = [['label' => $displayLabel, 'class' => $healthClass]];
 
         $stockFlag = in_array($stockHealth['status'], ['low_stock', 'out_of_stock'], true);
 
@@ -267,7 +250,7 @@ class ProductControlCatalogReadService
                 'low_stock' => $stockFlag,
                 'missing_cost' => $missingCost,
                 'missing_model' => $missingModel,
-                'needs_work' => $needsWork,
+                'needs_work' => !$isReady,
                 'ready' => $isReady,
                 'sync_required' => $syncRequired,
                 'synced_today' => $syncedToday,
@@ -277,15 +260,44 @@ class ProductControlCatalogReadService
         ];
     }
 
+    private function resolvePrimaryHealthLabel(bool $missingModel, bool $missingCost, array $stockHealth): string
+    {
+        if ($missingModel) {
+            return 'Needs Model';
+        }
+        if ($missingCost) {
+            return 'Needs Cost';
+        }
+        if (($stockHealth['status'] ?? '') === 'out_of_stock') {
+            return 'Out Of Stock';
+        }
+        if (($stockHealth['status'] ?? '') === 'low_stock') {
+            return 'Low Stock';
+        }
+
+        return 'Healthy';
+    }
+
+    private function healthClassForLabel(string $label): string
+    {
+        return match ($label) {
+            'Healthy' => 'ok',
+            'Low Stock' => 'low',
+            'Out Of Stock', 'Missing Model' => 'danger',
+            'Missing Cost' => 'orange',
+            default => 'muted',
+        };
+    }
+
     private function displayHealthLabel(string $primaryLabel, bool $isSupplierView): string
     {
         return match ($primaryLabel) {
-            'Complete', 'Healthy' => 'Ready',
-            'Out of Stock' => 'Out of Stock',
-            'Needs Cost' => $isSupplierView ? 'Missing Rate' : 'Missing Cost',
-            'Needs Model' => 'Missing Supplier Model',
+            'Complete', 'Healthy' => 'Healthy',
+            'Out of Stock', 'Out Of Stock' => 'Out Of Stock',
+            'Needs Cost' => 'Missing Cost',
+            'Needs Model' => 'Missing Model',
             'Low Stock' => 'Low Stock',
-            'Needs Work' => 'Needs Work',
+            'Needs Work' => 'Missing Model',
             default => $primaryLabel,
         };
     }
@@ -319,24 +331,6 @@ class ProductControlCatalogReadService
         }
 
         return ['label' => 'Healthy', 'class' => 'ok'];
-    }
-
-    private function primaryHealthLabel(bool $missingCost, bool $missingModel, bool $lowStock, bool $needsWork): string
-    {
-        if ($missingCost && $missingModel) {
-            return 'Needs Work';
-        }
-        if ($missingCost) {
-            return 'Needs Cost';
-        }
-        if ($missingModel) {
-            return 'Needs Model';
-        }
-        if ($lowStock) {
-            return 'Low Stock';
-        }
-
-        return 'Complete';
     }
 
     private function buildVariantRows(array $variants, array $product, bool $isSupplierView): array
@@ -414,19 +408,10 @@ class ProductControlCatalogReadService
 
     private function variantHealth(array $variant, array $product, bool $isSupplierView): array
     {
-        if (($variant['status'] ?? 'active') === 'inactive') {
-            return [
-                'label' => 'Inactive',
-                'class' => 'muted',
-                'warning' => '—',
-                'low_stock' => false,
-            ];
-        }
-
         if (trim((string) ($variant['supplier_model'] ?? '')) === '') {
             return [
                 'label' => 'Missing Model',
-                'class' => 'warn',
+                'class' => 'danger',
                 'warning' => '—',
                 'low_stock' => false,
             ];
@@ -434,8 +419,8 @@ class ProductControlCatalogReadService
 
         if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
             return [
-                'label' => $isSupplierView ? 'Missing Sale' : 'Missing Cost',
-                'class' => 'warn',
+                'label' => 'Missing Cost',
+                'class' => 'orange',
                 'warning' => '—',
                 'low_stock' => false,
             ];
@@ -444,15 +429,14 @@ class ProductControlCatalogReadService
         $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
         $vendorStock = (int) ($variant['vendor_stock'] ?? 0);
         $stockHealth = ProductControlVendorStockHealth::evaluate($vendorStock, $lowWarning);
-        $label = match ($stockHealth['label']) {
-            'Healthy' => 'Ready',
-            'Low Stock' => 'Low',
-            'Out of Stock' => 'Out',
-            default => $stockHealth['label'],
-        };
 
         return [
-            'label' => $label,
+            'label' => match ($stockHealth['label']) {
+                'Healthy' => 'Healthy',
+                'Low Stock' => 'Low Stock',
+                'Out of Stock' => 'Out Of Stock',
+                default => $stockHealth['label'],
+            },
             'class' => $stockHealth['class'],
             'warning' => $stockHealth['warning'],
             'low_stock' => in_array($stockHealth['status'], ['low_stock', 'out_of_stock'], true),

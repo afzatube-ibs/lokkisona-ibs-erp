@@ -54,7 +54,6 @@ class ProductControlController extends Controller
         $catalogFilters = [
             'q' => $_GET['q'] ?? '',
             'product_id' => $_GET['product_id'] ?? '',
-            'product_name' => $_GET['product_name'] ?? '',
             'model' => $_GET['model'] ?? '',
             'supplier_model' => $_GET['supplier_model'] ?? '',
             'category' => $_GET['category'] ?? '',
@@ -141,6 +140,9 @@ class ProductControlController extends Controller
             'ok' => true,
             'workspace' => $views['workspace'] ?? [],
             'isSupplierView' => $isSupplierView,
+            'categoryOptions' => (new ProductControlListReadService())->listCategoryOptions(
+                $isSupplierView ? SupplierContext::supplierId() : 0
+            ),
             'timing_ms' => $timer->isEnabled() ? $timer->laps() : null,
         ]);
     }

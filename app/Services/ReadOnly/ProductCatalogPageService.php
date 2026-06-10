@@ -68,13 +68,12 @@ class ProductCatalogPageService
         $allowedTypes = ['all', 'simple', 'variable'];
         $allowedSorts = [
             'product_id_asc', 'product_id_desc', 'name_asc', 'name_desc',
-            'model_asc', 'synced_desc', 'health',
+            'model_asc', 'category_asc', 'synced_desc', 'health',
         ];
 
         return [
             'q' => trim((string) ($filters['q'] ?? '')),
             'product_id' => trim((string) ($filters['product_id'] ?? '')),
-            'product_name' => trim((string) ($filters['product_name'] ?? '')),
             'model' => trim((string) ($filters['model'] ?? '')),
             'supplier_model' => trim((string) ($filters['supplier_model'] ?? '')),
             'category' => trim((string) ($filters['category'] ?? '')),
@@ -108,9 +107,6 @@ class ProductCatalogPageService
                 }
             }
             if ($f['product_id'] !== '' && !str_contains((string) ($row['product_id'] ?? ''), $f['product_id'])) {
-                return false;
-            }
-            if ($f['product_name'] !== '' && !str_contains(strtolower((string) ($row['product_name'] ?? '')), strtolower($f['product_name']))) {
                 return false;
             }
             if ($f['model'] !== '' && !str_contains(strtolower((string) ($row['source_model'] ?? '')), strtolower($f['model']))) {
@@ -150,6 +146,10 @@ class ProductCatalogPageService
                 'name_asc' => strcasecmp((string) ($a['product_name'] ?? ''), (string) ($b['product_name'] ?? '')),
                 'name_desc' => strcasecmp((string) ($b['product_name'] ?? ''), (string) ($a['product_name'] ?? '')),
                 'model_asc' => strcasecmp((string) ($a['source_model'] ?? ''), (string) ($b['source_model'] ?? '')),
+                'category_asc' => strcasecmp(
+                    (string) ($a['supplier_product_category'] ?? ''),
+                    (string) ($b['supplier_product_category'] ?? '')
+                ),
                 'synced_desc' => strcmp((string) ($b['last_synced_at'] ?? ''), (string) ($a['last_synced_at'] ?? '')),
                 'health' => strcasecmp((string) ($a['health_status_display'] ?? ''), (string) ($b['health_status_display'] ?? '')),
                 default => ((int) ($a['product_id'] ?? 0)) <=> ((int) ($b['product_id'] ?? 0)),

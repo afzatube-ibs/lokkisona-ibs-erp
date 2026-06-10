@@ -22,6 +22,7 @@
     var historyByProduct = {};
     var historyLoading = {};
     var isSupplierView = !!bootstrap.isSupplierView;
+    var categoryOptions = Array.isArray(bootstrap.categoryOptions) ? bootstrap.categoryOptions.slice() : [];
     var costFieldLabel = isSupplierView ? 'Supplier Sale' : 'Supplier Cost';
     var form = document.getElementById('productControlCenterForm');
     var variantLinesBody = document.getElementById('pccVariantLinesBody');
@@ -56,6 +57,42 @@
         return trimVal(value) === '' ? 'Not set' : String(value);
     }
 
+    function categoryDisplayVal(value) {
+        return trimVal(value) === '' ? '—' : String(value);
+    }
+
+    function findCanonicalCategory(name) {
+        var probe = trimVal(name);
+        if (probe === '') {
+            return { value: '', warning: '' };
+        }
+        var lower = probe.toLowerCase();
+        var i;
+        for (i = 0; i < categoryOptions.length; i++) {
+            if (String(categoryOptions[i]).toLowerCase() === lower) {
+                if (categoryOptions[i] !== probe) {
+                    return {
+                        value: categoryOptions[i],
+                        warning: 'IBS Category matched existing name "' + categoryOptions[i] + '".'
+                    };
+                }
+                return { value: categoryOptions[i], warning: '' };
+            }
+        }
+        return { value: probe, warning: '' };
+    }
+
+    function ensureCategoryOption(name) {
+        var resolved = findCanonicalCategory(name);
+        if (resolved.value !== '' && categoryOptions.indexOf(resolved.value) === -1) {
+            categoryOptions.push(resolved.value);
+            categoryOptions.sort(function (a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: 'base' });
+            });
+        }
+        return resolved;
+    }
+
     function chipHtml(value) {
         if (trimVal(value) === '') {
             return '<span class="pcc-field-chip pcc-field-chip-empty">Not set</span>';
@@ -63,29 +100,65 @@
         return '<span class="pcc-field-chip">' + esc(value) + '</span>';
     }
 
-    function imageCellHtml(url) {
-        if (url) {
+    function imageCellHtml(url, fallbackUrl) {
+        var src = trimVal(url) !== '' ? url : (trimVal(fallbackUrl) !== '' ? fallbackUrl : '');
+        if (src) {
             return '<div class="pcc-thumb-44">'
-                + '<img src="' + esc(url) + '" alt="" loading="lazy" '
+                + '<img src="' + esc(src) + '" alt="" loading="lazy" '
                 + 'onerror="this.parentNode.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'pcc-thumb-44 pcc-thumb-44-empty\',innerHTML:\'<span>No image</span>\'}))">'
                 + '</div>';
         }
         return '<div class="pcc-thumb-44 pcc-thumb-44-empty"><span>No image</span></div>';
     }
 
-    function shortHealthLabel(label) {
+    function healthLabel(label) {
         var map = {
-            'Healthy': 'Ready',
-            'Ready': 'Ready',
-            'Low Stock': 'Low',
-            'Out of Stock': 'Out',
+            'Ready': 'Healthy',
+            'Complete': 'Healthy',
+            'Healthy': 'Healthy',
+            'Low': 'Low Stock',
+            'Low Stock': 'Low Stock',
+            'Out': 'Out Of Stock',
+            'Out of Stock': 'Out Of Stock',
+            'Out Of Stock': 'Out Of Stock',
             'Missing Sale': 'Missing Cost',
             'Missing Cost': 'Missing Cost',
+            'Missing Supplier Model': 'Missing Model',
             'Missing Model': 'Missing Model',
-            'Inactive': 'Inactive',
-            'Needs Work': 'Needs Work'
+            'Needs Cost': 'Missing Cost',
+            'Needs Model': 'Missing Model',
+            'Needs Work': 'Missing Cost'
         };
         return map[label] || label || '—';
+    }
+
+    function computeVariantHealth(state, workspace) {
+        var lowWarning = parseInt((workspace && workspace.low_warning_threshold) || '0', 10) || 0;
+        if (trimVal(state.supplier_model) === '') {
+            return { label: 'Missing Model', cls: 'danger' };
+        }
+        if (state.product_cost === '' || state.product_cost == null) {
+            return { label: 'Missing Cost', cls: 'orange' };
+        }
+        var vendorStock = parseInt(state.vendor_stock || '0', 10) || 0;
+        if (vendorStock <= 0) {
+            return { label: 'Out Of Stock', cls: 'danger' };
+        }
+        if (lowWarning > 0 && vendorStock <= lowWarning) {
+            return { label: 'Low Stock', cls: 'low' };
+        }
+        return { label: 'Healthy', cls: 'ok' };
+    }
+
+    function updateVariantRowHealth(row, state, workspace) {
+        if (!row) {
+            return;
+        }
+        var health = computeVariantHealth(state, workspace);
+        var cell = row.querySelector('.pcc-vcol-health');
+        if (cell) {
+            cell.innerHTML = '<span class="badge badge-sm badge-' + esc(health.cls) + '">' + esc(health.label) + '</span>';
+        }
     }
 
     function setText(id, value) {
@@ -138,16 +211,6 @@
         }
     }
 
-    function renderSnapshotHealth(workspace) {
-        var el = document.getElementById('pccSnapshotHealth');
-        if (!el) {
-            return;
-        }
-        var label = shortHealthLabel(workspace.health_label || '—');
-        var cls = workspace.health_class || 'muted';
-        el.innerHTML = '<span class="badge badge-sm badge-' + esc(cls) + '">' + esc(label) + '</span>';
-    }
-
     function setDirty(dirty) {
         isDirty = !!dirty;
         if (saveBtn) {
@@ -198,17 +261,15 @@
             return;
         }
         tbody.innerHTML = rows.map(function (row) {
-            var change = (row.old_value !== '' && row.old_value != null ? row.old_value : '—')
-                + ' → ' + (row.new_value !== '' && row.new_value != null ? row.new_value : '—');
             return '<tr>'
                 + '<td>' + esc(row.created_at || '—') + '</td>'
-                + '<td>' + esc(row.variant_label || 'Product level') + '</td>'
                 + '<td>' + esc(row.field_changed || '—') + '</td>'
-                + '<td>' + esc(change) + '</td>'
+                + '<td class="pcc-num">' + esc(row.old_value !== '' && row.old_value != null ? row.old_value : '—') + '</td>'
+                + '<td class="pcc-num">' + esc(row.new_value !== '' && row.new_value != null ? row.new_value : '—') + '</td>'
                 + '<td>' + esc(row.change_type || '—') + '</td>'
-                + '<td>' + esc(row.delta_amount || '—') + '</td>'
-                + '<td>' + esc(row.note || '—') + '</td>'
+                + '<td class="pcc-num">' + esc(row.delta_amount || '—') + '</td>'
                 + '<td>' + esc(row.user_label || '—') + '</td>'
+                + '<td>' + esc(row.note || '—') + '</td>'
                 + '</tr>';
         }).join('');
     }
@@ -269,12 +330,12 @@
         }
         variantState = {};
         variantLinesBody.innerHTML = '';
+        var productImageUrl = (workspace && workspace.image_url) || '';
 
         (variants || []).forEach(function (variant, index) {
             var tr = document.createElement('tr');
             tr.setAttribute('data-variant-index', String(index));
             tr.dataset.variantId = String(variant.product_variant_id || '');
-            var healthClass = esc(variant.health_class || 'muted');
             var state = getVariantState(index);
             state.supplier_model = variant.supplier_model || '';
             state.product_cost = variant.product_cost ?? '';
@@ -282,17 +343,17 @@
             state.cost_meta = null;
             state.stock_meta = null;
 
-            var healthLabel = shortHealthLabel(variant.health || '—');
+            var health = computeVariantHealth(state, workspace);
             tr.innerHTML =
-                '<td class="pcc-vcol-image">' + imageCellHtml(variant.image_url) + '</td>'
+                '<td class="pcc-vcol-image">' + imageCellHtml(variant.image_url, productImageUrl) + '</td>'
                 + '<td class="pcc-vcol-line"><span class="pcc-cell-ellipsis" title="' + esc(variant.line_label || '') + '">' + esc(variant.line_label || variant.option_value || 'Option') + '</span></td>'
                 + '<td class="pcc-vcol-model"><span class="pcc-cell-ellipsis">' + esc(variant.source_model || '—') + '</span></td>'
                 + '<td class="pcc-vcol-vendor">' + editableCellHtml('supplier_model', state.supplier_model, index) + '</td>'
                 + '<td class="pcc-vcol-cost pcc-num">' + editableCellHtml('product_cost', state.product_cost, index) + '</td>'
                 + '<td class="pcc-vcol-stock pcc-ro-cell pcc-num">' + esc(variant.source_stock ?? '—') + '</td>'
                 + '<td class="pcc-vcol-vstock pcc-num">' + editableCellHtml('vendor_stock', state.vendor_stock, index) + '</td>'
-                + '<td class="pcc-vcol-health"><span class="badge badge-sm badge-' + healthClass + '">' + esc(healthLabel) + '</span></td>'
-                + '<td class="pcc-vcol-history"><button type="button" class="pcc-history-icon-btn pcc-row-history-btn" data-variant-id="' + esc(variant.product_variant_id || '') + '" title="History" aria-label="View option history">' + HISTORY_ICON + '</button></td>';
+                + '<td class="pcc-vcol-health"><span class="badge badge-sm badge-' + esc(health.cls) + '">' + esc(health.label) + '</span></td>'
+                + '<td class="pcc-vcol-history"><button type="button" class="pcc-history-icon-btn pcc-row-history-btn" data-variant-id="' + esc(variant.product_variant_id || '') + '" title="View history" aria-label="View option history">' + HISTORY_ICON + '</button></td>';
             variantLinesBody.appendChild(tr);
         });
 
@@ -370,6 +431,8 @@
             row.classList.add('pcc-row-dirty');
         }
         renderVariantCellDisplay(cell, field, index);
+        var workspace = workspaces[String(currentProductId)] || {};
+        updateVariantRowHealth(row, state, workspace);
         markDirty();
     }
 
@@ -422,25 +485,133 @@
     function syncSupplierFieldDisplay(field, value) {
         var display = document.querySelector('.pcc-dblclick-edit[data-field="' + field + '"]');
         var inputId = display ? display.getAttribute('data-input') : null;
-        if (display) {
-            if (field === 'status') {
-                display.textContent = value === 'inactive' ? 'Inactive' : 'Active';
-            } else {
-                display.textContent = displayVal(value);
+        if (field === 'status') {
+            var statusEl = document.getElementById('pccStatusDisplay');
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="badge badge-sm badge-' + (value === 'inactive' ? 'muted' : 'ok') + '">'
+                    + esc(value === 'inactive' ? 'Inactive' : 'Active') + '</span>';
             }
+            setInput('pccStatus', value);
+            return;
+        }
+        if (field === 'ibs_category') {
+            if (display) {
+                display.textContent = categoryDisplayVal(value);
+            }
+            setInput('pccCategory', value);
+            return;
+        }
+        if (display) {
+            display.textContent = displayVal(value);
         }
         if (inputId) {
             setInput(inputId, value);
         }
     }
 
+    function markSupplierFieldDirty(field) {
+        var row = document.querySelector('[data-supplier-field="' + field + '"]');
+        if (row) {
+            row.classList.add('pcc-row-dirty');
+        }
+    }
+
     function renderSupplierFields(workspace) {
         syncSupplierFieldDisplay('supplier_model', workspace.supplier_model || '');
+        syncSupplierFieldDisplay('ibs_category', workspace.supplier_product_category || '');
         syncSupplierFieldDisplay('low_warning', workspace.low_warning_threshold ?? '');
         syncSupplierFieldDisplay('product_cost', workspace.product_cost ?? '');
         syncSupplierFieldDisplay('vendor_stock', workspace.vendor_stock ?? 0);
         syncSupplierFieldDisplay('status', workspace.status || 'active');
+        setInput('pccCategory', workspace.supplier_product_category || '');
         setInput('pccSupplierNote', workspace.supplier_note || '');
+    }
+
+    function startCategoryFieldEdit(displayEl) {
+        if (!canEditSupplier || !displayEl) {
+            return;
+        }
+        var inputEl = document.getElementById('pccCategory');
+        if (!inputEl || displayEl.classList.contains('is-editing')) {
+            return;
+        }
+        var current = inputEl.value || '';
+        displayEl.classList.add('is-editing');
+        var html = '<select class="form-input form-input-compact pcc-category-select">';
+        html += '<option value="">— None —</option>';
+        categoryOptions.forEach(function (opt) {
+            html += '<option value="' + esc(opt) + '"' + (opt === current ? ' selected' : '') + '>' + esc(opt) + '</option>';
+        });
+        html += '<option value="__new__"' + (current !== '' && categoryOptions.indexOf(current) === -1 ? ' selected' : '') + '>+ Add new…</option>';
+        html += '</select>';
+        html += '<input type="text" class="form-input form-input-compact pcc-category-new-input" placeholder="New IBS category" hidden>';
+        displayEl.innerHTML = html;
+        var select = displayEl.querySelector('.pcc-category-select');
+        var newInput = displayEl.querySelector('.pcc-category-new-input');
+        function toggleNewInput() {
+            if (!newInput || !select) {
+                return;
+            }
+            var showNew = select.value === '__new__';
+            newInput.hidden = !showNew;
+            if (showNew) {
+                newInput.value = current !== '' && categoryOptions.indexOf(current) === -1 ? current : '';
+                newInput.focus();
+            }
+        }
+        if (select) {
+            toggleNewInput();
+            select.addEventListener('change', toggleNewInput);
+            select.focus();
+        }
+        function finishCategoryEdit() {
+            var raw = select && select.value === '__new__'
+                ? (newInput ? newInput.value : '')
+                : (select ? select.value : '');
+            var resolved = ensureCategoryOption(raw);
+            if (resolved.warning) {
+                showModalError(resolved.warning);
+            } else {
+                showModalError('');
+            }
+            inputEl.value = resolved.value;
+            displayEl.classList.remove('is-editing');
+            syncSupplierFieldDisplay('ibs_category', resolved.value);
+            markSupplierFieldDirty('ibs_category');
+            markDirty();
+        }
+        if (select) {
+            select.addEventListener('blur', function () {
+                window.setTimeout(finishCategoryEdit, 120);
+            });
+            select.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    finishCategoryEdit();
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    displayEl.classList.remove('is-editing');
+                    syncSupplierFieldDisplay('ibs_category', inputEl.value);
+                }
+            });
+        }
+        if (newInput) {
+            newInput.addEventListener('blur', function () {
+                window.setTimeout(finishCategoryEdit, 120);
+            });
+            newInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    finishCategoryEdit();
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    displayEl.classList.remove('is-editing');
+                    syncSupplierFieldDisplay('ibs_category', inputEl.value);
+                }
+            });
+        }
     }
 
     function startSupplierFieldEdit(displayEl) {
@@ -453,21 +624,19 @@
         if (!inputEl || displayEl.classList.contains('is-editing')) {
             return;
         }
+        if (field === 'status') {
+            return;
+        }
+        if (field === 'ibs_category') {
+            startCategoryFieldEdit(displayEl);
+            return;
+        }
         var current = inputEl.value;
         displayEl.classList.add('is-editing');
         var inputType = (field === 'low_warning' || field === 'product_cost' || field === 'vendor_stock') ? 'number' : 'text';
-        var html = '';
-        if (field === 'status') {
-            html = '<select class="form-input form-input-compact pcc-supplier-inline-input">'
-                + '<option value="active"' + (current === 'active' ? ' selected' : '') + '>Active</option>'
-                + '<option value="inactive"' + (current === 'inactive' ? ' selected' : '') + '>Inactive</option>'
-                + '</select>';
-        } else {
-            var step = field === 'product_cost' ? ' step="0.01" min="0"' : (inputType === 'number' ? ' min="0"' : '');
-            html = '<input type="' + inputType + '" class="form-input form-input-compact pcc-supplier-inline-input" value="' + esc(current) + '"' + step + '>';
-        }
-        displayEl.innerHTML = html;
-        var control = displayEl.querySelector('input, select');
+        var step = field === 'product_cost' ? ' step="0.01" min="0"' : (inputType === 'number' ? ' min="0"' : '');
+        displayEl.innerHTML = '<input type="' + inputType + '" class="form-input form-input-compact pcc-supplier-inline-input" value="' + esc(current) + '"' + step + '>';
+        var control = displayEl.querySelector('input');
         if (!control) {
             return;
         }
@@ -480,6 +649,7 @@
             inputEl.value = val;
             displayEl.classList.remove('is-editing');
             syncSupplierFieldDisplay(field, val);
+            markSupplierFieldDirty(field);
             markDirty();
         }
         control.addEventListener('blur', finish);
@@ -494,11 +664,12 @@
                 syncSupplierFieldDisplay(field, inputEl.value);
             }
         });
-        if (control.tagName === 'SELECT') {
-            control.addEventListener('change', function () {
-                control.blur();
-            });
-        }
+    }
+
+    function clearDirtyHighlights() {
+        document.querySelectorAll('.pcc-row-dirty').forEach(function (el) {
+            el.classList.remove('pcc-row-dirty');
+        });
     }
 
     function restoreBaseline() {
@@ -508,6 +679,7 @@
         }
         workspaces[String(currentProductId)] = JSON.parse(JSON.stringify(baseline));
         populateModal(baseline, currentProductId, { preserveTab: true });
+        clearDirtyHighlights();
         setDirty(false);
     }
 
@@ -522,13 +694,12 @@
         setInput('pccCategory', workspace.supplier_product_category || '');
         setImage(workspace.image_url || '');
         setText('pccProductNameMuted', workspace.product_name || '—');
-        setText('pccOcProductId', workspace.source_product_id || '—');
-        setText('pccOcModel', workspace.source_model || '—');
+        setText('pccProductIdDisplay', workspace.source_product_id || '—');
+        setText('pccMainModel', workspace.source_model || '—');
         setText('pccProductType', workspace.type === 'variable' ? 'Variable Product' : 'Simple Product');
         setText('pccTotalStock', workspace.total_stock != null ? workspace.total_stock : (workspace.source_stock ?? '—'));
         setText('pccTotalVariants', workspace.variant_count != null ? workspace.variant_count : (workspace.variants ? workspace.variants.length : 0));
         setText('pccLastSynced', workspace.last_synced_at || '—');
-        renderSnapshotHealth(workspace);
 
         var supplierIdEl = document.getElementById('pccSupplierId');
         if (supplierIdEl) {
@@ -587,6 +758,9 @@
                     showModalError((data && data.message) ? data.message : 'Could not load product workspace.');
                     return;
                 }
+                if (Array.isArray(data.categoryOptions)) {
+                    categoryOptions = data.categoryOptions.slice();
+                }
                 workspaces[String(productId)] = data.workspace;
                 populateModal(data.workspace, productId, options);
             })
@@ -626,11 +800,26 @@
         return Math.max(0, amount);
     }
 
-    function adjustPresetLabel(field, type, amount) {
-        if (field === 'cost') {
-            return ({ fixed_plus: '+' + amount, fixed_minus: '-' + amount, percent_plus: '+' + amount + '%', percent_minus: '-' + amount + '%' })[type] || type;
+    var COST_ADJUST_TYPES = [
+        { value: 'fixed_plus', label: '+ Fixed Amount' },
+        { value: 'fixed_minus', label: '− Fixed Amount' },
+        { value: 'percent_plus', label: '+ Percentage' },
+        { value: 'percent_minus', label: '− Percentage' }
+    ];
+    var STOCK_ADJUST_TYPES = [
+        { value: 'increase', label: 'Increase' },
+        { value: 'decrease', label: 'Decrease' }
+    ];
+
+    function populateAdjustTypeSelect(field, selectedType) {
+        var select = document.getElementById('pccAdjustType');
+        if (!select) {
+            return;
         }
-        return ({ increase: '+' + amount, decrease: '-' + amount })[type] || type;
+        var options = field === 'cost' ? COST_ADJUST_TYPES : STOCK_ADJUST_TYPES;
+        select.innerHTML = options.map(function (opt) {
+            return '<option value="' + esc(opt.value) + '"' + (opt.value === selectedType ? ' selected' : '') + '>' + esc(opt.label) + '</option>';
+        }).join('');
     }
 
     function showAdjustModal(context) {
@@ -639,18 +828,22 @@
             return;
         }
         var title = document.getElementById('pccAdjustTitle');
-        var preset = document.getElementById('pccAdjustPreset');
-        document.getElementById('pccAdjustType').value = context.presetType || 'direct';
-        document.getElementById('pccAdjustAmount').value = context.presetAmount || '';
+        var amountEl = document.getElementById('pccAdjustAmount');
         document.getElementById('pccAdjustNote').value = '';
+        populateAdjustTypeSelect(context.field, context.presetType || (context.field === 'cost' ? 'fixed_plus' : 'increase'));
+        if (amountEl) {
+            amountEl.value = context.presetAmount != null ? String(context.presetAmount) : '';
+            amountEl.step = context.field === 'cost' ? '0.01' : '1';
+            amountEl.min = '0';
+        }
         if (title) {
             title.textContent = context.field === 'cost' ? 'Cost Adjustment' : 'Stock Adjustment';
         }
-        if (preset) {
-            preset.textContent = 'Apply: ' + adjustPresetLabel(context.field, context.presetType, context.presetAmount);
-        }
         updateAdjustPreview();
         adjustPopover.hidden = false;
+        if (amountEl) {
+            amountEl.focus();
+        }
     }
 
     function hideAdjustPopover() {
@@ -683,8 +876,12 @@
         var type = document.getElementById('pccAdjustType').value;
         var amount = document.getElementById('pccAdjustAmount').value;
         var note = trimVal(document.getElementById('pccAdjustNote').value);
+        if (trimVal(amount) === '' || parseFloat(amount) < 0) {
+            window.alert('A valid adjustment amount is required.');
+            return;
+        }
         if (note === '') {
-            window.alert('Note/reason is required for adjustments.');
+            window.alert('Reason is required for every adjustment.');
             return;
         }
         var meta = { type: type, amount: amount, note: note };
@@ -710,14 +907,18 @@
                 if (cell) {
                     renderVariantCellDisplay(cell, cellField, adjustContext.variantIndex);
                 }
+                var workspace = workspaces[String(currentProductId)] || {};
+                updateVariantRowHealth(row, state, workspace);
             }
         } else if (adjustContext.field === 'cost') {
             setInput('pccProductCost', String(next));
             syncSupplierFieldDisplay('product_cost', next);
+            markSupplierFieldDirty('product_cost');
             document.getElementById('pccCostMeta').value = JSON.stringify(meta);
         } else {
             setInput('pccProductVendorStock', String(next));
             syncSupplierFieldDisplay('vendor_stock', next);
+            markSupplierFieldDirty('vendor_stock');
             document.getElementById('pccStockMeta').value = JSON.stringify(meta);
         }
         markDirty();
@@ -810,8 +1011,7 @@
                 scope: btn.getAttribute('data-adjust-scope') || 'product',
                 field: field,
                 baseValue: base,
-                presetType: btn.getAttribute('data-adjust-type'),
-                presetAmount: btn.getAttribute('data-adjust-amount')
+                presetType: btn.getAttribute('data-adjust-type')
             });
         });
     });
@@ -823,6 +1023,14 @@
     var adjustCancel = document.getElementById('pccAdjustCancel');
     if (adjustCancel) {
         adjustCancel.addEventListener('click', hideAdjustPopover);
+    }
+    var adjustTypeEl = document.getElementById('pccAdjustType');
+    var adjustAmountEl = document.getElementById('pccAdjustAmount');
+    if (adjustTypeEl) {
+        adjustTypeEl.addEventListener('change', updateAdjustPreview);
+    }
+    if (adjustAmountEl) {
+        adjustAmountEl.addEventListener('input', updateAdjustPreview);
     }
 
     if (form) {

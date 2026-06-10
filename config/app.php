@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.1.6',
-    'release_label' => 'Navigation Organization Foundation',
+    'version' => '2.1.8.1',
+    'release_label' => 'IBS Category Visibility Repair',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

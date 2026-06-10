@@ -50,10 +50,10 @@ class ProductControlHistoryNote
     {
         return match (strtolower(trim($type))) {
             'direct' => 'Direct',
-            'fixed_plus' => '+ Fixed',
-            'fixed_minus' => '- Fixed',
-            'percent_plus' => '+ Percent',
-            'percent_minus' => '- Percent',
+            'fixed_plus' => '+ Fixed Amount',
+            'fixed_minus' => '− Fixed Amount',
+            'percent_plus' => '+ Percentage',
+            'percent_minus' => '− Percentage',
             'increase' => 'Increase',
             'decrease' => 'Decrease',
             'workspace_save' => 'Workspace save',

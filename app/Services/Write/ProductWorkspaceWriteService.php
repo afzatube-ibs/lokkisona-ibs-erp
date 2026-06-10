@@ -6,6 +6,7 @@ use App\ActivityLog;
 use App\Auth;
 use App\Domain\ProductControlAdjustment;
 use App\Domain\ProductControlHistoryNote;
+use App\Domain\ProductControlIbsCategory;
 use App\Repositories\UserRepository;
 use App\Repositories\Write\ProductCostHistoryWriteRepository;
 use App\Repositories\Write\ProductStockHistoryWriteRepository;
@@ -75,10 +76,23 @@ class ProductWorkspaceWriteService
             'status' => $this->status($input, (string) ($product['status'] ?? 'active')),
         ];
 
+        $categoryWarning = null;
+
         if ($this->products->supplierProductCategoryColumnReady()) {
-            $supplierFields['supplier_product_category'] = array_key_exists('supplier_product_category', $input)
-                ? $this->nullableString($input, 'supplier_product_category')
-                : ($product['supplier_product_category'] ?? null);
+            if (array_key_exists('supplier_product_category', $input)) {
+                $supplierId = (int) ($product['supplier_id'] ?? 0);
+                $existingCategories = $this->products->distinctSupplierProductCategories(
+                    $supplierId > 0 ? $supplierId : null
+                );
+                $resolved = ProductControlIbsCategory::resolve(
+                    $this->nullableString($input, 'supplier_product_category'),
+                    $existingCategories
+                );
+                $supplierFields['supplier_product_category'] = $resolved['value'];
+                $categoryWarning = $resolved['warning'];
+            } else {
+                $supplierFields['supplier_product_category'] = $product['supplier_product_category'] ?? null;
+            }
         }
 
         if ($this->products->supplierNoteColumnReady() && array_key_exists('supplier_note', $input)) {
@@ -155,6 +169,9 @@ class ProductWorkspaceWriteService
         $message = $updatedVariants > 0
             ? 'Supplier/ERP fields saved (' . $updatedVariants . ' variant line(s) updated). OpenCart data was not changed.'
             : 'Supplier/ERP fields saved. OpenCart data was not changed.';
+        if ($categoryWarning !== null && $categoryWarning !== '') {
+            $message .= ' ' . $categoryWarning;
+        }
 
         return WriteResult::ok($message, $productId);
     }

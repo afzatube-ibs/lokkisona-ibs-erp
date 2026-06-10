@@ -1715,7 +1715,10 @@ select.form-input,
 .badge-success { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 22%, transparent); }
 .badge-warn    { background: var(--warn-soft);    color: var(--warn);    border-color: color-mix(in srgb, var(--warn) 22%, transparent); }
 .badge-fail,
-.badge-error   { background: var(--error-soft);   color: var(--error);   border-color: color-mix(in srgb, var(--error) 22%, transparent); }
+.badge-error,
+.badge-danger  { background: var(--error-soft);   color: var(--error);   border-color: color-mix(in srgb, var(--error) 22%, transparent); }
+.badge-orange  { background: color-mix(in srgb, #f97316 14%, var(--color-bg, #fff)); color: #c2410c; border-color: color-mix(in srgb, #f97316 28%, transparent); }
+.badge-low     { background: color-mix(in srgb, #eab308 16%, var(--color-bg, #fff)); color: #a16207; border-color: color-mix(in srgb, #eab308 30%, transparent); }
 .badge-info    { background: var(--info-soft);    color: var(--info);    border-color: color-mix(in srgb, var(--info) 22%, transparent); }
 .badge-neutral { background: var(--surface-2);    color: var(--text-secondary); border-color: var(--border-default); }
 
@@ -4896,14 +4899,15 @@ body.modal-open { overflow: hidden; }
 }
 .pcc-v202-top-split {
     display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 0.4rem;
     flex-shrink: 0;
-    align-items: start;
+    align-items: stretch;
 }
 .pcc-v202-snapshot,
 .pcc-v202-supplier {
-    height: auto;
+    height: 100%;
+    min-height: 0;
 }
 .pcc-v202-snapshot {
     display: flex;
@@ -4956,6 +4960,14 @@ body.modal-open { overflow: hidden; }
     min-width: 0;
     flex: 1;
 }
+.pcc-v202-section-title {
+    margin: 0 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
 .pcc-v202-product-name {
     margin: 0;
     font-size: 0.75rem;
@@ -4992,6 +5004,48 @@ body.modal-open { overflow: hidden; }
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.pcc-v202-fact-full {
+    grid-column: 1 / -1;
+}
+.pcc-v202-fact-full dd {
+    white-space: nowrap;
+}
+.pcc-v202-fact-editable dd {
+    min-width: 0;
+}
+.pcc-v202-info-line {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: 0.625rem;
+}
+.pcc-v202-info-label {
+    color: var(--color-text-muted);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.pcc-v202-info-value {
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pcc-v202-fact-editable.pcc-row-dirty {
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, transparent);
+    border-radius: var(--radius-sm);
+}
+.pcc-category-select,
+.pcc-category-new-input {
+    width: 100%;
+    max-width: 11rem;
+    font-size: 0.6875rem;
+}
+.pcc-v202-fact-editable .pcc-v202-field-value {
+    cursor: pointer;
+}
 .pcc-v202-supplier {
     display: flex;
     flex-direction: column;
@@ -5002,6 +5056,19 @@ body.modal-open { overflow: hidden; }
     background: var(--color-surface, #fff);
     min-width: 0;
     justify-content: flex-start;
+}
+.pcc-v202-field-row.pcc-row-dirty {
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 6%, transparent);
+    border-radius: var(--radius);
+}
+.pcc-status-readonly {
+    cursor: default;
+    padding: 0;
+    border: none;
+    min-height: 0;
+}
+.pcc-status-readonly:hover {
+    background: transparent;
 }
 .pcc-v202-supplier-name {
     margin: 0;
@@ -5069,9 +5136,14 @@ body.modal-open { overflow: hidden; }
     gap: 0.2rem;
 }
 .pcc-v202-adjust-btn {
-    padding: 0.15rem 0.4rem;
-    font-size: 0.6875rem;
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: 0;
+    padding: 0.2rem 0.35rem;
+    font-size: 0.625rem;
     font-weight: 600;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-bg-subtle);
@@ -5165,13 +5237,16 @@ body.modal-open { overflow: hidden; }
     top: 0;
     z-index: 2;
     background: var(--color-bg-subtle);
-    font-size: 0.625rem;
+    font-size: 0.5625rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    text-transform: none;
+    letter-spacing: 0;
     color: var(--color-text-muted);
-    padding: 0.3rem 0.35rem;
+    padding: 0.3rem 0.2rem;
     border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .pcc-v202-table tbody td {
     padding: 0.2rem 0.35rem;
@@ -5181,15 +5256,15 @@ body.modal-open { overflow: hidden; }
 .pcc-v202-table tbody tr:nth-child(even) {
     background: color-mix(in srgb, var(--color-bg-subtle) 50%, transparent);
 }
-.pcc-v202-table .pcc-vcol-image { width: 52px; padding: 0.15rem 0.1rem; }
-.pcc-v202-table .pcc-vcol-line { width: 16%; }
-.pcc-v202-table .pcc-vcol-model { width: 11%; }
-.pcc-v202-table .pcc-vcol-vendor { width: 12%; }
-.pcc-v202-table .pcc-vcol-cost { width: 10%; }
-.pcc-v202-table .pcc-vcol-stock { width: 7%; }
+.pcc-v202-table .pcc-vcol-image { width: 48px; padding: 0.15rem 0.1rem; }
+.pcc-v202-table .pcc-vcol-line { width: 14%; }
+.pcc-v202-table .pcc-vcol-model { width: 9%; }
+.pcc-v202-table .pcc-vcol-vendor { width: 11%; }
+.pcc-v202-table .pcc-vcol-cost { width: 11%; }
+.pcc-v202-table .pcc-vcol-stock { width: 6%; }
 .pcc-v202-table .pcc-vcol-vstock { width: 9%; }
-.pcc-v202-table .pcc-vcol-health { width: 9%; }
-.pcc-v202-table .pcc-vcol-history { width: 36px; padding: 0.1rem; }
+.pcc-v202-table .pcc-vcol-health { width: 10%; }
+.pcc-v202-table .pcc-vcol-history { width: 32px; padding: 0.1rem; }
 .pcc-v202-table .badge-sm {
     font-size: 0.5625rem;
     padding: 0.05rem 0.25rem;
@@ -7542,4 +7617,185 @@ body.modal-open { overflow: hidden; }
 [data-theme="dark"] .product-control-release .pc-table-row:hover,
 [data-theme="dark"] .product-control-release .pc-table-row:focus-visible {
     background: color-mix(in srgb, var(--color-bg-subtle) 80%, transparent);
+}
+
+/* v2.1.7.1 Product Control Workspace repair */
+.product-control-release {
+    gap: 0.65rem;
+}
+.product-control-release .pc-kpi-grid {
+    gap: 0.35rem;
+}
+.product-control-release .pc-kpi-card {
+    padding: 0.3rem 0.5rem;
+    min-height: 55px;
+    max-height: 55px;
+    gap: 0;
+    align-content: center;
+}
+.product-control-release .pc-kpi-card .kpi-label {
+    font-size: 0.625rem;
+    line-height: 1.15;
+}
+.product-control-release .pc-kpi-card .kpi-value {
+    font-size: 0.9375rem;
+    line-height: 1.1;
+}
+.product-control-release .pc-table-count {
+    font-weight: 600;
+    color: var(--color-text);
+}
+.product-control-release .pc-product-table th,
+.product-control-release .pc-product-table td {
+    padding: 0.32rem 0.45rem;
+    height: 58px;
+    max-height: 60px;
+}
+.product-control-release .pc-list-thumb,
+.pc-product-table-v2171 .pcc-list-thumb {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+.pc-product-table-v2171 .pcc-ro-stock-cell,
+.pc-product-table-v2171 .pcc-vendor-stock-cell,
+.pc-product-table-v2171 .pcc-num {
+    text-align: center;
+}
+.pc-product-table-v2171 .pcc-col-model-no {
+    width: 28%;
+    min-width: 10rem;
+}
+.pc-product-table-v2171 .pcc-col-action {
+    width: 4.25rem;
+}
+.pc-filter-compact-card .card-body,
+.pc-filter-compact-body {
+    padding: 0.45rem 0.65rem;
+}
+.pc-filter-compact-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.35rem 0.45rem;
+}
+.pc-filter-compact-row .pc-field {
+    flex: 1 1 7rem;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.625rem;
+    gap: 0.12rem;
+}
+.pc-filter-compact-row .pc-field-search {
+    flex: 1.4 1 9rem;
+}
+.pc-filter-compact-row .form-input-compact {
+    padding: 0.28rem 0.4rem;
+    font-size: 0.75rem;
+    min-height: 1.75rem;
+}
+.pc-filter-compact-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+.pc-chip-row-compact {
+    margin-top: 0.35rem;
+    gap: 0.25rem;
+}
+.pc-chip-row-compact .workflow-chip {
+    padding: 0.12rem 0.45rem;
+    font-size: 0.6875rem;
+}
+.pcc-muted-dash {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.pcc-vendor-stock-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.pcc-ro-stock-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+.pcc-product-cell-name {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 100%;
+}
+.pcc-list-scroll .pc-product-table-v2171 {
+    min-width: 58rem;
+}
+.pc-product-table-v2171 .pcc-col-ibs-category {
+    width: 9%;
+    min-width: 5.5rem;
+}
+.pc-product-table-v2171 th,
+.pc-product-table-v2171 td {
+    vertical-align: middle;
+}
+.pc-product-table-v2171 th:not(.pcc-col-model-no),
+.pc-product-table-v2171 td:not(.pcc-col-model-no) {
+    text-align: center;
+}
+.pc-product-table-v2171 .pcc-col-model-no {
+    text-align: left;
+}
+.pc-product-table-v2171 .pcc-col-id {
+    width: 4.5rem;
+}
+.pc-product-table-v2171 .pcc-col-ibs-model {
+    width: 10%;
+    min-width: 5rem;
+}
+.pc-product-table-v2171 .pcc-col-type {
+    width: 4.5rem;
+}
+.pc-product-table-v2171 .pcc-col-live-stock,
+.pc-product-table-v2171 .pcc-col-ibs-stock,
+.pc-product-table-v2171 .pcc-col-rate {
+    width: 4.5rem;
+}
+.pc-product-table-v2171 .pcc-col-health {
+    width: 6.5rem;
+}
+.pc-product-table-v2171 .pcc-col-action {
+    white-space: nowrap;
+}
+.pc-product-table-v2171 .pcc-col-action .btn {
+    margin: 0 auto;
+}
+.pcc-product-cell-subid {
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+.pc-product-table-v2171 .pcc-cell-ellipsis {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.pcc-v202-workspace.is-variable .pcc-v202-options {
+    flex: 1;
+    min-height: 12rem;
+    display: flex;
+    flex-direction: column;
+}
+@media (max-width: 900px) {
+    .pc-filter-compact-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
 }

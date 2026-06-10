@@ -12,7 +12,6 @@ $snapshotStale = !empty($snapshotIsStale);
 $chipUrl = static function (string $chipKey) use ($filters): string {
     $query = array_filter([
         'q' => $filters['q'] ?? '',
-        'product_name' => $filters['product_name'] ?? '',
         'supplier_model' => $filters['supplier_model'] ?? '',
         'category' => ($filters['category'] ?? '') !== '' ? ($filters['category'] ?? null) : null,
         'type' => ($filters['type'] ?? 'all') !== 'all' ? ($filters['type'] ?? null) : null,
@@ -109,6 +108,7 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
     'supplierSelectOptions' => $supplierSelectOptions ?? [],
     'writeGateSupplierNoteReady' => !empty($writeGateSupplierNoteReady),
     'writeGateSupplierNote' => $writeGateSupplierNote ?? [],
+    'categoryOptions' => $categoryOptions ?? [],
 ]); ?>
 
 <script type="application/json" id="productCatalogBootstrap"><?= json_encode([
@@ -116,6 +116,7 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
     'workspaceUrl' => url('/product-control/workspace'),
     'historyUrl' => url('/product-control/history'),
     'savedProductId' => (int) ($_GET['saved_product_id'] ?? 0),
+    'categoryOptions' => $categoryOptions ?? [],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>
 <script src="<?= e(asset('js/product-control.js')) ?>"></script>
 </div>

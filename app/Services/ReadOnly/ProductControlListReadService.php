@@ -5,9 +5,9 @@ namespace App\Services\ReadOnly;
 use App\Database\Connection;
 use App\Database\QueryGuard;
 use App\Database\TableName;
+use App\Domain\ProductControlIbsCategory;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\ReadFoundation\WriteGate;
 use App\Repositories\ProductVariantRepository;
 use App\Support\RequestTimer;
 use App\Support\SimpleFileCache;
@@ -31,8 +31,6 @@ class ProductControlListReadService
     private ProductVariantRepository $variantRepository;
 
     private SimpleFileCache $cache;
-
-    private ?bool $categoryColumnReady = null;
 
     public function __construct(
         ?ProductControlCatalogReadService $catalog = null,
@@ -263,12 +261,14 @@ class ProductControlListReadService
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-            return array_values(array_filter(array_map(
+            $fromDb = array_values(array_filter(array_map(
                 static fn (array $row): string => trim((string) ($row['category'] ?? '')),
                 $rows
             )));
+
+            return ProductControlIbsCategory::mergeOptions($fromDb);
         } catch (\Throwable $e) {
-            return [];
+            return ProductControlIbsCategory::mergeOptions([]);
         }
     }
 
@@ -289,10 +289,6 @@ class ProductControlListReadService
             }
             $where .= ' AND ' . $qClause . ')';
             $params['q'] = '%' . $normalized['q'] . '%';
-        }
-        if ($normalized['product_name'] !== '') {
-            $where .= ' AND p.product_name LIKE :product_name';
-            $params['product_name'] = '%' . $normalized['product_name'] . '%';
         }
         if ($normalized['model'] !== '') {
             $where .= ' AND p.source_model LIKE :model';
@@ -339,13 +335,7 @@ class ProductControlListReadService
 
     private function categoryColumnReady(): bool
     {
-        if ($this->categoryColumnReady !== null) {
-            return $this->categoryColumnReady;
-        }
-
-        $this->categoryColumnReady = (bool) (WriteGate::supplierProductCategoryColumn()['ready'] ?? false);
-
-        return $this->categoryColumnReady;
+        return $this->tableExists();
     }
 
     private function baseWhereSql(int $supplierId): string
@@ -479,6 +469,9 @@ class ProductControlListReadService
             'name_asc' => 'p.product_name ASC',
             'name_desc' => 'p.product_name DESC',
             'model_asc' => 'p.source_model ASC',
+            'category_asc' => $this->categoryColumnReady()
+                ? 'p.supplier_product_category ASC, p.product_id ASC'
+                : 'p.product_id ASC',
             'synced_desc' => 'p.last_synced_at DESC',
             'health' => 'p.supplier_model ASC',
             default => 'p.product_id ASC',

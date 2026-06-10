@@ -11,7 +11,7 @@ class ProductControlVendorStockHealth
     {
         if ($vendorStock <= 0) {
             return [
-                'label' => 'Out of Stock',
+                'label' => 'Out Of Stock',
                 'warning' => 'Out',
                 'class' => 'danger',
                 'status' => 'out_of_stock',
@@ -22,7 +22,7 @@ class ProductControlVendorStockHealth
             return [
                 'label' => 'Low Stock',
                 'warning' => 'Low',
-                'class' => 'warn',
+                'class' => 'low',
                 'status' => 'low_stock',
             ];
         }

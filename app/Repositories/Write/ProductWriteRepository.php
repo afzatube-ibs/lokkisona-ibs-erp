@@ -179,7 +179,36 @@ class ProductWriteRepository extends BaseWriteRepository
 
     public function supplierProductCategoryColumnReady(): bool
     {
-        return (bool) (WriteGate::supplierProductCategoryColumn()['ready'] ?? false);
+        return $this->tableExists();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function distinctSupplierProductCategories(?int $supplierId = null): array
+    {
+        if (!$this->tableExists() || !$this->supplierProductCategoryColumnReady()) {
+            return [];
+        }
+
+        $sql = 'SELECT DISTINCT TRIM(supplier_product_category) AS category FROM `'
+            . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE supplier_product_category IS NOT NULL AND TRIM(supplier_product_category) != \'\'';
+        $params = [];
+        if ($supplierId !== null && $supplierId > 0) {
+            $sql .= ' AND supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
+        $sql .= ' ORDER BY category ASC LIMIT 500';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        $rows = $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+        return array_values(array_filter(array_map(
+            static fn (array $row): string => trim((string) ($row['category'] ?? '')),
+            $rows
+        )));
     }
 
     public function syncOptionsStateColumnReady(): bool
