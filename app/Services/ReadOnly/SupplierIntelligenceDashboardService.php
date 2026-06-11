@@ -45,16 +45,18 @@ class SupplierIntelligenceDashboardService
         $catalogHealth = $this->catalogHealth($supplierId);
         $returnIntel = $this->returnIntelligence($supplierId, $base['return_rate'] ?? []);
         $payableCenter = $this->payableCommandCenter($supplierId);
+        $dispatchPipeline = $this->dispatchPipeline($supplierId);
         $performance = $this->performanceScore($dispatchSla, $catalogHealth, $returnIntel, $base['return_rate'] ?? []);
         $trendChart = $this->trendChart($supplierId, $base['sales_trend'] ?? [], $payableCenter['trend_payable'] ?? []);
 
         return [
             'header' => $this->headerMeta(),
             'insights' => $this->insightBanner($base, $dispatchSla, $catalogHealth, $payableCenter, $metrics),
+            'operational_priority' => $this->operationalPriorityCards($supplierId, $metrics, $catalogHealth, $dispatchPipeline, $returnIntel, $payableCenter),
             'kpis' => $this->kpiCards($supplierId, $metrics, $base, $catalogHealth, $performance, $dispatchSla),
             'performance' => $performance,
             'dispatch_sla' => $dispatchSla,
-            'dispatch_pipeline' => $this->dispatchPipeline($supplierId),
+            'dispatch_pipeline' => $dispatchPipeline,
             'payable_center' => $payableCenter,
             'trend_chart' => $trendChart,
             'top_products' => $this->topProductsTable($base['top_products'] ?? []),
@@ -152,6 +154,116 @@ class SupplierIntelligenceDashboardService
         }
 
         return ['items' => array_slice($items, 0, 4), 'has_data' => ($hero['sales_mtd'] ?? 0) > 0];
+    }
+
+    /**
+     * @param array<string, mixed> $metrics
+     * @param array<string, mixed> $catalogHealth
+     * @param array<string, mixed> $dispatchPipeline
+     * @param array<string, mixed> $returns
+     * @param array<string, mixed> $payableCenter
+     * @return array<int, array<string, mixed>>
+     */
+    private function operationalPriorityCards(
+        int $supplierId,
+        array $metrics,
+        array $catalogHealth,
+        array $dispatchPipeline,
+        array $returns,
+        array $payableCenter
+    ): array {
+        $pendingDispatch = 0;
+        foreach ($dispatchPipeline['workflow'] ?? [] as $stage) {
+            if (in_array((string) ($stage['status'] ?? ''), ['new_order', 'order_received', 'packaging'], true)) {
+                $pendingDispatch += (int) ($stage['count'] ?? 0);
+            }
+        }
+
+        $returnsPending = (int) ($metrics['pending_returns'] ?? 0);
+        if ($returnsPending === 0) {
+            $returnsPending = (int) ($returns['hub_return'] ?? 0) + (int) ($returns['customer_return'] ?? 0);
+        }
+
+        $currentBalance = (float) ($metrics['net_payable'] ?? 0);
+        foreach ($payableCenter['ledger_lines'] ?? [] as $line) {
+            if (($line['key'] ?? '') === 'balance') {
+                $currentBalance = (float) ($line['amount'] ?? $currentBalance);
+                break;
+            }
+        }
+
+        $lastPayment = $this->lastPaymentSummary($supplierId);
+        $lastPaymentLabel = $lastPayment['amount'] > 0
+            ? number_format($lastPayment['amount'], 0) . ' BDT'
+            : '—';
+        if ($lastPayment['date'] !== '') {
+            $ts = strtotime($lastPayment['date']);
+            if ($ts !== false) {
+                $lastPaymentLabel .= ' · ' . date('d M', $ts);
+            }
+        }
+
+        $ordersToday = $this->ordersToday($supplierId);
+        $ordersMonth = $this->ordersThisMonth($supplierId);
+
+        return [
+            [
+                'label' => 'Orders Today',
+                'value' => $ordersToday,
+                'display' => number_format($ordersToday),
+                'href' => '/order-workflow',
+                'tone' => 'primary',
+            ],
+            [
+                'label' => 'Orders This Month',
+                'value' => $ordersMonth,
+                'display' => number_format($ordersMonth),
+                'href' => '/order-workflow',
+                'tone' => 'info',
+            ],
+            [
+                'label' => 'Pending Dispatch',
+                'value' => $pendingDispatch,
+                'display' => number_format($pendingDispatch),
+                'href' => '/order-workflow?status=order_received',
+                'tone' => 'warn',
+            ],
+            [
+                'label' => 'Returns Pending',
+                'value' => $returnsPending,
+                'display' => number_format($returnsPending),
+                'href' => '/return-receive',
+                'tone' => 'muted',
+            ],
+            [
+                'label' => 'Current Payable',
+                'value' => (float) ($metrics['net_payable'] ?? 0),
+                'display' => number_format((float) ($metrics['net_payable'] ?? 0), 0) . ' BDT',
+                'href' => '/reports?report=supplier_ledger',
+                'tone' => 'warn',
+            ],
+            [
+                'label' => 'Current Balance',
+                'value' => $currentBalance,
+                'display' => number_format($currentBalance, 0) . ' BDT',
+                'href' => '/supplier-opening-balances',
+                'tone' => 'primary',
+            ],
+            [
+                'label' => 'Last Payment',
+                'value' => (float) ($lastPayment['amount'] ?? 0),
+                'display' => $lastPaymentLabel,
+                'href' => '/supplier-payables',
+                'tone' => 'success',
+            ],
+            [
+                'label' => 'Products Managed',
+                'value' => (int) ($catalogHealth['total_products'] ?? 0),
+                'display' => number_format((int) ($catalogHealth['total_products'] ?? 0)),
+                'href' => '/product-control',
+                'tone' => 'info',
+            ],
+        ];
     }
 
     /**
@@ -866,6 +978,53 @@ class SupplierIntelligenceDashboardService
         }
 
         return array_slice($actions, 0, 5);
+    }
+
+    /**
+     * @return array{amount: float, date: string}
+     */
+    private function lastPaymentSummary(int $supplierId): array
+    {
+        try {
+            $ledger = new PayableLedgerReadService();
+            $rows = $supplierId > 0 ? $ledger->forSupplier($supplierId, 200) : $ledger->all(200, 0);
+            foreach ($rows as $row) {
+                if (($row['ledger_type'] ?? '') === PayableLedgerType::PAYMENT_MADE && ($row['status'] ?? '') === 'posted') {
+                    return [
+                        'amount' => round((float) ($row['credit_amount'] ?? 0), 2),
+                        'date' => (string) ($row['occurred_at'] ?? $row['created_at'] ?? ''),
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            // Graceful.
+        }
+
+        return ['amount' => 0.0, 'date' => ''];
+    }
+
+    private function ordersToday(int $supplierId): int
+    {
+        try {
+            $pdo = Connection::pdo();
+            $prefix = config('database.prefix', 'ibs_');
+            if (!$this->tableExists($pdo, $prefix . 'orders')) {
+                return 0;
+            }
+            $sql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $prefix . 'orders') . '` WHERE created_at >= :start';
+            $params = ['start' => date('Y-m-d 00:00:00')];
+            if ($supplierId > 0) {
+                $sql .= ' AND supplier_id = :supplier_id';
+                $params['supplier_id'] = $supplierId;
+            }
+            QueryGuard::assertReadOnly($sql);
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+
+            return (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     private function ordersThisMonth(int $supplierId): int

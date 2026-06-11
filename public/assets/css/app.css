@@ -869,6 +869,84 @@ select.form-input,
    ========================================================================= */
 .admin-body {
     overflow-x: hidden;
+    --shell-bg: #05070a;
+    --shell-bg-soft: #0a1018;
+    --shell-card-bg: rgba(10, 16, 28, 0.88);
+    --shell-card-border: rgba(255, 255, 255, 0.09);
+    --shell-glow: rgba(37, 99, 176, 0.42);
+    --shell-accent: #3b82f6;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="dark"] .admin-body,
+.admin-body[data-theme="dark"] {
+    --color-sidebar: #0a1322;
+    --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+    --color-sidebar-active: rgba(59, 130, 246, 0.18);
+    --color-sidebar-text: rgba(214, 222, 233, 0.72);
+    --surface-0: var(--shell-bg-soft);
+    --surface-1: var(--shell-card-bg);
+    --surface-2: rgba(15, 23, 42, 0.65);
+    --color-bg: var(--shell-bg);
+    --color-bg-subtle: rgba(15, 23, 42, 0.55);
+    --color-surface: var(--shell-card-bg);
+    --color-border: var(--shell-card-border);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --color-text: #f1f5f9;
+    --color-text-muted: rgba(203, 213, 225, 0.78);
+    --color-text-subtle: rgba(148, 163, 184, 0.88);
+}
+
+[data-theme="dark"] .main-wrapper {
+    background:
+        radial-gradient(ellipse 90% 50% at 50% -10%, rgba(37, 99, 176, 0.1) 0%, transparent 55%),
+        linear-gradient(180deg, var(--shell-bg-soft) 0%, var(--shell-bg) 100%);
+}
+
+[data-theme="dark"] .topbar {
+    background: rgba(10, 16, 28, 0.82);
+    border-bottom-color: var(--shell-card-border);
+    box-shadow: 0 1px 0 rgba(59, 130, 246, 0.06);
+}
+
+[data-theme="dark"] .sidebar {
+    background: var(--color-sidebar);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset -1px 0 0 rgba(59, 130, 246, 0.04);
+}
+
+[data-theme="dark"] .sidebar-brand {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, transparent 100%);
+}
+
+[data-theme="dark"] .nav-item.active {
+    color: #fff;
+    background: var(--color-sidebar-active);
+}
+
+[data-theme="dark"] .nav-item.active::before {
+    background: var(--shell-accent);
+}
+
+[data-theme="dark"] .nav-item:hover,
+[data-theme="dark"] .sidebar-tier-summary:hover {
+    color: #fff;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .stat-card {
+    background: var(--shell-card-bg);
+    border-color: var(--shell-card-border);
+    box-shadow:
+        0 0 0 1px rgba(59, 130, 246, 0.04),
+        0 12px 32px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .app-footer {
+    background: rgba(10, 16, 28, 0.72);
+    border-top-color: var(--shell-card-border);
 }
 
 .admin-shell {
@@ -1058,6 +1136,18 @@ select.form-input,
 
 .sidebar-tier {
     margin-top: 0.125rem;
+}
+
+.sidebar-tier-workflow .sidebar-tier-summary {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.sidebar-tier-workflow .sidebar-tier-body {
+    padding-left: 0.125rem;
+}
+
+.sidebar-tier-workflow .nav-item-compact {
+    padding-left: 1.75rem;
 }
 
 .sidebar-tier-summary {
@@ -5779,6 +5869,24 @@ body.modal-open { overflow: hidden; }
 .si-insight-success { border-color: color-mix(in srgb, var(--color-success) 40%, transparent); color: var(--color-success); }
 .si-insight-warn { border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); color: var(--color-warning); }
 .si-insight-info { border-color: color-mix(in srgb, var(--color-primary) 40%, transparent); color: var(--color-primary); }
+.si-operational-priority {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.si-operational-card {
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.si-operational-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    transform: translateY(-1px);
+}
+.si-operational-card .si-kpi-value {
+    font-size: 1.35rem;
+}
 .si-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

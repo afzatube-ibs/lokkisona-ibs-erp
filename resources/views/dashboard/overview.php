@@ -58,7 +58,7 @@ foreach ($products['rows'] ?? [] as $row) {
 
 <div class="dash-supplier-hero">
     <div class="dash-supplier-hero-text">
-        <h1 class="page-title">Business Overview</h1>
+        <h1 class="page-title">Dashboard</h1>
         <p class="dash-welcome"><?= !empty($isSupplierView) ? 'Iqbal &amp; Brothers with Lokkisona' : 'Lokkisona ERP' ?> — <?= e($welcomeDate ?? date('l, d F Y')) ?></p>
         <p class="dash-supplier-tagline">Unified KPI wallboard — same view for owner and supplier. Open <a href="<?= e(url('/order-workflow')) ?>">Orders</a> for the live work queue.</p>
     </div>

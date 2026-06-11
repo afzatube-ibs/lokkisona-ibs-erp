@@ -1,5 +1,12 @@
 <?php
+use App\Support\NavigationLabels;
+
 $showDevBanner = in_array($appEnv ?? 'local', ['local', 'staging'], true);
+$shellLabels = NavigationLabels::resolve($currentPath ?? '', $currentQuery ?? []);
+if ($shellLabels !== null) {
+    $pageTitle = $shellLabels['pageTitle'];
+    $breadcrumbs = $shellLabels['breadcrumbs'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -7,8 +14,8 @@ $showDevBanner = in_array($appEnv ?? 'local', ['local', 'staging'], true);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle ?? $appName) ?> — <?= e($appName) ?></title>
-    <!-- Prevent dark-mode flash: apply saved theme before CSS renders -->
-    <script>(function(){try{var t=localStorage.getItem('ibs-theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}}());</script>
+    <!-- Prevent dark-mode flash: launch shell defaults to dark SaaS -->
+    <script>(function(){try{var t=localStorage.getItem('ibs-theme');if(t!=='light')document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}}());</script>
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

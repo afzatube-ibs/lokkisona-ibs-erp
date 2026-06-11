@@ -12,7 +12,7 @@ $bars = [
 <section class="card si-catalog-health">
     <div class="card-header card-header-flex">
         <h2 class="card-title">Catalog Health</h2>
-        <a href="<?= e(url('/product-control')) ?>" class="btn btn-sm btn-ghost">Product Control</a>
+        <a href="<?= e(url('/product-control')) ?>" class="btn btn-sm btn-ghost">Products</a>
     </div>
     <div class="card-body">
         <p class="si-catalog-summary">

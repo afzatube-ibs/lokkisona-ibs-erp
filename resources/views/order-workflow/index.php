@@ -4,7 +4,7 @@ $recentWorkflowHistory = $recentWorkflowHistory ?? [];
 ?>
 <div class="vf-ops-page">
 <div class="page-header page-header-compact vf-page-header">
-    <h1 class="page-title">Vendor Fulfillment</h1>
+    <h1 class="page-title">Orders</h1>
     <?php if (!empty($canCreateOrders)): ?>
     <button type="button" class="btn btn-primary btn-sm vf-header-create-btn" data-open-modal="workflowCreateOrderModal">+ Create New Order</button>
     <?php endif; ?>

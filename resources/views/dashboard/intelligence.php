@@ -36,6 +36,10 @@ foreach (['orders', 'dispatch', 'payable_bdt', 'forecast'] as $seriesKey) {
 
     <?php view('partials.dashboard.si-insights', ['insights' => $si['insights'] ?? []]); ?>
 
+    <?php view('partials.dashboard.si-operational-priority', [
+        'si' => $si,
+    ]); ?>
+
     <?php view('partials.dashboard.si-kpi-grid', [
         'kpis' => $si['kpis'] ?? [],
         'siSparkPolyline' => $siSparkPolyline,

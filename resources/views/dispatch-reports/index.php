@@ -1,6 +1,6 @@
 <?php use App\Domain\SupplierTerminology; ?>
 <div class="page-header page-header-compact">
-    <h1 class="page-title">Dispatch Reports</h1>
+    <h1 class="page-title">Daily Dispatch Batch</h1>
     <p class="ops-page-subtitle"><?= !empty($isSupplierView) ? 'Batch reports created by Lokkisona — locked cost snapshots for your account.' : 'Daily dispatch batches from shipped orders — immutable cost snapshots, supplier payable checkpoint.' ?></p>
 </div>
 

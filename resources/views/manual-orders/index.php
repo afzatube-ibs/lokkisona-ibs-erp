@@ -19,7 +19,7 @@ $productOptions = $productOptions ?? [];
 $recentOrders = $recentOrders ?? [];
 ?>
 <div class="page-header">
-    <h1 class="page-title">Manual Orders</h1>
+    <h1 class="page-title">Sales</h1>
     <p class="page-description">v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?> · Offline, Sonamoni reference, and manual channel entry. No payable, stock deduction, invoice, or channel sync on create.</p>
 </div>
 

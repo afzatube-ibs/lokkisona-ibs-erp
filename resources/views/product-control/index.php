@@ -27,7 +27,7 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
 <div class="page-header page-header-compact product-control-header pc-page-header">
     <div class="product-control-header-main">
         <div>
-            <h1 class="page-title">Product Control</h1>
+            <h1 class="page-title">Products</h1>
             <p class="ops-page-subtitle pc-page-subtitle">Local ERP product snapshot. Click <strong>Refresh Products</strong> only when you need latest Lokkisona catalog.</p>
             <p class="pc-snapshot-inline<?= $snapshotStale ? ' pc-snapshot-inline-stale' : '' ?>">
                 Snapshot last refreshed: <?= $lastSync !== '' ? e($lastSync) : '—' ?>

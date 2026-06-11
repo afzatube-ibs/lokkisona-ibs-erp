@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.1.8.3.2',
-    'release_label' => 'POIP Option Image Mapping Repair',
+    'version' => '2.2.2',
+    'release_label' => 'Launch Workflow Navigation Simplification',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
