@@ -91,4 +91,30 @@ class SupplierTerminology
     {
         return 'Total Dispatched Amount';
     }
+
+    public static function supplierReturnStatement(): string
+    {
+        return 'Supplier Return Statement';
+    }
+
+    public static function returnRateLabel(): string
+    {
+        return 'Rate';
+    }
+
+    public static function returnLineTotalLabel(): string
+    {
+        return 'Line Total';
+    }
+
+    public static function returnAmount(): string
+    {
+        return 'Return Amount';
+    }
+
+    /** @deprecated Use returnAmount() — kept for backward-compatible call sites during v2.4.x */
+    public static function totalReturnAdjustment(): string
+    {
+        return self::returnAmount();
+    }
 }

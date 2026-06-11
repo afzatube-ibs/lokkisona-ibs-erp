@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.3.0',
-    'release_label' => 'Daily Dispatch Supplier Statement Foundation',
+    'version' => '2.4.1',
+    'release_label' => 'Return Statement UAT Repair',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -167,32 +167,13 @@ class ReturnReceiveWriteService
                 'supplier_id' => $supplierId,
                 'business_source_id' => $businessSourceId,
                 'return_type' => $returnType,
+                'order_id' => $orderId,
+                'return_reason' => $returnReason,
                 'total_items' => max(1, $itemCount),
                 'total_cost_snapshot' => $costSnapshot,
                 'status' => 'received',
                 'received_by' => $receivedBy,
                 'received_at' => $receivedAt,
-            ]);
-
-            $batchId = $this->batches->create([
-                'return_batch_reference' => $reference,
-                'supplier_id' => $supplierId,
-                'total_returns' => 1,
-                'total_adjustment_amount' => 0.00,
-                'status' => 'received',
-            ]);
-
-            $this->batchItems->create([
-                'return_batch_id' => $batchId,
-                'return_receive_id' => $receiveId,
-                'order_id' => $orderId,
-                'manual_order_id' => null,
-                'product_id' => null,
-                'product_variant_id' => null,
-                'quantity' => max(1, $itemCount),
-                'cost_snapshot' => $costSnapshot,
-                'adjustment_amount' => 0.00,
-                'status' => 'received',
             ]);
 
             $workflowResult = $this->workflow->recordReturnReceived($orderId, $historyNote);

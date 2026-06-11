@@ -7380,6 +7380,58 @@ body.modal-open { overflow: hidden; }
     white-space: nowrap;
 }
 
+.return-report-view-page .return-report-meta,
+.return-report-view-page .dispatch-report-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem 1.25rem;
+}
+
+.return-report-view-page .return-report-meta .info-row,
+.return-report-view-page .dispatch-report-meta .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0;
+    border-bottom: none;
+    min-width: 0;
+}
+
+.return-report-view-page .return-report-meta .info-row dt,
+.return-report-view-page .dispatch-report-meta .info-row dt {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+}
+
+.return-report-view-page .return-report-meta .info-row dd,
+.return-report-view-page .dispatch-report-meta .info-row dd {
+    text-align: left;
+    width: 100%;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.return-report-view-page .return-report-meta .info-row:nth-child(2) dd,
+.return-report-view-page .return-report-meta .info-row:nth-child(3) dd,
+.return-report-view-page .dispatch-report-meta .info-row:nth-child(2) dd,
+.return-report-view-page .dispatch-report-meta .info-row:nth-child(3) dd {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    line-height: 1.35;
+}
+
+.return-report-view-page .return-report-meta .info-row:nth-child(4) dd,
+.return-report-view-page .dispatch-report-meta .info-row:nth-child(4) dd {
+    white-space: nowrap;
+}
+
+.return-report-orders-table th,
+.return-report-orders-table td {
+    font-size: 0.8125rem;
+}
+
 .dispatch-report-view-page .dispatch-report-product-line {
     font-size: 0.8125rem;
     line-height: 1.35;
@@ -7501,6 +7553,141 @@ body.modal-open { overflow: hidden; }
 
 .dds-print-body {
     background: #f8fafc;
+}
+
+/* v2.4.1 — Supplier Return Statement print + screen table */
+.srs-print.quick-invoice-print {
+    max-width: min(100%, 280mm);
+}
+
+.srs-print-header {
+    align-items: flex-start;
+}
+
+.srs-print-meta {
+    min-width: 11rem;
+    max-width: 14rem;
+}
+
+.srs-print-meta div {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.srs-lines-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.srs-lines-table col.col-sl { width: 3%; }
+.srs-lines-table col.col-source { width: 8%; }
+.srs-lines-table col.col-order { width: 7%; }
+.srs-lines-table col.col-product { width: 22%; }
+.srs-lines-table col.col-model { width: 18%; }
+.srs-lines-table col.col-qty { width: 4%; }
+.srs-lines-table col.col-num { width: 7%; }
+.srs-lines-table col.col-reason { width: 9%; }
+.srs-lines-table col.col-type { width: 12%; }
+
+.srs-lines-table th,
+.srs-lines-table td {
+    vertical-align: top;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
+    line-height: 1.35;
+}
+
+.srs-cell-wrap {
+    min-width: 0;
+}
+
+.srs-product-text,
+.srs-model-text {
+    display: block;
+    line-height: 1.35;
+}
+
+.srs-option-chip {
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    margin-top: 0.15rem;
+}
+
+.srs-screen-table th:nth-child(4),
+.srs-screen-table td:nth-child(4),
+.srs-screen-table th:nth-child(5),
+.srs-screen-table td:nth-child(5) {
+    min-width: 9rem;
+    max-width: 16rem;
+}
+
+.srs-screen-table th:nth-child(9),
+.srs-screen-table td:nth-child(9),
+.srs-screen-table th:nth-child(10),
+.srs-screen-table td:nth-child(10) {
+    min-width: 6.5rem;
+    max-width: 10rem;
+}
+
+.return-report-orders-table.srs-lines-table th.num,
+.return-report-orders-table.srs-lines-table td.num {
+    white-space: nowrap;
+}
+
+.srs-print-totals {
+    break-inside: avoid;
+}
+
+.srs-print-footer {
+    break-inside: avoid;
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    .srs-print-body {
+        padding: 0;
+        background: #fff;
+    }
+
+    .srs-print.quick-invoice-print {
+        max-width: none;
+        border: none;
+        padding: 0;
+    }
+
+    .srs-print-thumb,
+    .srs-print-body .dds-print-thumb {
+        display: none !important;
+    }
+
+    .srs-lines-table {
+        font-size: 7pt;
+    }
+
+    .srs-lines-table th,
+    .srs-lines-table td {
+        padding: 0.3rem 0.35rem;
+    }
+
+    .srs-print-body .qip-header {
+        break-inside: avoid;
+    }
+
+    .srs-print-body .srs-lines-table {
+        break-inside: auto;
+    }
+
+    .srs-print-body .srs-lines-table tr {
+        break-inside: avoid;
+    }
 }
 
 .dds-parties {

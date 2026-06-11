@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-11',
+            'release_date' => '2026-06-12',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,8 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v2.4.1 Return Statement UAT Repair: Supplier Return Statement print layout (A4 landscape, fixed column widths, word wrap); screen table wrapping; Return Amount label (was Total Return Adjustment); client mixed-supplier guard alongside mixed-source; ReturnStatementLinePresenter reconciles display to locked ibs_return_report_items.product_cost_snapshot; handoff accounting chain Dispatch → Return → Payment → Balance; v2.5 ledger hook documented to use locked dispatch snapshot not catalog cost — no schema migration',
+                'v2.4.0 Returns Foundation: Supplier Return Statement module (/return-reports, /return-report/{ref}, print) — one-step lock from supplier-confirmed Hub/Customer returns; duplicate/mixed supplier-source/missing cost-reason guards; ReturnStatementLinePresenter with Return Reason + Return Type columns; confirmReceive staging fix (no auto per-order batch); legacy Return Batch UI retired; migration 0007_return_reports_foundation.sql (manual apply) — no ledger posting, independent from Daily Dispatch',
                 'v2.3.0 Daily Dispatch Supplier Statement Foundation: dedicated Daily Dispatch Statement print layout (/dispatch-report/{ref}/print) — not invoice wording; supplier-scoped eligible list with business-source filter and mixed-source block; one-step lock unchanged; transaction re-check; payable checkpoint PCP draft cross-link on detail (no ledger posting); return receive badges; Order List copy aligned to Daily Dispatch — no schema migration, no OpenCart writes, no stock deduction',
                 'v2.1.8.3.2 POIP Option Image Mapping Repair: option rows resolve real variant images from POIP / Improved Options (API payload + read-only OpenCart DB enrichment); 3-tier display priority option → product → placeholder without forcing parent image on every row; simple/zero-variant products hide Option Rows; main product thumbnail no placeholder overlap — sync import and workspace read only',
                 'v2.1.8.3 Product Control Adjustment UX Repair: compact Adjust Price / Adjust Quantity triggers (simple IBS Details + per option row); structured popover with Change Type, Method (price), Amount/Quantity, required reason dropdown (Forward to Wholesale, Manual Correction); server-side reason whitelist validation; simple/zero-variant products hide Option Rows; Inventory planning doc internal only — no launch UI block',

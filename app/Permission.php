@@ -45,7 +45,8 @@ class Permission
 
             // Fulfillment
             ['label' => 'Daily Dispatch', 'path' => '/dispatch-reports', 'permission' => 'dispatch_reports.view', 'tier' => 'fulfillment', 'icon' => '<rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5a1 1 0 0 1-1 1h-6z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>'],
-            ['label' => 'Returns', 'path' => '/return-receive', 'permission' => 'return_receive.view', 'tier' => 'fulfillment', 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>'],
+            ['label' => 'Return Receive', 'path' => '/return-receive', 'permission' => 'return_receive.view', 'tier' => 'fulfillment', 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>'],
+            ['label' => 'Return Reports', 'path' => '/return-reports', 'permission' => 'returns.view', 'tier' => 'fulfillment', 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/><line x1="12" y1="8" x2="12" y2="14"/>'],
 
             // Accounts
             ['label' => 'Supplier Ledger', 'path' => '/reports', 'match_query' => ['report' => 'supplier_ledger'], 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>'],

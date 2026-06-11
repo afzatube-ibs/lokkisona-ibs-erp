@@ -102,7 +102,7 @@ view('partials.write-gate-warning', [
         <h2 class="card-title">Return Batch Deductions</h2>
     </div>
     <div class="card-body card-body-flush">
-        <p class="page-description" style="padding: 1rem 1.25rem 0;">Owner-approved return batches eligible for a Return / Damage Deduction draft. Creating the draft does not post it — it still requires approval in the ledger below.</p>
+        <p class="page-description" style="padding: 1rem 1.25rem 0;">Legacy path — owner-approved return batches from pre-v2.4.0. New returns use <a href="<?= e(url('/return-reports')) ?>">Return Reports</a> (Supplier Return Statement). v2.5 Supplier Ledger will consume Return Reports for payable deduction.</p>
         <div class="table-scroll">
             <table class="data-table">
                 <thead>

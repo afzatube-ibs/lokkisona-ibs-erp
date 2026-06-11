@@ -202,6 +202,143 @@
         });
     });
 
+    document.querySelectorAll('.js-return-report-form').forEach(function (form) {
+        var summary = form.querySelector('.js-return-report-summary');
+        var missingCostWarning = form.querySelector('.js-return-missing-cost-warning');
+        var missingReasonWarning = form.querySelector('.js-return-missing-reason-warning');
+        var missingOrderNoWarning = form.querySelector('.js-return-missing-order-no-warning');
+        var mixedSourceWarning = form.querySelector('.js-return-mixed-source-warning');
+        var mixedSupplierWarning = form.querySelector('.js-return-mixed-supplier-warning');
+        var submitBtn = form.querySelector('.js-return-report-submit-btn');
+        var selects = form.querySelectorAll('.js-return-report-select');
+        var selectAll = form.querySelector('.js-return-select-all');
+
+        function refreshReturnSummary() {
+            if (!summary) {
+                return;
+            }
+            var returnCount = 0;
+            var totalQty = 0;
+            var totalCost = 0;
+            var missingCostCount = 0;
+            var missingReasonCount = 0;
+            var missingOrderNoCount = 0;
+            var businessSources = {};
+            var suppliers = {};
+            selects.forEach(function (checkbox) {
+                if (!checkbox.checked) {
+                    return;
+                }
+                var row = checkbox.closest('.js-return-report-row');
+                if (!row) {
+                    return;
+                }
+                returnCount += 1;
+                totalQty += parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
+                totalCost += parseFloat(row.getAttribute('data-cost') || '0') || 0;
+                if (row.getAttribute('data-missing-cost') === '1') {
+                    missingCostCount += 1;
+                }
+                if (row.getAttribute('data-missing-reason') === '1') {
+                    missingReasonCount += 1;
+                }
+                if (row.getAttribute('data-missing-order-no') === '1') {
+                    missingOrderNoCount += 1;
+                }
+                var sourceKey = (row.getAttribute('data-business-source') || '0').trim();
+                businessSources[sourceKey] = true;
+                var supplierKey = (row.getAttribute('data-supplier') || '0').trim();
+                if (supplierKey !== '0') {
+                    suppliers[supplierKey] = true;
+                }
+            });
+            var sourceCount = Object.keys(businessSources).length;
+            var supplierCount = Object.keys(suppliers).length;
+            summary.textContent = 'Report summary: ' + returnCount + ' returns · ' + totalQty + ' qty · '
+                + totalCost.toFixed(2) + ' return amount · ' + sourceCount + ' business source(s)';
+
+            var mixedSources = sourceCount > 1;
+            var mixedSuppliers = supplierCount > 1;
+            if (mixedSupplierWarning) {
+                if (mixedSuppliers) {
+                    mixedSupplierWarning.style.display = 'block';
+                    mixedSupplierWarning.textContent = 'Cannot create report: selected returns span multiple suppliers. Select returns from one supplier only.';
+                } else {
+                    mixedSupplierWarning.style.display = 'none';
+                    mixedSupplierWarning.textContent = '';
+                }
+            }
+            if (mixedSourceWarning) {
+                if (mixedSources) {
+                    mixedSourceWarning.style.display = 'block';
+                    mixedSourceWarning.textContent = 'Cannot create report: selected returns span multiple business sources. Select returns from one source only.';
+                } else {
+                    mixedSourceWarning.style.display = 'none';
+                    mixedSourceWarning.textContent = '';
+                }
+            }
+            if (missingCostWarning) {
+                if (missingCostCount > 0) {
+                    missingCostWarning.style.display = 'block';
+                    missingCostWarning.textContent = 'Cannot create report: missing cost — update Products first (' + missingCostCount + ' selected).';
+                } else {
+                    missingCostWarning.style.display = 'none';
+                    missingCostWarning.textContent = '';
+                }
+            }
+            if (missingReasonWarning) {
+                if (missingReasonCount > 0) {
+                    missingReasonWarning.style.display = 'block';
+                    missingReasonWarning.textContent = 'Cannot create report: missing return reason on selected rows.';
+                } else {
+                    missingReasonWarning.style.display = 'none';
+                    missingReasonWarning.textContent = '';
+                }
+            }
+            if (missingOrderNoWarning) {
+                if (missingOrderNoCount > 0) {
+                    missingOrderNoWarning.style.display = 'block';
+                    missingOrderNoWarning.textContent = 'Cannot create report: selected returns missing order number.';
+                } else {
+                    missingOrderNoWarning.style.display = 'none';
+                    missingOrderNoWarning.textContent = '';
+                }
+            }
+            if (submitBtn) {
+                submitBtn.disabled = missingCostCount > 0 || missingReasonCount > 0 || missingOrderNoCount > 0 || mixedSources || mixedSuppliers;
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                selects.forEach(function (checkbox) {
+                    if (!checkbox.disabled) {
+                        checkbox.checked = selectAll.checked;
+                    }
+                });
+                refreshReturnSummary();
+            });
+        }
+
+        selects.forEach(function (checkbox) {
+            checkbox.addEventListener('change', refreshReturnSummary);
+        });
+        refreshReturnSummary();
+
+        form.addEventListener('submit', function (e) {
+            var label = form.getAttribute('data-confirm-label') || 'this return report';
+            var confirmedField = form.querySelector('.js-batch-confirmed');
+            if (!confirmedField || confirmedField.value === '1') {
+                return;
+            }
+            e.preventDefault();
+            if (window.confirm('Confirm: ' + label + '?')) {
+                confirmedField.value = '1';
+                form.submit();
+            }
+        });
+    });
+
     document.querySelectorAll('.js-workflow-action-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             var label = form.getAttribute('data-confirm-label') || 'this action';

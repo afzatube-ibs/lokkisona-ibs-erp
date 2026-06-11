@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Domain\ReturnReceiveType;
 use App\Models\ReturnReceive;
 
 class ReturnReceiveRepository extends BaseReadOnlyRepository
@@ -73,6 +74,65 @@ class ReturnReceiveRepository extends BaseReadOnlyRepository
             return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
         } catch (\Throwable $e) {
             return [];
+        }
+    }
+
+    /**
+     * Supplier-confirmed returns eligible for Return Report (not yet reported).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findEligibleForReport(int $limit = 50): array
+    {
+        if (!$this->tableExists()) {
+            return [];
+        }
+
+        $reportItemsTable = config('database.prefix', 'ibs_') . 'return_report_items';
+        $database = config('database.database', '');
+
+        try {
+            $limit = max(1, min($limit, 50));
+            $receivesTable = \App\Database\TableName::forModel(ReturnReceive::class);
+
+            $reportItemsJoin = '';
+            if ($this->tableExistsByName($reportItemsTable, $database)) {
+                $reportItemsJoin = 'LEFT JOIN `' . $this->escapeIdentifier($reportItemsTable) . '` ri ON ri.return_receive_id = r.return_receive_id ';
+            }
+
+            $supplierTypes = ReturnReceiveType::supplierTypes();
+            $typePlaceholders = implode(',', array_fill(0, count($supplierTypes), '?'));
+
+            $sql = 'SELECT r.* FROM `' . $this->escapeIdentifier($receivesTable) . '` r '
+                . $reportItemsJoin
+                . 'WHERE r.status = ? AND r.return_type IN (' . $typePlaceholders . ') '
+                . ($reportItemsJoin !== '' ? 'AND ri.return_report_item_id IS NULL ' : '')
+                . 'AND r.total_cost_snapshot > 0 '
+                . 'ORDER BY r.received_at DESC, r.return_receive_id DESC LIMIT ' . $limit;
+            \App\Database\QueryGuard::assertReadOnly($sql);
+
+            $params = array_merge(['received'], $supplierTypes);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute($params);
+
+            return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    private function tableExistsByName(string $table, string $database): bool
+    {
+        try {
+            $check = $this->pdo->prepare(
+                'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table'
+            );
+            $check->execute(['schema' => $database, 'table' => $table]);
+            $row = $check->fetch(\PDO::FETCH_ASSOC);
+
+            return ((int) ($row['table_count'] ?? 0)) > 0;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 
@@ -158,4 +218,4 @@ class ReturnReceiveRepository extends BaseReadOnlyRepository
         }
     }
 }
-
+

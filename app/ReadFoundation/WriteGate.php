@@ -185,6 +185,17 @@ class WriteGate
         ]);
     }
 
+    public static function returnReports(): array
+    {
+        return self::status([
+            'ibs_return_reports',
+            'ibs_return_report_items',
+            'ibs_return_receives',
+            'ibs_orders',
+            'ibs_order_items',
+        ]);
+    }
+
     public static function supplierPayables(): array
     {
         return self::status([

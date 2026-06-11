@@ -1,7 +1,7 @@
 <?php use App\Domain\ReturnReceiveType; ?>
 <div class="page-header page-header-compact">
     <h1 class="page-title">Return Receive</h1>
-    <p class="ops-page-subtitle">Confirm returned parcel received using ERP order and product details. <?= e($stageNote ?? '') ?></p>
+    <p class="ops-page-subtitle">Pending Supplier Confirmation — confirm returned parcels before creating a Supplier Return Statement on <a href="<?= e(url('/return-reports')) ?>">Return Reports</a>. <?= e($stageNote ?? '') ?></p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>
@@ -51,7 +51,7 @@ $renderPendingSection = static function (
 <?php if (!empty($writeGateReady)): ?>
 
 <?php $renderPendingSection(
-    'Pending Hub Returns / Courier Returns (Supplier Return)',
+    'Pending Supplier Confirmation — Hub Returns / Courier Returns',
     'Supplier Return / Vendor Return — Hub Return / Courier Return. Orders at Hub Return from workflow Shipped → Delivery Stop → Return Received.',
     'Move an order to Hub Return via Order Workflow (Delivery Stop → Return Received).',
     $pendingHubReturns ?? [],
@@ -60,7 +60,7 @@ $renderPendingSection = static function (
 ); ?>
 
 <?php $renderPendingSection(
-    'Pending Customer Returns to Supplier (Supplier Return)',
+    'Pending Supplier Confirmation — Customer Returns to Supplier',
     $customerReturnEmptyNote ?? '',
     'Orders appear when status is Customer Return / Order Returning (Supplier House mapping).',
     $pendingCustomerReturns ?? [],
@@ -125,131 +125,8 @@ $renderPendingSection = static function (
     </div>
 </div>
 
-<?php if (!empty($writeGateReady) && !empty($canCreateBatch)): ?>
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Create Return Batch</h2></div>
-    <div class="card-body">
-        <p class="page-description" style="margin-bottom: 1rem;"><?= e($returnBatchDeductionNote ?? 'Owner-approved return batch becomes eligible for a deduction draft on Supplier Payables. Deduction is never automatic.') ?> Reference format mirrors dispatch: R + DDMMYYYY (R + DDMMYYYY-P1/P2 for same-day repeats). Max 50 returns per batch, same supplier only.</p>
-        <?php if (empty($eligibleReturns)): ?>
-            <div class="empty-state"><p>No confirmed returns are waiting to be batched. Confirm returns above first; received returns not yet in a batch will appear here.</p></div>
-        <?php else: ?>
-        <form method="post" action="<?= e(url('/return-receive/create-batch')) ?>">
-            <?= $csrfField ?>
-            <div class="table-scroll">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width:2.5rem;">Add</th>
-                            <th>Return Ref</th>
-                            <th>Type</th>
-                            <th>Items</th>
-                            <th>Cost Snapshot</th>
-                            <th>Received</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($eligibleReturns as $eligible): ?>
-                        <tr>
-                            <td><input type="checkbox" name="return_receive_ids[]" value="<?= e((string) ($eligible['return_receive_id'] ?? '')) ?>"></td>
-                            <td><code><?= e((string) ($eligible['return_reference'] ?? '')) ?></code></td>
-                            <td><?= e(\App\Domain\ReturnReceiveType::label((string) ($eligible['return_type'] ?? ''))) ?></td>
-                            <td><?= e((string) ($eligible['total_items'] ?? 0)) ?></td>
-                            <td><?= e(number_format((float) ($eligible['total_cost_snapshot'] ?? 0), 2)) ?></td>
-                            <td><?= e((string) ($eligible['received_at'] ?? '')) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <label class="workflow-confirm-checkbox" style="margin-top: 1rem; display:flex; gap:0.5rem; align-items:flex-start;">
-                <input type="checkbox" name="batch_confirmed" value="1" required>
-                <span>I confirm these confirmed returns should be grouped into one return batch. This does not create any deduction — that stays a separate owner approval on Supplier Payables.</span>
-            </label>
-            <div class="form-actions" style="margin-top: 1rem;">
-                <button type="submit" class="btn btn-primary">Create Return Batch</button>
-            </div>
-        </form>
-        <?php endif; ?>
-    </div>
-</div>
-<?php endif; ?>
-
-<div class="card" style="margin-bottom: 1.5rem;">
-    <div class="card-header"><h2 class="card-title">Return Batches</h2></div>
-    <div class="card-body card-body-flush">
-        <p class="page-description" style="padding: 1rem 1.25rem 0;">Owner approves return batches before payable deduction drafts. Deduction still requires separate approval on Supplier Payables.</p>
-        <?php if (!empty($returnBatches)): ?>
-        <div class="table-scroll">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Batch Ref</th>
-                        <th>Returns</th>
-                        <th>Adjustment</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($returnBatches as $batch): ?>
-                    <tr>
-                        <td><code><?= e((string) ($batch['return_batch_reference'] ?? '')) ?></code></td>
-                        <td><?= e((string) ($batch['total_returns'] ?? 0)) ?></td>
-                        <td><?= e(number_format((float) ($batch['total_adjustment_amount'] ?? 0), 2)) ?></td>
-                        <td><span class="badge badge-<?= ($batch['status'] ?? '') === 'owner_approved' ? 'success' : 'warn' ?>"><?= e(\App\Domain\ReturnBatchReference::statusLabel((string) ($batch['status'] ?? ''))) ?></span></td>
-                        <td><?= e((string) ($batch['created_at'] ?? '')) ?></td>
-                        <td>
-                            <?php if (!empty($canApproveBatch) && ($batch['status'] ?? '') !== 'owner_approved'): ?>
-                            <form method="post" action="<?= e(url('/return-receive/approve-batch')) ?>" class="inline-form">
-                                <?= $csrfField ?>
-                                <input type="hidden" name="return_batch_id" value="<?= e((string) ($batch['return_batch_id'] ?? '')) ?>">
-                                <button type="submit" class="btn btn-sm btn-primary">Owner Approve</button>
-                            </form>
-                            <?php else: ?>—<?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php if (!empty($batch['items'])): ?>
-                    <tr class="return-batch-detail-row">
-                        <td colspan="6" style="background:var(--color-bg);">
-                            <details>
-                                <summary style="cursor:pointer;font-size:0.8125rem;">View <?= e((string) count($batch['items'])) ?> return line(s)</summary>
-                                <div class="table-scroll" style="margin-top:0.5rem;">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Return Ref</th>
-                                                <th>Type</th>
-                                                <th>Qty</th>
-                                                <th>Cost Snapshot</th>
-                                                <th>Adjustment</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($batch['items'] as $bItem): ?>
-                                            <tr>
-                                                <td><code><?= e((string) ($bItem['return_reference'] ?? '')) ?></code></td>
-                                                <td><?= e(\App\Domain\ReturnReceiveType::label((string) ($bItem['return_type'] ?? ''))) ?></td>
-                                                <td><?= e((string) ($bItem['quantity'] ?? 0)) ?></td>
-                                                <td><?= e(number_format((float) ($bItem['cost_snapshot'] ?? 0), 2)) ?></td>
-                                                <td><?= e(number_format((float) ($bItem['adjustment_amount'] ?? 0), 2)) ?></td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </details>
-                        </td>
-                    </tr>
-                    <?php endif; ?>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php else: ?>
-        <div class="empty-state"><p>No return batches yet. Use <strong>Create Return Batch</strong> above once returns are confirmed.</p></div>
-        <?php endif; ?>
-    </div>
+<div class="workflow-info-banner" style="margin-bottom: 1.5rem;">
+    Confirmed returns are grouped on <a href="<?= e(url('/return-reports')) ?>"><strong>Return Reports</strong></a> as a locked Supplier Return Statement. Legacy Return Batch UI retired in v2.4.0 — no ledger posting from this page.
 </div>
 
 <details class="planning-collapsible">

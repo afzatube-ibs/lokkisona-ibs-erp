@@ -32,6 +32,8 @@ class ModelRegistry
         'order_workflow_histories' => OrderWorkflowHistory::class,
         'dispatch_reports' => DispatchReport::class,
         'return_receives' => ReturnReceive::class,
+        'return_reports' => ReturnReport::class,
+        'return_report_items' => ReturnReportItem::class,
         'payable_ledgers' => PayableLedger::class,
         'invoices' => Invoice::class,
         'supplier_opening_balances' => SupplierOpeningBalance::class,

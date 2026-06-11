@@ -14,6 +14,8 @@ class ReturnReceive extends BaseModel
         'supplier_id',
         'business_source_id',
         'return_type',
+        'order_id',
+        'return_reason',
         'total_items',
         'total_cost_snapshot',
         'status',
