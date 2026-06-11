@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.2.2',
-    'release_label' => 'Launch Workflow Navigation Simplification',
+    'version' => '2.3.0',
+    'release_label' => 'Daily Dispatch Supplier Statement Foundation',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

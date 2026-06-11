@@ -93,6 +93,8 @@
     document.querySelectorAll('.js-dispatch-batch-form').forEach(function (form) {
         var summary = form.querySelector('.js-dispatch-batch-summary');
         var missingWarning = form.querySelector('.js-dispatch-missing-cost-warning');
+        var missingOrderNoWarning = form.querySelector('.js-dispatch-missing-order-no-warning');
+        var mixedSourceWarning = form.querySelector('.js-dispatch-mixed-source-warning');
         var submitBtn = form.querySelector('.js-dispatch-submit-btn');
         var selects = form.querySelectorAll('.js-dispatch-order-select');
 
@@ -104,7 +106,9 @@
             var totalQty = 0;
             var totalCost = 0;
             var missingCount = 0;
+            var missingOrderNoCount = 0;
             var couriers = {};
+            var businessSources = {};
             selects.forEach(function (checkbox) {
                 if (!checkbox.checked) {
                     return;
@@ -119,31 +123,60 @@
                 if (row.getAttribute('data-missing-cost') === '1') {
                     missingCount += 1;
                 }
+                if (row.getAttribute('data-missing-order-no') === '1') {
+                    missingOrderNoCount += 1;
+                }
                 var courier = (row.getAttribute('data-courier') || '').trim();
                 if (courier !== '') {
                     couriers[courier] = true;
                 }
+                var sourceKey = (row.getAttribute('data-business-source') || '0').trim();
+                businessSources[sourceKey] = true;
             });
             var courierLabel = Object.keys(couriers).join(', ');
             if (courierLabel === '') {
                 courierLabel = 'not selected';
             }
+            var sourceCount = Object.keys(businessSources).length;
             summary.textContent = 'Batch summary: ' + orderCount + ' orders · ' + totalQty + ' qty · '
-                + totalCost.toFixed(2) + ' product cost · courier: ' + courierLabel;
+                + totalCost.toFixed(2) + ' cost snapshot · ' + sourceCount + ' business source(s)';
+
+            var mixedSources = sourceCount > 1;
+            if (mixedSourceWarning) {
+                if (mixedSources) {
+                    mixedSourceWarning.style.display = 'block';
+                    mixedSourceWarning.textContent = 'Cannot create statement: selected orders span multiple business sources. Select orders from one source only.';
+                } else {
+                    mixedSourceWarning.style.display = 'none';
+                    mixedSourceWarning.textContent = '';
+                }
+            }
 
             if (missingWarning) {
                 if (missingCount > 0) {
-                    var itemWord = missingCount === 1 ? 'item' : 'items';
+                    var itemWord = missingCount === 1 ? 'order' : 'orders';
                     missingWarning.style.display = 'block';
-                    missingWarning.textContent = 'Cannot create dispatch report: product cost missing for '
-                        + missingCount + ' ' + itemWord + '. Update Product Control first.';
+                    missingWarning.textContent = 'Cannot create statement: missing cost — update Products first ('
+                        + missingCount + ' selected ' + itemWord + ').';
                 } else {
                     missingWarning.style.display = 'none';
                     missingWarning.textContent = '';
                 }
             }
+            if (missingOrderNoWarning) {
+                if (missingOrderNoCount > 0) {
+                    var orderWord = missingOrderNoCount === 1 ? 'order' : 'orders';
+                    missingOrderNoWarning.style.display = 'block';
+                    missingOrderNoWarning.textContent = 'Cannot create statement: '
+                        + missingOrderNoCount + ' selected ' + orderWord
+                        + ' missing order number (Lokkisona source no or sales invoice no).';
+                } else {
+                    missingOrderNoWarning.style.display = 'none';
+                    missingOrderNoWarning.textContent = '';
+                }
+            }
             if (submitBtn) {
-                submitBtn.disabled = missingCount > 0;
+                submitBtn.disabled = missingCount > 0 || missingOrderNoCount > 0 || mixedSources;
             }
         }
 

@@ -49,7 +49,7 @@ $displayActionNote = $displayActionNote ?? static function (?string $note): stri
         <p class="workflow-info-banner"><?= e($order['status_info_note']) ?></p>
         <?php endif; ?>
         <?php if (!empty($order['dispatch_redirect_note'])): ?>
-        <p class="workflow-info-banner"><?= e($order['dispatch_redirect_note']) ?> <a href="<?= e(url('/dispatch-reports')) ?>">Dispatch Reports</a></p>
+        <p class="workflow-info-banner"><?= e($order['dispatch_redirect_note']) ?> <a href="<?= e(url('/dispatch-reports')) ?>">Daily Dispatch</a></p>
         <?php endif; ?>
 
         <?php if (!empty($order['actions'])): ?>

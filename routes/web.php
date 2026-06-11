@@ -61,6 +61,7 @@ $router->post('/order-workflow/note', 'OrderWorkflowController@note');
 $router->post('/order-workflow/create', 'OrderWorkflowController@create');
 $router->get('/dispatch-reports', 'DispatchReportsController@index');
 $router->get('/dispatch-reports/view', 'DispatchReportsController@view');
+$router->get('/dispatch-report/{batch}/print', 'DispatchReportsController@printStatement');
 $router->get('/dispatch-report/{batch}', 'DispatchReportsController@show');
 $router->post('/dispatch-reports/create', 'DispatchReportsController@create');
 $router->get('/supplier-payables', 'SupplierPayablesController@index');

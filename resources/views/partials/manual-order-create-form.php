@@ -27,8 +27,8 @@ $showSubmitButton = $showSubmitButton ?? true;
                 <?php endforeach; ?>
             </select>
         </label>
-        <label>Manual order reference (optional)<input type="text" name="manual_order_reference" class="form-input" placeholder="Auto-generated if blank"></label>
-        <label>External order reference (optional)<input type="text" name="external_order_reference" class="form-input"></label>
+        <label>Order No / sales invoice no <span class="required">*</span><input type="text" name="manual_order_reference" class="form-input" required placeholder="Enter sales invoice or manual order number"></label>
+        <label>External order reference (optional)<input type="text" name="external_order_reference" class="form-input" placeholder="Lokkisona OC order no if different"></label>
         <label>External invoice reference (optional)<input type="text" name="external_invoice_reference" class="form-input"></label>
     </div>
 

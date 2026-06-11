@@ -39,4 +39,17 @@ class DispatchCostSnapshot
 
         return $missing;
     }
+
+    /**
+     * @param array<string, mixed> $order
+     */
+    public static function hasDispatchOrderNo(array $order): bool
+    {
+        $sourceRef = trim((string) ($order['source_order_reference'] ?? ''));
+        if ($sourceRef !== '') {
+            return true;
+        }
+
+        return trim((string) ($order['order_reference'] ?? '')) !== '';
+    }
 }

@@ -331,7 +331,7 @@ class OrderWorkflowController extends Controller
             'new_order' => 'Receive Order',
             'order_received' => 'Print & Start Packaging',
             'packaging' => 'Mark Shipped',
-            'shipped' => 'Create Dispatch Report',
+            'shipped' => 'Create Daily Dispatch',
             'hold' => 'Resume Order Received',
             default => null,
         };

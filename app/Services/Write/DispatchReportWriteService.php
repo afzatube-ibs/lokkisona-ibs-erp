@@ -50,16 +50,16 @@ class DispatchReportWriteService
         }
 
         if (empty($input['batch_confirmed'])) {
-            return WriteResult::fail('Batch confirmation is required before creating a dispatch report.');
+            return WriteResult::fail('Batch confirmation is required before creating a Daily Dispatch Statement.');
         }
 
         $orderIds = $this->normalizeOrderIds($input['order_ids'] ?? []);
         if ($orderIds === []) {
-            return WriteResult::fail('Select at least one shipped order for the dispatch report.');
+            return WriteResult::fail('Select at least one shipped order for the Daily Dispatch Statement.');
         }
 
         if (count($orderIds) > 50) {
-            return WriteResult::fail('Maximum 50 orders per dispatch report.');
+            return WriteResult::fail('Maximum 50 orders per Daily Dispatch Statement.');
         }
 
         $validatedOrders = [];
@@ -79,7 +79,7 @@ class DispatchReportWriteService
             }
 
             if ($this->items->existsForOrderId($orderId)) {
-                return WriteResult::fail('Order #' . $orderId . ' is already included in a dispatch report.');
+                return WriteResult::fail('Order #' . $orderId . ' is already included in a Daily Dispatch Statement.');
             }
 
             $orderSupplierId = ($order['supplier_id'] ?? null) !== null && $order['supplier_id'] !== ''
@@ -94,6 +94,19 @@ class DispatchReportWriteService
                 $businessSourceId = $orderSourceId;
             } elseif ($orderSupplierId !== $supplierId) {
                 return WriteResult::fail('All selected orders must belong to the same supplier.');
+            }
+
+            if ($businessSourceId === null && $orderSourceId !== null) {
+                $businessSourceId = $orderSourceId;
+            } elseif ($orderSourceId !== $businessSourceId) {
+                return WriteResult::fail('All selected orders must belong to the same business source.');
+            }
+
+            if (!DispatchCostSnapshot::hasDispatchOrderNo($order)) {
+                return WriteResult::fail(
+                    'Cannot create Daily Dispatch Statement: order #' . $orderId . ' is missing order number. '
+                    . 'Synced orders need Lokkisona source order no; manual/sales orders need invoice/order no.'
+                );
             }
 
             $orderLines = $this->orderItems->findByOrderId($orderId);
@@ -114,11 +127,11 @@ class DispatchReportWriteService
             $itemWord = $totalMissingLines === 1 ? 'item' : 'items';
 
             return WriteResult::fail(
-                'Cannot create dispatch report: product cost missing for '
+                'Cannot create Daily Dispatch Statement: missing cost — update Products first ('
                 . $totalMissingLines
                 . ' '
                 . $itemWord
-                . '. Update Product Control first.'
+                . ').'
             );
         }
 
@@ -156,6 +169,15 @@ class DispatchReportWriteService
                 $orderId = (int) ($order['order_id'] ?? 0);
                 $snapshot = $entry['snapshot'];
 
+                $status = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? ''));
+                if ($status !== 'shipped') {
+                    throw new \RuntimeException('Order #' . $orderId . ' is no longer Shipped.');
+                }
+
+                if ($this->items->existsForOrderId($orderId)) {
+                    throw new \RuntimeException('Order #' . $orderId . ' is already included in a Daily Dispatch Statement.');
+                }
+
                 $this->items->create([
                     'dispatch_report_id' => $reportId,
                     'order_id' => $orderId,
@@ -178,22 +200,22 @@ class DispatchReportWriteService
                 $pdo->rollBack();
             }
 
-            return WriteResult::fail('Dispatch report create failed: ' . $e->getMessage());
+            return WriteResult::fail('Daily Dispatch Statement create failed: ' . $e->getMessage());
         }
 
         $payableNote = '';
         try {
             $payableResult = (new PayableLedgerWriteService())->createDraftFromDispatch($reportId);
             if ($payableResult->success) {
-                $payableNote = ' Product Cost Payable draft created — awaiting owner approval.';
+                $payableNote = ' Payable checkpoint draft PCP-' . $reference . ' created — review on Supplier Payables (no ledger posting yet).';
             } else {
                 $payableNote = ' Warning: ' . $payableResult->message;
             }
         } catch (\Throwable $e) {
-            $payableNote = ' Warning: Payable ledger unavailable — dispatch report still created.';
+            $payableNote = ' Warning: Payable checkpoint unavailable — daily dispatch statement still created.';
         }
 
-        ActivityLog::record('dispatch_report_created', 'Daily dispatch report created (locked snapshot)', [
+        ActivityLog::record('dispatch_report_created', 'Daily dispatch statement created (locked snapshot)', [
             'action' => 'create_dispatch_report',
             'dispatch_report_id' => $reportId,
             'batch_reference' => $reference,
@@ -206,7 +228,7 @@ class DispatchReportWriteService
         ]);
 
         return WriteResult::ok(
-            'Dispatch report ' . $reference . ' created and locked with ' . count($validatedOrders) . ' order(s).' . $payableNote,
+            'Daily Dispatch Statement ' . $reference . ' created and locked with ' . count($validatedOrders) . ' order(s).' . $payableNote,
             $reportId
         );
     }

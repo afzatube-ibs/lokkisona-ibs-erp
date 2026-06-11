@@ -6,12 +6,12 @@ use App\ActivityLog;
 use App\Csrf;
 use App\Domain\DispatchCostSnapshot;
 use App\Domain\DispatchReportReference;
+use App\Domain\SupplierTerminology;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\BusinessSourceRepository;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderItemRepository;
-use App\Repositories\OrderWorkflowHistoryRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\ProductVariantRepository;
 use App\Repositories\SupplierRepository;
@@ -19,6 +19,7 @@ use App\Repositories\Write\OrderWriteRepository;
 use App\Services\Write\DispatchReportWriteService;
 use App\Services\Write\PayableLedgerWriteService;
 use App\SupplierContext;
+use App\Support\DispatchStatementLinePresenter;
 use App\Support\OrderWorkflowRowPresenter;
 
 class DispatchReportsController extends Controller
@@ -30,13 +31,18 @@ class DispatchReportsController extends Controller
 
         $supplierId = SupplierContext::enforceSupplierId(0);
 
+        $eligibleContext = SupplierContext::isSupplier() ? [] : $this->buildEligibleOrdersContext();
+
         $this->render('dispatch-reports.index', [
-            'pageTitle' => 'Dispatch Reports',
+            'pageTitle' => 'Daily Dispatch',
             'breadcrumbs' => [
-                ['label' => 'Operations', 'active' => false],
-                ['label' => 'Dispatch Reports', 'active' => true],
+                ['label' => 'Fulfillment', 'active' => false],
+                ['label' => 'Daily Dispatch', 'active' => true],
             ],
-            'eligibleOrders' => SupplierContext::isSupplier() ? [] : $this->buildEligibleOrders(),
+            'eligibleOrders' => $eligibleContext['orders'] ?? [],
+            'eligibleSummary' => $eligibleContext['summary'] ?? [],
+            'eligibleFilters' => $eligibleContext['filters'] ?? [],
+            'businessSources' => $eligibleContext['business_sources'] ?? [],
             'latestReports' => $this->buildLatestReports($supplierId),
             'canManageDispatch' => Permission::can('dispatch_reports.manage'),
             'isSupplierView' => SupplierContext::isSupplier(),
@@ -94,12 +100,12 @@ class DispatchReportsController extends Controller
 
         $this->render('dispatch-reports.show', [
             'pageTitle' => $reportDetail !== null
-                ? 'Dispatch Report ' . ($reportDetail['report']['dispatch_reference'] ?? '')
-                : 'Dispatch Report',
+                ? SupplierTerminology::dailyDispatchStatement() . ' ' . ($reportDetail['report']['dispatch_reference'] ?? '')
+                : SupplierTerminology::dailyDispatchStatement(),
             'breadcrumbs' => [
-                ['label' => 'Operations', 'active' => false],
-                ['label' => 'Dispatch Reports', 'active' => false, 'url' => '/dispatch-reports'],
-                ['label' => 'Report', 'active' => true],
+                ['label' => 'Fulfillment', 'active' => false],
+                ['label' => 'Daily Dispatch', 'active' => false, 'url' => '/dispatch-reports'],
+                ['label' => 'Statement', 'active' => true],
             ],
             'reportDetail' => $reportDetail,
             'batchReference' => $batchReference,
@@ -120,16 +126,54 @@ class DispatchReportsController extends Controller
         $this->redirectWithWriteResult('/dispatch-reports', (new DispatchReportWriteService())->createDailyBatch($_POST));
     }
 
-    private function buildEligibleOrders(): array
+    public function printStatement($batch)
     {
+        $this->authorize('dispatch_reports.view');
+
+        $supplierId = SupplierContext::enforceSupplierId(0);
+        $batchReference = trim(rawurldecode((string) $batch));
+        $reportDetail = $batchReference !== ''
+            ? $this->buildReportDetailByReference($batchReference, $supplierId)
+            : null;
+
+        if ($batchReference !== '' && $reportDetail !== null) {
+            ActivityLog::record('dispatch_report_print', 'Daily dispatch statement printed: ' . $batchReference);
+        }
+
+        view('dispatch-reports.print', [
+            'reportDetail' => $reportDetail,
+            'isSupplierView' => SupplierContext::isSupplier(),
+        ]);
+        exit;
+    }
+
+    /**
+     * @return array{orders: array<int, array<string, mixed>>, summary: array<string, int>, filters: array<string, int>, business_sources: array<int, string>}
+     */
+    private function buildEligibleOrdersContext(): array
+    {
+        $defaultSupplierId = (int) config('app.auth.supplier_id', 0);
+        $supplierId = (int) ($_GET['supplier_id'] ?? $defaultSupplierId);
+        $businessSourceId = (int) ($_GET['business_source_id'] ?? 0);
+
+        $businessSources = $this->businessSourceNameMap();
+        $sourceNames = $businessSources;
+
         try {
-            $orders = (new OrderWriteRepository())->findShippedEligible(50);
+            $orders = (new OrderWriteRepository())->findShippedEligible(50, true, $supplierId, $businessSourceId);
         } catch (\Throwable $e) {
-            return [];
+            return [
+                'orders' => [],
+                'summary' => ['awaiting' => 0, 'missing_cost' => 0, 'shown' => 0],
+                'filters' => ['supplier_id' => $supplierId, 'business_source_id' => $businessSourceId],
+                'business_sources' => $sourceNames,
+            ];
         }
 
         $orderItems = new OrderItemRepository();
         $eligible = [];
+        $missingCostCount = 0;
+        $missingOrderNoCount = 0;
 
         foreach ($orders as $order) {
             $orderId = (int) ($order['order_id'] ?? 0);
@@ -139,19 +183,43 @@ class DispatchReportsController extends Controller
 
             $lines = $orderItems->findByOrderId($orderId);
             $missingLines = DispatchCostSnapshot::countMissingLineItems($lines);
+            if ($missingLines > 0) {
+                $missingCostCount++;
+            }
+            $missingOrderNo = !DispatchCostSnapshot::hasDispatchOrderNo($order);
+            if ($missingOrderNo) {
+                $missingOrderNoCount++;
+            }
             $lineCost = $orderItems->sumSupplierCostByOrderId($orderId);
             $lineQty = $orderItems->sumQuantityByOrderId($orderId);
             $snapshot = DispatchCostSnapshot::forOrder($order, $lineCost, $lineQty);
+            $sourceKey = (int) ($order['business_source_id'] ?? 0);
 
             $eligible[] = array_merge($order, [
                 'preview_cost_snapshot' => $snapshot['product_cost_snapshot'],
                 'preview_item_count' => $snapshot['item_count'],
                 'missing_cost' => $missingLines > 0,
                 'missing_line_count' => $missingLines,
+                'missing_order_no' => $missingOrderNo,
+                'display_order_no' => OrderWorkflowRowPresenter::formatOrderNo($order),
+                'business_source_name' => $sourceNames[$sourceKey] ?? '—',
             ]);
         }
 
-        return $eligible;
+        return [
+            'orders' => $eligible,
+            'summary' => [
+                'awaiting' => count($eligible),
+                'missing_cost' => $missingCostCount,
+                'missing_order_no' => $missingOrderNoCount,
+                'shown' => count($eligible),
+            ],
+            'filters' => [
+                'supplier_id' => $supplierId,
+                'business_source_id' => $businessSourceId,
+            ],
+            'business_sources' => $sourceNames,
+        ];
     }
 
     private function buildLatestReports(int $supplierId = 0): array
@@ -166,14 +234,17 @@ class DispatchReportsController extends Controller
             $reportIds = array_map(static fn (array $row): int => (int) ($row['dispatch_report_id'] ?? 0), $reports);
             $qtyByReport = $repository->sumItemCountsByReportIds($reportIds);
             $supplierNames = $this->supplierNameMap();
+            $sourceNames = $this->businessSourceNameMap();
 
             foreach ($reports as $index => $report) {
                 $reportId = (int) ($report['dispatch_report_id'] ?? 0);
                 $supplierKey = (int) ($report['supplier_id'] ?? 0);
+                $sourceKey = (int) ($report['business_source_id'] ?? 0);
                 $reports[$index]['status_label'] = DispatchReportReference::statusLabel(
                     (string) ($report['status'] ?? '')
                 );
                 $reports[$index]['supplier_name'] = $supplierNames[$supplierKey] ?? '—';
+                $reports[$index]['business_source_name'] = $sourceNames[$sourceKey] ?? '—';
                 $reports[$index]['total_qty'] = $qtyByReport[$reportId] ?? 0;
                 $reports[$index]['created_by_label'] = $this->resolvePreparedByLabel($report);
             }
@@ -268,16 +339,16 @@ class DispatchReportsController extends Controller
         }
 
         $reportId = (int) ($report['dispatch_report_id'] ?? 0);
-        if ($reportId <= 0) {
+        $dispatchReference = trim((string) ($report['dispatch_reference'] ?? ''));
+        if ($reportId <= 0 && $dispatchReference === '') {
             return null;
         }
 
         $repository = new DispatchReportRepository();
-        $items = $repository->findItemsWithOrders($reportId);
+        $items = $repository->findItemsForReport($report);
         $orderItemRepo = new OrderItemRepository();
         $productRepo = new ProductRepository();
         $variantRepo = new ProductVariantRepository();
-        $historyRepo = new OrderWorkflowHistoryRepository();
 
         $orderIds = array_values(array_filter(array_map(
             static fn (array $row): int => (int) ($row['order_id'] ?? 0),
@@ -285,9 +356,6 @@ class DispatchReportsController extends Controller
         ), static fn (int $id): bool => $id > 0));
 
         $itemsByOrder = $orderItemRepo->groupedByOrderIds($orderIds);
-        $importHistories = $historyRepo->tableExists()
-            ? $historyRepo->findImportNotesByOrderIds($orderIds)
-            : [];
 
         $productIds = [];
         foreach ($itemsByOrder as $orderLines) {
@@ -301,72 +369,41 @@ class DispatchReportsController extends Controller
         $productsById = $productRepo->indexedByIds(array_values($productIds));
         $variantsByProduct = $variantRepo->groupedByProductIds(array_values($productIds));
 
-        $totalQuantity = 0;
-        $flatProductRows = [];
+        $supplierNames = $this->supplierNameMap();
+        $sourceNames = $this->businessSourceNameMap();
 
-        foreach ($items as $index => $item) {
-            $orderId = (int) ($item['order_id'] ?? 0);
-            $lineQty = (int) ($item['item_count'] ?? 0);
-            $totalQuantity += $lineQty;
+        $linePayload = DispatchStatementLinePresenter::build(
+            $items,
+            $sourceNames,
+            $itemsByOrder,
+            $productsById,
+            $variantsByProduct,
+            $report
+        );
 
-            $orderRow = [
-                'order_id' => $orderId,
-                'origin_order_status_name' => $item['origin_order_status_name'] ?? null,
-                'source_order_status' => $item['source_order_status'] ?? null,
-            ];
-            $ocStatus = OrderWorkflowRowPresenter::resolveSourceOrderStatus(
-                $orderRow,
-                $importHistories[$orderId] ?? null
-            );
-
-            $formattedLines = OrderWorkflowRowPresenter::formatProductLines(
-                $itemsByOrder[$orderId] ?? [],
-                $productsById,
-                $variantsByProduct
-            );
-
-            $items[$index]['product_lines'] = $formattedLines;
-            $items[$index]['line_cost_total'] = round((float) ($item['product_cost_snapshot'] ?? 0), 2);
-            $items[$index]['order_no'] = $this->formatDispatchOrderNo($item);
-            $items[$index]['courier_status'] = trim((string) ($item['courier_status'] ?? '')) ?: '—';
-            $items[$index]['consignment_id'] = trim((string) ($item['tracking_number'] ?? '')) ?: 'Not Assigned';
-            $items[$index]['oc_order_status'] = $ocStatus ?? '—';
-
-            foreach ($formattedLines as $line) {
-                $flatProductRows[] = [
-                    'order_no' => $items[$index]['order_no'],
-                    'customer_name' => (string) ($item['customer_name'] ?? ''),
-                    'customer_phone' => trim((string) ($item['customer_phone'] ?? '')) ?: '—',
-                    'image_url' => $line['image_url'] ?? null,
-                    'model' => (string) ($line['model'] ?? ''),
-                    'option_chips' => $line['option_chips'] ?? [],
-                    'quantity' => (int) ($line['quantity'] ?? 0),
-                    'unit_cost_snapshot' => round((float) ($line['cost_snapshot'] ?? 0), 2),
-                    'line_cost_snapshot' => round((float) ($line['line_cost_total'] ?? 0), 2),
-                    'courier_status' => $items[$index]['courier_status'],
-                    'consignment_id' => $items[$index]['consignment_id'],
-                    'oc_order_status' => $items[$index]['oc_order_status'],
-                ];
-            }
-        }
+        $flatProductRows = $linePayload['product_rows'];
+        $totalQuantity = (int) ($linePayload['total_quantity'] ?? 0);
+        $totalAmount = (float) ($linePayload['total_amount'] ?? 0);
 
         $report['status_label'] = DispatchReportReference::statusLabel(
             (string) ($report['status'] ?? '')
         );
 
-        $supplierNames = $this->supplierNameMap();
-        $sourceNames = $this->businessSourceNameMap();
         $supplierKey = (int) ($report['supplier_id'] ?? 0);
         $sourceKey = (int) ($report['business_source_id'] ?? 0);
         $dispatchReference = (string) ($report['dispatch_reference'] ?? '');
 
-        $payableNotice = 'Payable draft pending finance module completion.';
+        $payableNotice = 'Payable checkpoint not created yet — owner can create from Supplier Payables when ready.';
         $payableDraftRef = null;
+        $payableStatus = null;
+        $payableLedgerId = null;
         try {
             $payable = (new PayableLedgerWriteService())->payableStatusForDispatch($dispatchReference);
             if ($payable !== null) {
                 $payableDraftRef = (string) ($payable['ledger_reference'] ?? ('PCP-' . $dispatchReference));
-                $payableNotice = 'Payable draft ' . $payableDraftRef . ' recorded — settlement pending finance module completion.';
+                $payableStatus = (string) ($payable['status'] ?? 'draft');
+                $payableLedgerId = (int) ($payable['payable_ledger_id'] ?? 0);
+                $payableNotice = 'Payable checkpoint ' . $payableDraftRef . ' (' . $payableStatus . ') — review on Supplier Payables. No ledger posting from this page.';
             }
         } catch (\Throwable $e) {
             // non-blocking
@@ -377,25 +414,18 @@ class DispatchReportsController extends Controller
             'items' => $items,
             'product_rows' => $flatProductRows,
             'total_quantity' => $totalQuantity,
+            'total_amount' => $totalAmount,
+            'legacy_warning' => $linePayload['legacy_warning'] ?? null,
+            'lines_empty' => (bool) ($linePayload['lines_empty'] ?? true),
             'supplier_name' => $supplierNames[$supplierKey] ?? '—',
             'business_source_name' => $sourceNames[$sourceKey] ?? '—',
             'prepared_by' => $this->resolvePreparedByLabel($report),
             'payable_notice' => $payableNotice,
             'payable_draft_ref' => $payableDraftRef,
+            'payable_status' => $payableStatus,
+            'payable_ledger_id' => $payableLedgerId > 0 ? $payableLedgerId : null,
+            'payable_url' => url('/supplier-payables'),
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $item
-     */
-    private function formatDispatchOrderNo(array $item): string
-    {
-        $ref = trim((string) ($item['erp_order_reference'] ?? $item['order_reference'] ?? ''));
-        if ($ref === '') {
-            return '#' . (int) ($item['order_id'] ?? 0);
-        }
-
-        return str_starts_with($ref, '#') ? $ref : '#' . $ref;
     }
 
     /**

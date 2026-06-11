@@ -68,7 +68,7 @@ class ManualOrderWriteService
 
         $ref = trim((string) ($input['manual_order_reference'] ?? ''));
         if ($ref === '') {
-            $ref = 'MO-' . date('YmdHis') . '-' . random_int(100, 999);
+            return WriteResult::fail('Order No / sales invoice number is required for manual orders.');
         }
 
         $customerName = trim((string) ($input['customer_name'] ?? ''));

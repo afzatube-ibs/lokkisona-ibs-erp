@@ -10,7 +10,7 @@ class OrderWorkflowStatus
 
     public const COURIER_FLOW_NOTE = 'Courier flow continues by status mapping. Supplier has no manual Out For Delivery / Delivered action.';
 
-    public const DISPATCH_REPORT_REDIRECT_NOTE = 'Create Dispatch Report from Dispatch Reports page.';
+    public const DISPATCH_REPORT_REDIRECT_NOTE = 'Create Daily Dispatch Statement from Daily Dispatch page.';
 
     public const OUT_FOR_DELIVERY_NOTE = 'Courier/PIT status reflection only. Supplier does not manage courier stages.';
 
@@ -48,7 +48,7 @@ class OrderWorkflowStatus
         'new_order|order_received' => 'Receive Order',
         'order_received|packaging' => 'Print & Start Packaging',
         'packaging|shipped' => 'Mark as Shipped',
-        'shipped|dispatch_report_created' => 'Create Dispatch Report',
+        'shipped|dispatch_report_created' => 'Create Daily Dispatch',
         'dispatch_report_created|delivery_stop' => 'Delivery Stop',
         'shipped|delivery_stop' => 'Delivery Stop',
         'delivery_stop|hub_return' => 'Confirm Hub Return',
@@ -360,7 +360,7 @@ class OrderWorkflowStatus
         }
 
         if ($from === 'shipped' && $to === 'dispatch_report_created') {
-            return 'Create Dispatch Report';
+            return 'Create Daily Dispatch';
         }
 
         if ($from === 'delivery_stop' && $to === 'hub_return') {
@@ -376,7 +376,7 @@ class OrderWorkflowStatus
             'bulk_receive' => 'Bulk Receive Order',
             'bulk_packaging' => 'Print & Start Packaging',
             'bulk_shipped' => 'Mark as Shipped',
-            'bulk_dispatch' => 'Create Dispatch Report',
+            'bulk_dispatch' => 'Create Daily Dispatch',
             default => 'Bulk action',
         };
     }

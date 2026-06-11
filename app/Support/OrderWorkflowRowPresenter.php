@@ -73,7 +73,7 @@ class OrderWorkflowRowPresenter
             'dispatch_report_id' => $dispatchReportId,
             'view_report_url' => $viewReportUrl,
             'created_report_note' => ($batchLocked || $displayStatus === 'dispatch_report_created') && $batchRef !== ''
-                ? 'Included in Dispatch Batch ' . $batchRef . '. Normal workflow actions are locked.'
+                ? 'Included in Daily Dispatch Statement ' . $batchRef . '. Sale/cost snapshot locked — workflow actions are locked.'
                 : null,
             'batch_locked' => $batchLocked,
             'primary_action' => $actions['primary'],
@@ -134,7 +134,13 @@ class OrderWorkflowRowPresenter
                 $chips[] = ['label' => 'No option selected', 'meta' => null, 'empty_option' => true];
             }
 
+            $productName = trim((string) ($line['product_name'] ?? $product['product_name'] ?? $product['source_name'] ?? ''));
+            if ($productName === '') {
+                $productName = $model !== '' ? $model : 'Product';
+            }
+
             $lines[] = [
+                'product_name' => $productName,
                 'image_url' => $rawImage !== '' ? opencart_media_url($rawImage) : null,
                 'model' => $model,
                 'quantity' => $qty,
@@ -353,7 +359,7 @@ class OrderWorkflowRowPresenter
     {
         return [
             'code' => 'create_dispatch_report',
-            'label' => 'Create Dispatch Report',
+            'label' => 'Create Daily Dispatch',
             'requires_note' => false,
             'requires_checkbox' => false,
             'checkbox_label' => null,

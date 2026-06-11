@@ -4074,15 +4074,19 @@ body.modal-open { overflow: hidden; }
 }
 .qip-supplier { margin: 0; font-size: 1.5rem; }
 .qip-sub { margin: 0.25rem 0 0; color: #64748b; font-size: 0.875rem; }
-.qip-meta { text-align: right; font-size: 0.875rem; }
+.qip-meta { text-align: right; font-size: 0.875rem; line-height: 1.45; }
+.qip-meta div { white-space: nowrap; }
+.dds-print .qip-meta { min-width: 12rem; }
 .qip-customer h2 { margin: 0 0 0.35rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
 .qip-customer-name { font-weight: 600; margin: 0; }
 .qip-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.875rem; }
 .qip-table th, .qip-table td { border: 1px solid #e2e8f0; padding: 0.5rem 0.65rem; }
 .qip-table th { background: #f1f5f9; text-align: left; }
 .qip-table .num { text-align: right; }
-.qip-totals { margin-left: auto; width: min(100%, 280px); font-size: 0.875rem; }
-.qip-total-row { display: flex; justify-content: space-between; padding: 0.3rem 0; }
+.qip-totals { margin-left: auto; width: min(100%, 320px); font-size: 0.875rem; }
+.qip-total-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.3rem 0; }
+.qip-total-row span:last-child { white-space: nowrap; flex-shrink: 0; }
+.qip-total-row span:first-child { min-width: 0; }
 .qip-balance { font-size: 1.0625rem; font-weight: 700; border-top: 2px solid #0f172a; margin-top: 0.35rem; padding-top: 0.5rem; }
 .qip-notes { margin-top: 1rem; font-size: 0.875rem; }
 .qip-footer { margin-top: 2rem; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 0.75rem; }
@@ -7337,8 +7341,43 @@ body.modal-open { overflow: hidden; }
 
 .dispatch-report-view-page .dispatch-report-meta {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-    gap: 0.5rem 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem 1.25rem;
+}
+
+.dispatch-report-view-page .dispatch-report-meta .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0;
+    border-bottom: none;
+    min-width: 0;
+}
+
+.dispatch-report-view-page .dispatch-report-meta .info-row dt {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+}
+
+.dispatch-report-view-page .dispatch-report-meta .info-row dd {
+    text-align: left;
+    width: 100%;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+/* Supplier / Business Source — wrap at words, not per character */
+.dispatch-report-view-page .dispatch-report-meta .info-row:nth-child(2) dd,
+.dispatch-report-view-page .dispatch-report-meta .info-row:nth-child(3) dd {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    line-height: 1.35;
+}
+
+.dispatch-report-view-page .dispatch-report-meta .info-row:nth-child(4) dd {
+    white-space: nowrap;
 }
 
 .dispatch-report-view-page .dispatch-report-product-line {
@@ -7385,13 +7424,119 @@ body.modal-open { overflow: hidden; }
     background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-subtle));
 }
 
-.dispatch-report-orders-table {
-    font-size: 0.75rem;
+.dispatch-report-orders-table--payable {
+    width: 100%;
+    table-layout: auto;
+    font-size: 0.8125rem;
+}
+
+.dispatch-report-orders-table--payable th.num,
+.dispatch-report-orders-table--payable td.num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.dispatch-report-orders-table--payable th,
+.dispatch-report-orders-table--payable td {
+    vertical-align: top;
+    padding: 0.5rem 0.65rem;
+}
+
+.dispatch-table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.dispatch-report-model-option {
+    min-width: 8rem;
+    max-width: 14rem;
+}
+
+.dispatch-report-model {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.dispatch-payable-note {
+    margin: 0.75rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted, #64748b);
+}
+
+.dds-lines-table--flat.dispatch-report-orders-table--payable {
+    font-size: 0.8125rem;
 }
 
 .dispatch-report-orders-table th,
 .dispatch-report-orders-table td {
     vertical-align: top;
+}
+
+.dispatch-report-product-cell {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 10rem;
+}
+
+.dispatch-report-product-name {
+    display: block;
+    line-height: 1.35;
+}
+
+.dispatch-report-row--snapshot {
+    background: color-mix(in srgb, var(--color-warning, #b45309) 6%, transparent);
+}
+
+.dds-lines-table--flat {
+    margin: 1rem 0;
+}
+
+.dds-print-thumb {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.35rem;
+}
+
+.dds-print-body {
+    background: #f8fafc;
+}
+
+.dds-parties {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.dds-party h2 {
+    margin: 0 0 0.35rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.dds-party-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.dds-order-block {
+    margin: 1.25rem 0;
+    break-inside: avoid;
+}
+
+.dds-order-heading {
+    margin: 0 0 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.dds-lines-table {
+    font-size: 0.8125rem;
 }
 
 @media print {

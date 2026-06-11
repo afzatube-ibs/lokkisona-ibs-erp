@@ -278,8 +278,12 @@ class OrderWriteRepository extends BaseWriteRepository
         return (int) ($row['row_count'] ?? 0);
     }
 
-    public function findShippedEligible(int $limit = 50, bool $excludeDispatched = true): array
-    {
+    public function findShippedEligible(
+        int $limit = 50,
+        bool $excludeDispatched = true,
+        int $supplierId = 0,
+        int $businessSourceId = 0
+    ): array {
         if (!$this->tableExists()) {
             return [];
         }
@@ -287,6 +291,8 @@ class OrderWriteRepository extends BaseWriteRepository
         $limit = max(1, min($limit, 50));
         $ordersTable = $this->escapeIdentifier($this->table());
         $excludeSql = '';
+        $filterSql = '';
+        $params = ['status' => 'shipped'];
 
         if ($excludeDispatched) {
             $itemsTable = config('database.prefix', 'ibs_') . 'dispatch_report_items';
@@ -304,11 +310,21 @@ class OrderWriteRepository extends BaseWriteRepository
             }
         }
 
+        if ($supplierId > 0) {
+            $filterSql .= ' AND o.supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
+
+        if ($businessSourceId > 0) {
+            $filterSql .= ' AND o.business_source_id = :business_source_id';
+            $params['business_source_id'] = $businessSourceId;
+        }
+
         $sql = 'SELECT o.* FROM `' . $ordersTable . '` o '
-            . 'WHERE o.ibs_status = :status' . $excludeSql
-            . ' ORDER BY o.order_id ASC LIMIT ' . $limit;
+            . 'WHERE o.ibs_status = :status' . $excludeSql . $filterSql
+            . ' ORDER BY o.order_id DESC LIMIT ' . $limit;
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['status' => 'shipped']);
+        $statement->execute($params);
 
         return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }

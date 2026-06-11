@@ -180,10 +180,57 @@ class DispatchReportRepository extends BaseReadOnlyRepository
 
     public function findItemsWithOrders(int $dispatchReportId): array
     {
-        if (!$this->tableExists() || $dispatchReportId <= 0) {
+        if (!$this->tableExists() || $dispatchReportId < 0) {
             return [];
         }
 
+        return $this->fetchItemsWithOrders(
+            'i.dispatch_report_id = :dispatch_report_id',
+            ['dispatch_report_id' => $dispatchReportId]
+        );
+    }
+
+    public function findItemsWithOrdersByReference(string $reference): array
+    {
+        $reference = trim($reference);
+        if ($reference === '' || !$this->tableExists()) {
+            return [];
+        }
+
+        $reportsTable = config('database.prefix', 'ibs_') . 'dispatch_reports';
+
+        return $this->fetchItemsWithOrders(
+            'i.dispatch_report_id = r.dispatch_report_id AND r.dispatch_reference = :dispatch_reference',
+            ['dispatch_reference' => $reference],
+            $reportsTable
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     */
+    public function findItemsForReport(array $report): array
+    {
+        $reportId = (int) ($report['dispatch_report_id'] ?? 0);
+        $reference = trim((string) ($report['dispatch_reference'] ?? ''));
+        $totalOrders = max(0, (int) ($report['total_orders'] ?? 0));
+
+        $items = $reportId > 0
+            ? $this->findItemsWithOrders($reportId)
+            : ($reference !== '' ? $this->findItemsWithOrdersByReference($reference) : []);
+
+        if ($items !== [] && $reportId <= 0 && $totalOrders > 0 && count($items) > $totalOrders) {
+            $items = array_slice($items, 0, $totalOrders);
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private function fetchItemsWithOrders(string $whereSql, array $params, ?string $reportsTable = null): array
+    {
         $itemsTable = config('database.prefix', 'ibs_') . 'dispatch_report_items';
         $ordersTable = config('database.prefix', 'ibs_') . 'orders';
         $database = config('database.database', '');
@@ -193,7 +240,12 @@ class DispatchReportRepository extends BaseReadOnlyRepository
                 'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table'
             );
 
-            foreach ([$itemsTable, $ordersTable] as $tableName) {
+            $requiredTables = [$itemsTable, $ordersTable];
+            if ($reportsTable !== null) {
+                $requiredTables[] = $reportsTable;
+            }
+
+            foreach ($requiredTables as $tableName) {
                 $check->execute(['schema' => $database, 'table' => $tableName]);
                 $row = $check->fetch(\PDO::FETCH_ASSOC);
                 if (((int) ($row['table_count'] ?? 0)) === 0) {
@@ -201,15 +253,20 @@ class DispatchReportRepository extends BaseReadOnlyRepository
                 }
             }
 
+            $from = '`' . $this->escapeIdentifier($itemsTable) . '` i ';
+            if ($reportsTable !== null) {
+                $from .= 'INNER JOIN `' . $this->escapeIdentifier($reportsTable) . '` r ON r.dispatch_report_id = i.dispatch_report_id ';
+            }
+
             $sql = 'SELECT i.*, o.customer_name, o.customer_phone, o.ibs_status, o.order_reference AS erp_order_reference, '
-                . 'o.courier_status, o.tracking_number, o.source_order_status, o.origin_order_status_name '
-                . 'FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
+                . 'o.source_order_reference, o.business_source_id, o.courier_status, o.tracking_number '
+                . 'FROM ' . $from
                 . 'LEFT JOIN `' . $this->escapeIdentifier($ordersTable) . '` o ON o.order_id = i.order_id '
-                . 'WHERE i.dispatch_report_id = :dispatch_report_id '
+                . 'WHERE ' . $whereSql . ' '
                 . 'ORDER BY i.dispatch_report_item_id ASC';
             \App\Database\QueryGuard::assertReadOnly($sql);
             $statement = $this->pdo->prepare($sql);
-            $statement->execute(['dispatch_report_id' => $dispatchReportId]);
+            $statement->execute($params);
 
             return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
         } catch (\Throwable $e) {
