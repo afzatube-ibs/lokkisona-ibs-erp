@@ -5,6 +5,7 @@ namespace App\Services\Write;
 use App\ActivityLog;
 use App\Auth;
 use App\Domain\ProductControlAdjustment;
+use App\Domain\ProductControlAdjustmentReason;
 use App\Domain\ProductControlHistoryNote;
 use App\Domain\ProductControlIbsCategory;
 use App\Repositories\UserRepository;
@@ -52,6 +53,27 @@ class ProductWorkspaceWriteService
             $variantRows = is_array($decoded) ? $decoded : [];
         }
         $hasVariants = is_array($variantRows) && $variantRows !== [];
+
+        $productCostMeta = $this->metaFromInput($input, 'cost_meta');
+        $productStockMeta = $this->metaFromInput($input, 'stock_meta');
+        $metaError = ProductControlAdjustmentReason::validateMeta($productCostMeta)
+            ?? ProductControlAdjustmentReason::validateMeta($productStockMeta);
+        if ($metaError !== null) {
+            return WriteResult::fail($metaError);
+        }
+
+        if ($hasVariants) {
+            foreach ($variantRows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $variantMetaError = ProductControlAdjustmentReason::validateMeta($this->metaFromRow($row, 'cost_meta'))
+                    ?? ProductControlAdjustmentReason::validateMeta($this->metaFromRow($row, 'stock_meta'));
+                if ($variantMetaError !== null) {
+                    return WriteResult::fail($variantMetaError);
+                }
+            }
+        }
 
         $productCost = $hasVariants
             ? ($product['product_cost'] !== null ? (float) $product['product_cost'] : null)
@@ -110,8 +132,8 @@ class ProductWorkspaceWriteService
             $productId,
             $product,
             $supplierFields,
-            $this->metaFromInput($input, 'cost_meta'),
-            $this->metaFromInput($input, 'stock_meta')
+            $productCostMeta,
+            $productStockMeta
         );
 
         $updatedVariants = 0;

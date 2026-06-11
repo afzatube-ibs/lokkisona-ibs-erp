@@ -1,0 +1,9 @@
+{
+  "name": "IBS Sync Connector",
+  "code": "ibs_sync_connector",
+  "version": "1.0.0",
+  "author": "IBS ERP",
+  "link": "https://github.com/lokkisona/ibs-erp",
+  "type": "module",
+  "description": "Read-only IBS ERP sync API (products, POIP option images, orders)."
+}

@@ -21,4 +21,13 @@ return [
     'order_sync_enabled' => true,
     'dispatch_bridge_required' => true,
     'max_rows_per_page' => 20,
+    // Optional: read POIP / option images when the IBS API omits them (SELECT only).
+    // 'option_image_db_enrichment' => true,
+    // 'db' => [
+    //     'host' => '127.0.0.1',
+    //     'database' => 'opencart_db_name',
+    //     'username' => 'readonly_user',
+    //     'password' => 'REPLACE',
+    //     'prefix' => 'oc_',
+    // ],
 ];

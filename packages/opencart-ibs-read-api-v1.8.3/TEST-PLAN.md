@@ -14,6 +14,12 @@ GET ?route=api/ibs/connection_test&api_token=YOUR_KEY
 
 **Pass:** JSON with `success: true`, `read_only: true`, `bridge_available: true`.
 
+**Option images (v1.8.3.2+):** Response should include `option_image_probe` with:
+
+- `join_active: true`
+- `detected_tables` listing POIP / option image tables
+- `sample_images_non_empty` > 0 for ST-A5 stroller value ids (971, 972, 1011, 1024) when POIP data exists on the store
+
 **Fail checks:**
 
 - Missing token → `success: false`, error about `api_token`

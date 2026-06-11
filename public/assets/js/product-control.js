@@ -23,11 +23,15 @@
     var historyLoading = {};
     var isSupplierView = !!bootstrap.isSupplierView;
     var categoryOptions = Array.isArray(bootstrap.categoryOptions) ? bootstrap.categoryOptions.slice() : [];
-    var costFieldLabel = isSupplierView ? 'Supplier Sale' : 'Supplier Cost';
+    var costFieldLabel = isSupplierView ? 'Sale' : 'Rate';
+    var adjustPriceLabel = isSupplierView ? 'Adjust Sale' : 'Adjust Price';
+    var adjustQuantityLabel = 'Adjust Quantity';
+    var ADJUST_REASONS = ['Forward to Wholesale', 'Manual Correction'];
     var form = document.getElementById('productControlCenterForm');
     var variantLinesBody = document.getElementById('pccVariantLinesBody');
     var variantSection = document.getElementById('pccVariantSection');
     var noOptionsNotice = document.getElementById('pccNoOptionsNotice');
+    var simpleNoOptionsHint = document.getElementById('pccSimpleNoOptionsHint');
     var vendorMappingCard = document.getElementById('pccVendorMappingCard');
     var supplierCostField = document.getElementById('pccProductCost');
     var supplierStockField = document.getElementById('pccProductVendorStock');
@@ -100,15 +104,50 @@
         return '<span class="pcc-field-chip">' + esc(value) + '</span>';
     }
 
-    function imageCellHtml(url, fallbackUrl) {
-        var src = trimVal(url) !== '' ? url : (trimVal(fallbackUrl) !== '' ? fallbackUrl : '');
-        if (src) {
+    function handleThumbImageError(img) {
+        var fallback = trimVal(img.getAttribute('data-fallback'));
+        if (fallback !== '') {
+            img.removeAttribute('data-fallback');
+            img.onerror = function () {
+                handleThumbImageError(img);
+            };
+            img.src = fallback;
+            return;
+        }
+        var wrap = img.parentNode;
+        if (wrap) {
+            var empty = document.createElement('div');
+            empty.className = 'pcc-thumb-44 pcc-thumb-44-empty';
+            empty.innerHTML = '<span>No image</span>';
+            wrap.replaceWith(empty);
+        }
+    }
+
+    function imageCellHtml(optionUrl, fallbackUrl) {
+        var option = trimVal(optionUrl);
+        var fallback = trimVal(fallbackUrl);
+        if (option !== '') {
             return '<div class="pcc-thumb-44">'
-                + '<img src="' + esc(src) + '" alt="" loading="lazy" '
-                + 'onerror="this.parentNode.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'pcc-thumb-44 pcc-thumb-44-empty\',innerHTML:\'<span>No image</span>\'}))">'
+                + '<img src="' + esc(option) + '" alt="" loading="lazy" data-fallback="' + esc(fallback) + '">'
+                + '</div>';
+        }
+        if (fallback !== '') {
+            return '<div class="pcc-thumb-44">'
+                + '<img src="' + esc(fallback) + '" alt="" loading="lazy" data-fallback="">'
                 + '</div>';
         }
         return '<div class="pcc-thumb-44 pcc-thumb-44-empty"><span>No image</span></div>';
+    }
+
+    function bindThumbImages(container) {
+        if (!container) {
+            return;
+        }
+        container.querySelectorAll('.pcc-thumb-44 img').forEach(function (img) {
+            img.onerror = function () {
+                handleThumbImageError(img);
+            };
+        });
     }
 
     function healthLabel(label) {
@@ -182,6 +221,8 @@
             return;
         }
         if (url) {
+            placeholder.hidden = true;
+            img.hidden = false;
             img.onerror = function () {
                 img.hidden = true;
                 img.removeAttribute('src');
@@ -189,8 +230,6 @@
             };
             img.src = url;
             img.loading = 'lazy';
-            img.hidden = false;
-            placeholder.hidden = true;
         } else {
             img.hidden = true;
             img.removeAttribute('src');
@@ -324,6 +363,18 @@
         return '<span class="pcc-cell-value" data-editable="' + esc(field) + '" data-variant-index="' + index + '" tabindex="0" title="Double-click to edit">' + display + '</span>';
     }
 
+    function editableCellWithAdjustHtml(field, value, index, adjustMode) {
+        var adjustBtn = '';
+        if (canEditSupplier && adjustMode) {
+            var label = adjustMode === 'price' ? adjustPriceLabel : adjustQuantityLabel;
+            var shortLabel = adjustMode === 'price' ? 'Price' : 'Qty';
+            adjustBtn = '<button type="button" class="pcc-v202-adjust-mini pcc-v202-adjust-trigger" data-adjust-scope="variant" data-adjust-mode="'
+                + esc(adjustMode) + '" data-variant-index="' + index + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">'
+                + esc(shortLabel) + '</button>';
+        }
+        return '<div class="pcc-cell-with-adjust">' + editableCellHtml(field, value, index) + adjustBtn + '</div>';
+    }
+
     function renderVariantLinesTable(variants, workspace) {
         if (!variantLinesBody) {
             return;
@@ -343,20 +394,23 @@
             state.cost_meta = null;
             state.stock_meta = null;
 
+            var optionImageUrl = variant.option_image_url || '';
+            var fallbackImageUrl = variant.fallback_image_url || productImageUrl;
             var health = computeVariantHealth(state, workspace);
             tr.innerHTML =
-                '<td class="pcc-vcol-image">' + imageCellHtml(variant.image_url, productImageUrl) + '</td>'
+                '<td class="pcc-vcol-image">' + imageCellHtml(optionImageUrl, fallbackImageUrl) + '</td>'
                 + '<td class="pcc-vcol-line"><span class="pcc-cell-ellipsis" title="' + esc(variant.line_label || '') + '">' + esc(variant.line_label || variant.option_value || 'Option') + '</span></td>'
                 + '<td class="pcc-vcol-model"><span class="pcc-cell-ellipsis">' + esc(variant.source_model || '—') + '</span></td>'
                 + '<td class="pcc-vcol-vendor">' + editableCellHtml('supplier_model', state.supplier_model, index) + '</td>'
-                + '<td class="pcc-vcol-cost pcc-num">' + editableCellHtml('product_cost', state.product_cost, index) + '</td>'
+                + '<td class="pcc-vcol-cost pcc-num pcc-editable-cell">' + editableCellWithAdjustHtml('product_cost', state.product_cost, index, 'price') + '</td>'
                 + '<td class="pcc-vcol-stock pcc-ro-cell pcc-num">' + esc(variant.source_stock ?? '—') + '</td>'
-                + '<td class="pcc-vcol-vstock pcc-num">' + editableCellHtml('vendor_stock', state.vendor_stock, index) + '</td>'
+                + '<td class="pcc-vcol-vstock pcc-num pcc-editable-cell">' + editableCellWithAdjustHtml('vendor_stock', state.vendor_stock, index, 'quantity') + '</td>'
                 + '<td class="pcc-vcol-health"><span class="badge badge-sm badge-' + esc(health.cls) + '">' + esc(health.label) + '</span></td>'
                 + '<td class="pcc-vcol-history"><button type="button" class="pcc-history-icon-btn pcc-row-history-btn" data-variant-id="' + esc(variant.product_variant_id || '') + '" title="View history" aria-label="View option history">' + HISTORY_ICON + '</button></td>';
             variantLinesBody.appendChild(tr);
         });
 
+        bindThumbImages(variantLinesBody);
         bindVariantCellEvents();
     }
 
@@ -384,6 +438,42 @@
                 var variantId = btn.getAttribute('data-variant-id');
                 activateTab('history');
                 loadHistory(currentProductId, variantId);
+            });
+        });
+        bindAdjustTriggers(variantLinesBody);
+    }
+
+    function bindAdjustTriggers(container) {
+        if (!container) {
+            return;
+        }
+        container.querySelectorAll('.pcc-v202-adjust-trigger').forEach(function (btn) {
+            btn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                if (!canEditSupplier) {
+                    return;
+                }
+                var mode = btn.getAttribute('data-adjust-mode') || 'price';
+                var scope = btn.getAttribute('data-adjust-scope') || 'product';
+                var base = 0;
+                var variantIndex;
+                if (scope === 'variant') {
+                    variantIndex = parseInt(btn.getAttribute('data-variant-index') || '0', 10);
+                    var state = getVariantState(variantIndex);
+                    base = mode === 'price'
+                        ? (state.product_cost === '' || state.product_cost == null ? 0 : state.product_cost)
+                        : (state.vendor_stock ?? 0);
+                } else {
+                    base = mode === 'price'
+                        ? (supplierCostField ? supplierCostField.value : 0)
+                        : (supplierStockField ? supplierStockField.value : 0);
+                }
+                showAdjustModal({
+                    scope: scope,
+                    mode: mode,
+                    variantIndex: variantIndex,
+                    baseValue: base
+                });
             });
         });
     }
@@ -466,12 +556,18 @@
         return collected;
     }
 
-    function toggleVariableLayout(isVariable) {
+    function toggleVariableLayout(isVariable, showSimpleNoOptionsHint) {
         document.querySelectorAll('.pcc-simple-supplier-field').forEach(function (el) {
             el.hidden = isVariable;
         });
         if (variantSection) {
             variantSection.hidden = !isVariable;
+        }
+        if (simpleNoOptionsHint) {
+            simpleNoOptionsHint.hidden = isVariable || !showSimpleNoOptionsHint;
+        }
+        if (noOptionsNotice) {
+            noOptionsNotice.hidden = true;
         }
         var workspaceEl = document.querySelector('.pcc-v202-workspace');
         if (workspaceEl) {
@@ -708,13 +804,15 @@
 
         renderSupplierFields(workspace);
 
-        var isVariable = workspace.type === 'variable';
-        toggleVariableLayout(isVariable);
-        if (noOptionsNotice) {
-            noOptionsNotice.hidden = !(isVariable && workspace.no_options_synced);
-        }
+        var variantCount = workspace.variant_count != null
+            ? workspace.variant_count
+            : (workspace.variants ? workspace.variants.length : 0);
+        var hasOptionRows = variantCount > 0;
+        var isVariable = hasOptionRows;
+        var showSimpleNoOptionsHint = workspace.type === 'variable' && variantCount === 0 && workspace.no_options_synced;
+        toggleVariableLayout(isVariable, showSimpleNoOptionsHint);
 
-        if (isVariable) {
+        if (hasOptionRows) {
             setInput('pccProductCost', '');
             setInput('pccProductVendorStock', '');
             setInput('pccCostMeta', '');
@@ -800,26 +898,30 @@
         return Math.max(0, amount);
     }
 
-    var COST_ADJUST_TYPES = [
-        { value: 'fixed_plus', label: '+ Fixed Amount' },
-        { value: 'fixed_minus', label: '− Fixed Amount' },
-        { value: 'percent_plus', label: '+ Percentage' },
-        { value: 'percent_minus', label: '− Percentage' }
-    ];
-    var STOCK_ADJUST_TYPES = [
-        { value: 'increase', label: 'Increase' },
-        { value: 'decrease', label: 'Decrease' }
-    ];
-
-    function populateAdjustTypeSelect(field, selectedType) {
-        var select = document.getElementById('pccAdjustType');
-        if (!select) {
-            return;
+    function composeAdjustType(mode, changeType, method) {
+        if (mode === 'quantity') {
+            return changeType === 'increase' ? 'increase' : 'decrease';
         }
-        var options = field === 'cost' ? COST_ADJUST_TYPES : STOCK_ADJUST_TYPES;
-        select.innerHTML = options.map(function (opt) {
-            return '<option value="' + esc(opt.value) + '"' + (opt.value === selectedType ? ' selected' : '') + '>' + esc(opt.label) + '</option>';
-        }).join('');
+        var prefix = method === 'percent' ? 'percent' : 'fixed';
+        var suffix = changeType === 'increase' ? '_plus' : '_minus';
+        return prefix + suffix;
+    }
+
+    function setAdjustPopoverMode(mode) {
+        var methodWrap = document.getElementById('pccAdjustMethodWrap');
+        var amountLabel = document.getElementById('pccAdjustAmountLabel');
+        var amountEl = document.getElementById('pccAdjustAmount');
+        if (methodWrap) {
+            methodWrap.hidden = mode !== 'price';
+        }
+        if (amountLabel) {
+            amountLabel.textContent = mode === 'price' ? 'Amount' : 'Quantity';
+        }
+        if (amountEl) {
+            amountEl.step = mode === 'price' ? '0.01' : '1';
+            amountEl.min = '0';
+            amountEl.placeholder = mode === 'price' ? 'Enter amount' : 'Enter quantity';
+        }
     }
 
     function showAdjustModal(context) {
@@ -829,15 +931,24 @@
         }
         var title = document.getElementById('pccAdjustTitle');
         var amountEl = document.getElementById('pccAdjustAmount');
-        document.getElementById('pccAdjustNote').value = '';
-        populateAdjustTypeSelect(context.field, context.presetType || (context.field === 'cost' ? 'fixed_plus' : 'increase'));
+        var changeTypeEl = document.getElementById('pccAdjustChangeType');
+        var methodEl = document.getElementById('pccAdjustMethod');
+        var reasonEl = document.getElementById('pccAdjustReason');
+        if (changeTypeEl) {
+            changeTypeEl.value = 'increase';
+        }
+        if (methodEl) {
+            methodEl.value = 'fixed';
+        }
+        if (reasonEl) {
+            reasonEl.value = '';
+        }
         if (amountEl) {
             amountEl.value = context.presetAmount != null ? String(context.presetAmount) : '';
-            amountEl.step = context.field === 'cost' ? '0.01' : '1';
-            amountEl.min = '0';
         }
+        setAdjustPopoverMode(context.mode);
         if (title) {
-            title.textContent = context.field === 'cost' ? 'Cost Adjustment' : 'Stock Adjustment';
+            title.textContent = context.mode === 'price' ? adjustPriceLabel : adjustQuantityLabel;
         }
         updateAdjustPreview();
         adjustPopover.hidden = false;
@@ -857,13 +968,15 @@
         if (!adjustContext) {
             return;
         }
-        var type = document.getElementById('pccAdjustType').value;
+        var changeType = document.getElementById('pccAdjustChangeType').value;
+        var method = document.getElementById('pccAdjustMethod').value;
         var amount = document.getElementById('pccAdjustAmount').value;
         var preview = document.getElementById('pccAdjustPreview');
         if (!preview) {
             return;
         }
-        var next = adjustContext.field === 'cost'
+        var type = composeAdjustType(adjustContext.mode, changeType, method);
+        var next = adjustContext.mode === 'price'
             ? applyCostAdjust(adjustContext.baseValue, type, amount)
             : applyStockAdjust(adjustContext.baseValue, type, amount);
         preview.textContent = 'Preview: ' + adjustContext.baseValue + ' → ' + next;
@@ -873,28 +986,29 @@
         if (!adjustContext) {
             return;
         }
-        var type = document.getElementById('pccAdjustType').value;
+        var changeType = document.getElementById('pccAdjustChangeType').value;
+        var method = document.getElementById('pccAdjustMethod').value;
         var amount = document.getElementById('pccAdjustAmount').value;
-        var note = trimVal(document.getElementById('pccAdjustNote').value);
+        var note = trimVal(document.getElementById('pccAdjustReason').value);
         if (trimVal(amount) === '' || parseFloat(amount) < 0) {
             window.alert('A valid adjustment amount is required.');
             return;
         }
-        if (note === '') {
-            window.alert('Reason is required for every adjustment.');
+        if (note === '' || ADJUST_REASONS.indexOf(note) === -1) {
+            window.alert('Select a reason before applying this adjustment.');
             return;
         }
+        var type = composeAdjustType(adjustContext.mode, changeType, method);
         var meta = { type: type, amount: amount, note: note };
-        var next = adjustContext.field === 'cost'
+        var next = adjustContext.mode === 'price'
             ? applyCostAdjust(adjustContext.baseValue, type, amount)
             : applyStockAdjust(adjustContext.baseValue, type, amount);
 
         if (adjustContext.scope === 'variant') {
             var state = getVariantState(adjustContext.variantIndex);
-            if (adjustContext.field === 'cost') {
+            if (adjustContext.mode === 'price') {
                 state.product_cost = String(next);
                 state.cost_meta = meta;
-                syncSupplierFieldDisplay('product_cost', state.product_cost);
             } else {
                 state.vendor_stock = next;
                 state.stock_meta = meta;
@@ -902,7 +1016,7 @@
             var row = variantLinesBody.querySelector('tr[data-variant-index="' + adjustContext.variantIndex + '"]');
             if (row) {
                 row.classList.add('pcc-row-dirty');
-                var cellField = adjustContext.field === 'cost' ? 'product_cost' : 'vendor_stock';
+                var cellField = adjustContext.mode === 'price' ? 'product_cost' : 'vendor_stock';
                 var cell = row.querySelector('.pcc-cell-value[data-editable="' + cellField + '"]');
                 if (cell) {
                     renderVariantCellDisplay(cell, cellField, adjustContext.variantIndex);
@@ -910,7 +1024,7 @@
                 var workspace = workspaces[String(currentProductId)] || {};
                 updateVariantRowHealth(row, state, workspace);
             }
-        } else if (adjustContext.field === 'cost') {
+        } else if (adjustContext.mode === 'price') {
             setInput('pccProductCost', String(next));
             syncSupplierFieldDisplay('product_cost', next);
             markSupplierFieldDirty('product_cost');
@@ -998,23 +1112,7 @@
         }
     });
 
-    document.querySelectorAll('.pcc-v202-adjust-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            if (!canEditSupplier) {
-                return;
-            }
-            var field = btn.getAttribute('data-adjust-field');
-            var base = field === 'cost'
-                ? (supplierCostField ? supplierCostField.value : 0)
-                : (supplierStockField ? supplierStockField.value : 0);
-            showAdjustModal({
-                scope: btn.getAttribute('data-adjust-scope') || 'product',
-                field: field,
-                baseValue: base,
-                presetType: btn.getAttribute('data-adjust-type')
-            });
-        });
-    });
+    bindAdjustTriggers(document.getElementById('pccSimpleAdjustPair'));
 
     var adjustApply = document.getElementById('pccAdjustApply');
     if (adjustApply) {
@@ -1024,10 +1122,14 @@
     if (adjustCancel) {
         adjustCancel.addEventListener('click', hideAdjustPopover);
     }
-    var adjustTypeEl = document.getElementById('pccAdjustType');
+    var adjustChangeTypeEl = document.getElementById('pccAdjustChangeType');
+    var adjustMethodEl = document.getElementById('pccAdjustMethod');
     var adjustAmountEl = document.getElementById('pccAdjustAmount');
-    if (adjustTypeEl) {
-        adjustTypeEl.addEventListener('change', updateAdjustPreview);
+    if (adjustChangeTypeEl) {
+        adjustChangeTypeEl.addEventListener('change', updateAdjustPreview);
+    }
+    if (adjustMethodEl) {
+        adjustMethodEl.addEventListener('change', updateAdjustPreview);
     }
     if (adjustAmountEl) {
         adjustAmountEl.addEventListener('input', updateAdjustPreview);

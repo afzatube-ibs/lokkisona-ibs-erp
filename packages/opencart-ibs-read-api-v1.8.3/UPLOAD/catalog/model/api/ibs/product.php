@@ -145,6 +145,80 @@ class ModelApiIbsProduct extends Model
         return $grouped;
     }
 
+    /**
+     * Read-only probe for POIP / option image tables (connection test + diagnostics).
+     *
+     * @param array<int, int|string> $sampleValueIds
+     */
+    public function probeOptionImageSources(array $sampleValueIds = []): array
+    {
+        $detected = [];
+        $candidateTables = [
+            'product_option_value',
+            'poip_product_option_value',
+            'product_option_value_image',
+            'improved_option_value',
+        ];
+
+        foreach ($candidateTables as $tableSuffix) {
+            if (!$this->tableExists($tableSuffix)) {
+                continue;
+            }
+
+            $imageColumns = [];
+            foreach (['image', 'optionimage', 'option_image', 'thumb'] as $column) {
+                if ($this->columnExists($tableSuffix, $column)) {
+                    $imageColumns[] = $column;
+                }
+            }
+
+            $detected[] = [
+                'table' => DB_PREFIX . $tableSuffix,
+                'image_columns' => $imageColumns,
+                'has_product_option_value_id' => $this->columnExists($tableSuffix, 'product_option_value_id'),
+            ];
+        }
+
+        $samples = [];
+        $ids = [];
+        foreach ($sampleValueIds as $valueId) {
+            $valueId = (int) $valueId;
+            if ($valueId > 0) {
+                $ids[$valueId] = $valueId;
+            }
+        }
+        if ($ids === []) {
+            $ids = [971, 972, 1011, 1024];
+        }
+
+        $imageJoin = $this->resolveOptionImageJoin('pov');
+        if (($imageJoin['select'] ?? '') !== '') {
+            $idList = implode(',', array_map('intval', array_values($ids)));
+            $sql = 'SELECT pov.product_option_value_id' . $imageJoin['select']
+                . ' FROM `' . DB_PREFIX . 'product_option_value` pov '
+                . $imageJoin['join']
+                . ' WHERE pov.product_option_value_id IN (' . $idList . ')';
+            $query = $this->db->query($sql);
+            foreach ($query->rows as $row) {
+                $valueId = (int) ($row['product_option_value_id'] ?? 0);
+                if ($valueId <= 0) {
+                    continue;
+                }
+                $samples[(string) $valueId] = trim((string) ($row['option_image'] ?? ''));
+            }
+        }
+
+        $nonEmptySamples = array_filter($samples, static fn (string $path): bool => $path !== '');
+
+        return [
+            'join_active' => ($imageJoin['select'] ?? '') !== '',
+            'detected_tables' => $detected,
+            'sample_value_ids' => array_values($ids),
+            'sample_images' => $samples,
+            'sample_images_non_empty' => count($nonEmptySamples),
+        ];
+    }
+
     private function resolveOptionModelSelect(string $alias): string
     {
         if ($this->optionModelColumn === null) {
@@ -160,34 +234,56 @@ class ModelApiIbsProduct extends Model
 
     private function resolveOptionImageJoin(string $alias): array
     {
-        if ($this->optionImageTable === null) {
-            foreach (['product_option_value_image', 'poip_product_option_value'] as $candidate) {
-                if ($this->tableExists($candidate) && $this->columnExists($candidate, 'product_option_value_id')) {
-                    $this->optionImageTable = $candidate;
+        if ($this->optionImageTable !== null) {
+            return $this->optionImageTable;
+        }
+
+        $selectParts = [];
+        $joins = '';
+
+        foreach (['optionimage', 'image', 'option_image'] as $column) {
+            if ($this->columnExists('product_option_value', $column)) {
+                $selectParts[] = 'NULLIF(' . $alias . '.' . $column . ', \'\')';
+                break;
+            }
+        }
+
+        $joinIndex = 0;
+        foreach (['poip_product_option_value', 'product_option_value_image', 'improved_option_value'] as $candidate) {
+            if (!$this->tableExists($candidate) || !$this->columnExists($candidate, 'product_option_value_id')) {
+                continue;
+            }
+
+            $imageColumn = '';
+            foreach (['image', 'optionimage', 'option_image'] as $column) {
+                if ($this->columnExists($candidate, $column)) {
+                    $imageColumn = $column;
                     break;
                 }
             }
-            if ($this->optionImageTable === null) {
-                $this->optionImageTable = '';
+            if ($imageColumn === '') {
+                continue;
             }
+
+            $joinAlias = 'oimg' . $joinIndex;
+            $joinIndex++;
+            $joins .= ' LEFT JOIN `' . DB_PREFIX . $candidate . '` ' . $joinAlias
+                . ' ON ' . $joinAlias . '.product_option_value_id = ' . $alias . '.product_option_value_id ';
+            $selectParts[] = 'NULLIF(' . $joinAlias . '.' . $imageColumn . ', \'\')';
         }
 
-        if ($this->optionImageTable === '') {
-            return ['select' => '', 'join' => ''];
+        if ($selectParts === []) {
+            $this->optionImageTable = ['select' => '', 'join' => ''];
+
+            return $this->optionImageTable;
         }
 
-        $imageColumn = $this->columnExists($this->optionImageTable, 'image') ? 'image' : '';
-        if ($imageColumn === '') {
-            return ['select' => '', 'join' => ''];
-        }
-
-        $joinAlias = 'oimg';
-
-        return [
-            'select' => ', ' . $joinAlias . '.' . $imageColumn . ' AS option_image',
-            'join' => ' LEFT JOIN `' . DB_PREFIX . $this->optionImageTable . '` ' . $joinAlias
-                . ' ON ' . $joinAlias . '.product_option_value_id = ' . $alias . '.product_option_value_id ',
+        $this->optionImageTable = [
+            'select' => ', COALESCE(' . implode(', ', $selectParts) . ') AS option_image',
+            'join' => $joins,
         ];
+
+        return $this->optionImageTable;
     }
 
     private function tableExists(string $tableSuffix): bool

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>IBS OpenCart Sync Connector</name>
+    <code>ibs_opencart_sync_connector</code>
+    <version>1.0.0</version>
+    <author>IBS ERP</author>
+    <link>https://github.com/lokkisona/ibs-erp</link>
+    <!-- Metadata only. Files are installed from upload/ by Extension Installer. -->
+    <!-- Module listing requires upload/admin/controller/extension/module/ibs_sync_connector.php -->
+</modification>

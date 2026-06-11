@@ -5,19 +5,23 @@ namespace App\Services\Write;
 use App\ActivityLog;
 use App\Repositories\Write\ProductVariantWriteRepository;
 use App\Repositories\Write\ProductWriteRepository;
+use App\Services\Read\OpenCartOptionImageResolver;
 use App\Services\Read\OpenCartReadClient;
 
 class ProductWriteService
 {
     private ProductWriteRepository $repository;
     private ProductVariantWriteRepository $variants;
+    private ?OpenCartOptionImageResolver $optionImageResolver = null;
 
     public function __construct(
         ?ProductWriteRepository $repository = null,
-        ?ProductVariantWriteRepository $variants = null
+        ?ProductVariantWriteRepository $variants = null,
+        ?OpenCartOptionImageResolver $optionImageResolver = null
     ) {
         $this->repository = $repository ?? new ProductWriteRepository();
         $this->variants = $variants ?? new ProductVariantWriteRepository();
+        $this->optionImageResolver = $optionImageResolver;
     }
 
     public function tableReady(): bool
@@ -214,12 +218,19 @@ class ProductWriteService
     /**
      * @return array{created:int,updated:int,skipped:int}
      */
+    private function optionImageResolver(): OpenCartOptionImageResolver
+    {
+        return $this->optionImageResolver ??= new OpenCartOptionImageResolver();
+    }
+
     private function upsertWarehouseVariants(int $productId, array $options): array
     {
         $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0];
         if (!$this->variants->tableExists() || $productId <= 0) {
             return $stats;
         }
+
+        $options = $this->optionImageResolver()->enrichOptions($options);
 
         foreach ($options as $option) {
             if (!is_array($option)) {
@@ -239,7 +250,7 @@ class ProductWriteService
                 'option_value' => (string) ($option['option_value'] ?? ''),
                 'source_model' => trim((string) ($option['source_model'] ?? '')) ?: null,
                 'source_stock' => isset($option['source_stock']) ? (int) $option['source_stock'] : null,
-                'option_image_path' => trim((string) ($option['option_image_path'] ?? '')) ?: null,
+                'option_image_path' => OpenCartOptionImageResolver::extractFromPayload($option),
             ];
 
             $existing = $this->variants->findBySourceOption($productId, $sourceOptionId, $sourceOptionValueId);

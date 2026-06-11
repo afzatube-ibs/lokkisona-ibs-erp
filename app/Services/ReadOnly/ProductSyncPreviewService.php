@@ -3,6 +3,7 @@
 namespace App\Services\ReadOnly;
 
 use App\Repositories\Write\ProductWriteRepository;
+use App\Services\Read\OpenCartOptionImageResolver;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\Read\OpenCartSchemaProbe;
 
@@ -76,7 +77,7 @@ class ProductSyncPreviewService
                     'product_option_value_id' => (string) ($option['product_option_value_id'] ?? ''),
                     'option_name' => (string) ($option['option_name'] ?? ''),
                     'option_value' => (string) ($option['option_value'] ?? ''),
-                    'option_image_path' => (string) ($option['option_image_path'] ?? ''),
+                    'option_image_path' => (string) (OpenCartOptionImageResolver::extractFromPayload($option) ?? ''),
                     'source_model' => (string) ($option['source_model'] ?? ''),
                     'source_stock' => $option['source_stock'] ?? null,
                     'price_display' => (string) ($option['price_display'] ?? ''),

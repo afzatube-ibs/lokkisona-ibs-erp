@@ -1,6 +1,8 @@
 <?php
 $costLabel = !empty($isSupplierView) ? 'Sale' : 'Cost';
-$supplierCostLabel = !empty($isSupplierView) ? 'Supplier Sale' : 'Supplier Cost';
+$rateLabel = !empty($isSupplierView) ? 'Sale' : 'Rate';
+$adjustPriceLabel = !empty($isSupplierView) ? 'Adjust Sale' : 'Adjust Price';
+$adjustQuantityLabel = 'Adjust Quantity';
 $defaultSupplierId = (int) (config('auth.supplier_id', 1));
 $categoryOptions = $categoryOptions ?? [];
 ?>
@@ -47,23 +49,24 @@ $categoryOptions = $categoryOptions ?? [];
                                     <div class="pcc-v202-fact pcc-v202-fact-full"><dt>Product Name</dt><dd id="pccProductNameMuted">—</dd></div>
                                     <div class="pcc-v202-fact"><dt>Product ID</dt><dd id="pccProductIdDisplay">—</dd></div>
                                     <div class="pcc-v202-fact"><dt>Main Model</dt><dd id="pccMainModel">—</dd></div>
-                                    <div class="pcc-v202-info-line pcc-v202-fact-editable" data-supplier-field="ibs_category">
-                                        <span class="pcc-v202-info-label">IBS Category:</span>
-                                        <span class="pcc-v202-info-value pcc-v202-field-value pcc-dblclick-edit pcc-category-display" data-field="ibs_category" data-input="pccCategory" tabindex="0" id="pccIbsCategoryDisplay" title="Double-click to edit">—</span>
-                                    </div>
                                     <div class="pcc-v202-fact"><dt>Type</dt><dd id="pccProductType">—</dd></div>
-                                    <div class="pcc-v202-fact"><dt>Stock</dt><dd id="pccTotalStock">—</dd></div>
+                                    <div class="pcc-v202-fact"><dt>Live Stock</dt><dd id="pccTotalStock">—</dd></div>
                                     <div class="pcc-v202-fact"><dt>Variants</dt><dd id="pccTotalVariants">—</dd></div>
                                     <div class="pcc-v202-fact"><dt>Last Sync</dt><dd id="pccLastSynced">—</dd></div>
                                 </dl>
                             </div>
                         </section>
 
-                        <section class="pcc-v202-supplier" id="pccVendorMappingCard" aria-label="Supplier control">
+                        <section class="pcc-v202-supplier" id="pccVendorMappingCard" aria-label="IBS Details">
+                            <h3 class="pcc-v202-section-title">IBS Details</h3>
                             <p class="pcc-v202-supplier-name">Iqbal &amp; Brothers (IBS)</p>
                             <div class="pcc-v202-supplier-fields" id="pccSupplierFields">
+                                <div class="pcc-v202-field-row" data-supplier-field="ibs_category">
+                                    <span class="pcc-v202-field-label">IBS Category</span>
+                                    <span class="pcc-v202-field-value pcc-dblclick-edit pcc-category-display" data-field="ibs_category" data-input="pccCategory" tabindex="0" id="pccIbsCategoryDisplay" title="Double-click to edit">—</span>
+                                </div>
                                 <div class="pcc-v202-field-row" data-supplier-field="supplier_model">
-                                    <span class="pcc-v202-field-label">Main Vendor Model</span>
+                                    <span class="pcc-v202-field-label">Main IBS Model</span>
                                     <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="supplier_model" data-input="pccSupplierModel" tabindex="0">—</span>
                                     <input type="hidden" name="supplier_model" id="pccSupplierModel" value="">
                                 </div>
@@ -73,14 +76,18 @@ $categoryOptions = $categoryOptions ?? [];
                                     <input type="hidden" name="low_warning_threshold" id="pccLowWarning" value="">
                                 </div>
                                 <div class="pcc-v202-field-row pcc-simple-supplier-field" data-supplier-field="product_cost">
-                                    <span class="pcc-v202-field-label"><?= e($supplierCostLabel) ?></span>
+                                    <span class="pcc-v202-field-label"><?= e($rateLabel) ?></span>
                                     <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="product_cost" data-input="pccProductCost" tabindex="0">—</span>
                                     <input type="hidden" name="product_cost" id="pccProductCost" value="">
                                 </div>
                                 <div class="pcc-v202-field-row pcc-simple-supplier-field" data-supplier-field="vendor_stock">
-                                    <span class="pcc-v202-field-label">Vendor Stock</span>
+                                    <span class="pcc-v202-field-label">IBS Stock</span>
                                     <span class="pcc-v202-field-value pcc-dblclick-edit" data-field="vendor_stock" data-input="pccProductVendorStock" tabindex="0">—</span>
                                     <input type="hidden" name="vendor_stock" id="pccProductVendorStock" value="">
+                                </div>
+                                <div class="pcc-v202-adjust-pair pcc-simple-supplier-field" id="pccSimpleAdjustPair">
+                                    <button type="button" class="pcc-v202-adjust-trigger" data-adjust-scope="product" data-adjust-mode="price"><?= e($adjustPriceLabel) ?></button>
+                                    <button type="button" class="pcc-v202-adjust-trigger" data-adjust-scope="product" data-adjust-mode="quantity"><?= e($adjustQuantityLabel) ?></button>
                                 </div>
                                 <div class="pcc-v202-field-row" data-supplier-field="status">
                                     <span class="pcc-v202-field-label">Status</span>
@@ -88,28 +95,11 @@ $categoryOptions = $categoryOptions ?? [];
                                     <input type="hidden" name="status" id="pccStatus" value="active">
                                 </div>
                             </div>
-                            <div class="pcc-v202-adjust-block pcc-simple-supplier-field" id="pccCostAdjustBlock">
-                                <span class="pcc-v202-adjust-label">Cost Adjustment</span>
-                                <div class="pcc-v202-adjust-btns">
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="fixed_plus">+ Fixed Amount</button>
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="fixed_minus">− Fixed Amount</button>
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="percent_plus">+ Percentage</button>
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="cost" data-adjust-type="percent_minus">− Percentage</button>
-                                </div>
-                            </div>
-                            <div class="pcc-v202-adjust-block pcc-simple-supplier-field" id="pccStockAdjustBlock">
-                                <span class="pcc-v202-adjust-label">Stock Adjustment</span>
-                                <div class="pcc-v202-adjust-btns">
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="increase">Increase</button>
-                                    <button type="button" class="pcc-v202-adjust-btn" data-adjust-scope="product" data-adjust-field="stock" data-adjust-type="decrease">Decrease</button>
-                                </div>
-                            </div>
+                            <p class="page-description pcc-simple-no-options-hint pcc-simple-supplier-field" id="pccSimpleNoOptionsHint" hidden>No options synced yet. Refresh Products to pull option lines.</p>
                             <?php if (!empty($writeGateSupplierNoteReady)): ?>
                             <label class="pcc-v202-note-field">
-                                <textarea name="supplier_note" id="pccSupplierNote" class="form-input form-input-compact" rows="1" placeholder="Supplier note (ERP only)"></textarea>
+                                <textarea name="supplier_note" id="pccSupplierNote" class="form-input form-input-compact" rows="1" placeholder="Internal note (ERP only)"></textarea>
                             </label>
-                            <?php elseif (!empty($writeGateSupplierNote)): ?>
-                            <p class="page-description pcc-field-hint pcc-v202-note-hint"><?= e($writeGateSupplierNote['message'] ?? 'Supplier note unavailable until migration 0012 is applied manually.') ?></p>
                             <?php endif; ?>
                         </section>
                     </div>
@@ -127,10 +117,10 @@ $categoryOptions = $categoryOptions ?? [];
                                         <th class="pcc-vcol-image">Image</th>
                                         <th class="pcc-vcol-line">Option Value</th>
                                         <th class="pcc-vcol-model">Model</th>
-                                        <th class="pcc-vcol-vendor">Vendor Model</th>
-                                        <th class="pcc-vcol-cost"><?= e($supplierCostLabel) ?></th>
-                                        <th class="pcc-vcol-stock">Stock</th>
-                                        <th class="pcc-vcol-vstock">Vendor Stock</th>
+                                        <th class="pcc-vcol-vendor">IBS Model</th>
+                                        <th class="pcc-vcol-cost"><?= e($rateLabel) ?></th>
+                                        <th class="pcc-vcol-stock">Live Stock</th>
+                                        <th class="pcc-vcol-vstock">IBS Stock</th>
                                         <th class="pcc-vcol-health">Health</th>
                                         <th class="pcc-vcol-history">History</th>
                                     </tr>
@@ -184,15 +174,28 @@ $categoryOptions = $categoryOptions ?? [];
 
 <div class="pcc-adjust-popover pcc-v202-adjust-modal" id="pccAdjustPopover" hidden>
     <div class="pcc-adjust-popover-inner">
-        <p class="pcc-adjust-title" id="pccAdjustTitle">Adjustment</p>
-        <label class="pcc-field pcc-field-compact">Adjustment type
-            <select id="pccAdjustType" class="form-input"></select>
+        <p class="pcc-adjust-title" id="pccAdjustTitle">Adjust Price</p>
+        <label class="pcc-field pcc-field-compact" id="pccAdjustChangeTypeWrap">Change Type
+            <select id="pccAdjustChangeType" class="form-input">
+                <option value="increase">Increase</option>
+                <option value="decrease">Decrease</option>
+            </select>
         </label>
-        <label class="pcc-field pcc-field-compact">Amount <span class="pcc-required">*</span>
+        <label class="pcc-field pcc-field-compact" id="pccAdjustMethodWrap">Method
+            <select id="pccAdjustMethod" class="form-input">
+                <option value="fixed">Fixed Amount</option>
+                <option value="percent">Percentage</option>
+            </select>
+        </label>
+        <label class="pcc-field pcc-field-compact" id="pccAdjustAmountWrap"><span id="pccAdjustAmountLabel">Amount</span> <span class="pcc-required">*</span>
             <input type="number" id="pccAdjustAmount" class="form-input" min="0" step="any" placeholder="Enter amount" required>
         </label>
-        <label class="pcc-field pcc-field-compact">Reason <span class="pcc-required">*</span>
-            <input type="text" id="pccAdjustNote" class="form-input" placeholder="Required for every adjustment" required>
+        <label class="pcc-field pcc-field-compact" id="pccAdjustReasonWrap">Reason <span class="pcc-required">*</span>
+            <select id="pccAdjustReason" class="form-input" required>
+                <option value="">Select reason</option>
+                <option value="Forward to Wholesale">Forward to Wholesale</option>
+                <option value="Manual Correction">Manual Correction</option>
+            </select>
         </label>
         <p class="pcc-adjust-preview" id="pccAdjustPreview"></p>
         <div class="pcc-adjust-actions">

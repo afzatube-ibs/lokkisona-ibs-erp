@@ -3,9 +3,17 @@
 namespace App\Services\ReadOnly;
 
 use App\Domain\ProductControlVendorStockHealth;
+use App\Services\Read\OpenCartOptionImageResolver;
 
 class ProductControlCatalogReadService
 {
+    private ?OpenCartOptionImageResolver $optionImageResolver = null;
+
+    public function __construct(?OpenCartOptionImageResolver $optionImageResolver = null)
+    {
+        $this->optionImageResolver = $optionImageResolver;
+    }
+
     public function build(array $productRows, array $variantRows, bool $isSupplierView = false): array
     {
         $variantsByProduct = [];
@@ -131,7 +139,7 @@ class ProductControlCatalogReadService
                 'source_model' => (string) ($product['source_model'] ?? ''),
                 'source_stock' => $hasVariants ? $ownerStock : ($product['source_stock'] ?? null),
                 'supplier_model' => (string) ($product['supplier_model'] ?? ''),
-                'product_cost' => $product['product_cost'] ?? '',
+                'product_cost' => $this->productCostDisplay($product),
                 'average_cost' => $costDisplay,
                 'owner_stock' => $ownerStock,
                 'vendor_stock' => $vendorStock,
@@ -182,7 +190,7 @@ class ProductControlCatalogReadService
                 'image_url' => opencart_media_url($rawImagePath),
                 'type' => $isVariable ? 'variable' : 'simple',
                 'no_options_synced' => $noOptionsSynced,
-                'product_cost' => $product['product_cost'] ?? '',
+                'product_cost' => $this->productCostDisplay($product),
                 'vendor_stock' => (int) ($product['vendor_stock'] ?? 0),
                 'business_source_id' => $product['business_source_id'] ?? '',
                 'status' => (string) ($product['status'] ?? 'active'),
@@ -218,13 +226,13 @@ class ProductControlCatalogReadService
 
         if ($variants === []) {
             $missingModel = trim((string) ($product['supplier_model'] ?? '')) === '';
-            $missingCost = $product['product_cost'] === null || $product['product_cost'] === '';
+            $missingCost = $this->isMissingCost($product);
         } else {
             foreach ($variants as $variant) {
                 if (trim((string) ($variant['supplier_model'] ?? '')) === '') {
                     $missingModel = true;
                 }
-                if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
+                if ($this->isMissingCost($variant)) {
                     $missingCost = true;
                 }
             }
@@ -307,13 +315,13 @@ class ProductControlCatalogReadService
         $vendorStock = $this->vendorStockTotal($product, $variants);
         $lowWarning = (int) ($product['low_warning_threshold'] ?? 0);
         $hasSupplierData = trim((string) ($product['supplier_model'] ?? '')) !== ''
-            || ($product['product_cost'] !== null && $product['product_cost'] !== '')
+            || $this->hasCost($product)
             || $lowWarning > 0;
 
         if ($variants !== []) {
             foreach ($variants as $variant) {
                 if (trim((string) ($variant['supplier_model'] ?? '')) !== ''
-                    || ($variant['product_cost'] !== null && $variant['product_cost'] !== '')) {
+                    || $this->hasCost($variant)) {
                     $hasSupplierData = true;
                     break;
                 }
@@ -333,11 +341,32 @@ class ProductControlCatalogReadService
         return ['label' => 'Healthy', 'class' => 'ok'];
     }
 
+    private function optionImageResolver(): OpenCartOptionImageResolver
+    {
+        return $this->optionImageResolver ??= new OpenCartOptionImageResolver();
+    }
+
     private function buildVariantRows(array $variants, array $product, bool $isSupplierView): array
     {
         if ($variants === []) {
             return [];
         }
+
+        $missingValueIds = [];
+        foreach ($variants as $variant) {
+            if (trim((string) ($variant['option_image_path'] ?? '')) !== '') {
+                continue;
+            }
+
+            $valueId = trim((string) ($variant['source_option_value_id'] ?? ''));
+            if ($valueId !== '' && ctype_digit($valueId)) {
+                $missingValueIds[] = (int) $valueId;
+            }
+        }
+
+        $resolvedImages = $missingValueIds !== []
+            ? $this->optionImageResolver()->resolveForValueIds($missingValueIds)
+            : [];
 
         $rows = [];
         $productImagePath = trim((string) ($product['image_path'] ?? ''));
@@ -346,21 +375,29 @@ class ProductControlCatalogReadService
         foreach ($variants as $variant) {
             $variantId = (int) ($variant['product_variant_id'] ?? 0);
             $optionPath = trim((string) ($variant['option_image_path'] ?? ''));
-            $imagePath = $optionPath !== '' ? $optionPath : $productImagePath;
-            $imageUrl = $imagePath !== '' ? opencart_media_url($imagePath) : $productImageUrl;
+            if ($optionPath === '') {
+                $valueId = (int) ($variant['source_option_value_id'] ?? 0);
+                if ($valueId > 0 && isset($resolvedImages[$valueId])) {
+                    $optionPath = trim($resolvedImages[$valueId]);
+                }
+            }
+
+            $optionImageUrl = $optionPath !== '' ? opencart_media_url($optionPath) : null;
             $lineHealth = $this->variantHealth($variant, $product, $isSupplierView);
             $rows[] = [
                 'product_variant_id' => $variantId,
                 'line_label' => trim((string) ($variant['option_name'] ?? '') . ': ' . (string) ($variant['option_value'] ?? ''), ': '),
                 'option_name' => (string) ($variant['option_name'] ?? ''),
                 'option_value' => (string) ($variant['option_value'] ?? ''),
-                'image_path' => $imagePath,
-                'image_url' => $imageUrl,
+                'image_path' => $optionPath,
+                'option_image_url' => $optionImageUrl,
+                'fallback_image_url' => $productImageUrl,
+                'image_url' => $optionImageUrl,
                 'source_model' => (string) ($variant['source_model'] ?? ''),
                 'supplier_model' => (string) ($variant['supplier_model'] ?? ''),
                 'supplier_note' => (string) ($variant['supplier_note'] ?? ''),
                 'source_stock' => $variant['source_stock'] ?? null,
-                'product_cost' => $variant['product_cost'] ?? '',
+                'product_cost' => $this->productCostDisplay($variant),
                 'vendor_stock' => (int) ($variant['vendor_stock'] ?? 0),
                 'warning' => $lineHealth['warning'],
                 'health' => $lineHealth['label'],
@@ -417,7 +454,7 @@ class ProductControlCatalogReadService
             ];
         }
 
-        if ($variant['product_cost'] === null || $variant['product_cost'] === '') {
+        if ($this->isMissingCost($variant)) {
             return [
                 'label' => 'Missing Cost',
                 'class' => 'orange',
@@ -446,17 +483,19 @@ class ProductControlCatalogReadService
     private function costDisplay(array $product, array $variants): string
     {
         if ($variants === []) {
-            if ($product['product_cost'] === null || $product['product_cost'] === '') {
+            $productCost = $this->costValue($product);
+            if ($productCost === null) {
                 return '—';
             }
 
-            return (string) $product['product_cost'];
+            return $productCost;
         }
 
         $costs = [];
         foreach ($variants as $variant) {
-            if ($variant['product_cost'] !== null && $variant['product_cost'] !== '') {
-                $costs[] = (float) $variant['product_cost'];
+            $variantCost = $this->costValue($variant);
+            if ($variantCost !== null) {
+                $costs[] = (float) $variantCost;
             }
         }
 
@@ -491,5 +530,39 @@ class ProductControlCatalogReadService
         }
 
         return $total;
+    }
+
+    private function productCostRaw(array $row): ?string
+    {
+        if (!array_key_exists('product_cost', $row)) {
+            return null;
+        }
+
+        $cost = $row['product_cost'];
+        if ($cost === null || $cost === '') {
+            return null;
+        }
+
+        return (string) $cost;
+    }
+
+    private function productCostDisplay(array $row): string
+    {
+        return $this->productCostRaw($row) ?? '';
+    }
+
+    private function costValue(array $row): ?string
+    {
+        return $this->productCostRaw($row);
+    }
+
+    private function isMissingCost(array $row): bool
+    {
+        return $this->costValue($row) === null;
+    }
+
+    private function hasCost(array $row): bool
+    {
+        return !$this->isMissingCost($row);
     }
 }

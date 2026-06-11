@@ -49,6 +49,7 @@ return [
         'relatedoptions',
         'related_options',
     ],
+    'option_image_db_enrichment' => true,
     'db_readonly_allowed' => false,
     'db' => [
         'host' => '',
@@ -98,7 +99,7 @@ return [
                     'price_prefix' => '+',
                     'subtract' => 1,
                     'required' => 1,
-                    'image' => '',
+                    'image' => 'catalog/demo/stroller-blue.png',
                 ],
                 [
                     'option_id' => '11',
@@ -111,6 +112,7 @@ return [
                     'price_prefix' => '+',
                     'subtract' => 1,
                     'required' => 1,
+                    'image' => 'catalog/demo/stroller-red.png',
                 ],
             ],
         ],

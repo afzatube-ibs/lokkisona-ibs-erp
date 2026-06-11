@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.1.8.1',
-    'release_label' => 'IBS Category Visibility Repair',
+    'version' => '2.1.8.3.2',
+    'release_label' => 'POIP Option Image Mapping Repair',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

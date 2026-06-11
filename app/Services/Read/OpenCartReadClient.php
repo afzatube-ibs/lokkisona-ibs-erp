@@ -458,6 +458,7 @@ class OpenCartReadClient
 
     private function normalizeWarehouseProducts(array $products): array
     {
+        $resolver = new OpenCartOptionImageResolver();
         $normalized = [];
         foreach ($products as $product) {
             if (!is_array($product)) {
@@ -467,7 +468,7 @@ class OpenCartReadClient
             $rawFromWarehouse = $product['from_warehouse'] ?? $product['fromWarehouse'] ?? null;
             $fromWarehouse = self::isStrictFromWarehouseValue($rawFromWarehouse) ? 1 : -1;
             $optionsRaw = $product['options'] ?? $product['option_lines'] ?? $product['variants'] ?? null;
-            $options = $this->normalizeOptions(is_array($optionsRaw) ? $optionsRaw : []);
+            $options = $resolver->enrichOptions($this->normalizeOptions(is_array($optionsRaw) ? $optionsRaw : []));
             $hasOptionsKey = array_key_exists('options', $product)
                 || array_key_exists('option_lines', $product)
                 || array_key_exists('variants', $product);
@@ -518,7 +519,7 @@ class OpenCartReadClient
                 'option_value' => (string) ($option['option_value'] ?? $option['value'] ?? ''),
                 'source_model' => trim((string) ($option['model'] ?? $option['source_model'] ?? '')) ?: null,
                 'source_stock' => isset($option['quantity']) ? (int) $option['quantity'] : (isset($option['source_stock']) ? (int) $option['source_stock'] : null),
-                'option_image_path' => trim((string) ($option['image'] ?? $option['option_image_path'] ?? '')) ?: null,
+                'option_image_path' => OpenCartOptionImageResolver::extractFromPayload($option),
                 'price' => $price,
                 'price_prefix' => $prefix !== '' ? $prefix : null,
                 'price_display' => $this->formatOptionPrice($price, $prefix),

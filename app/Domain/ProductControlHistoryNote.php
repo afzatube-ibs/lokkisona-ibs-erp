@@ -40,8 +40,9 @@ class ProductControlHistoryNote
     public static function fieldLabel(string $field): string
     {
         return match ($field) {
-            'supplier_cost', 'product_cost' => 'Supplier Cost',
-            'vendor_stock' => 'Vendor Stock',
+            'supplier_cost', 'product_cost' => 'Rate',
+            'vendor_stock' => 'IBS Stock',
+            'supplier_model' => 'IBS Model',
             default => $field !== '' ? $field : '—',
         };
     }

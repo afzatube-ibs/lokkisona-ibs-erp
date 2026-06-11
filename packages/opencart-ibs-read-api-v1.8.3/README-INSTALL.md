@@ -17,6 +17,10 @@ Example:
 https://www.staging.lokkisona.com/index.php?route=api/ibs/connection_test&api_token=YOUR_KEY
 ```
 
+## POIP option images (v1.8.3.2 patch)
+
+For **per-option image** support (ERP v2.1.8.3.2), see **`DEPLOY-POIP-OPTION-IMAGES.md`** — minimum upload: `connection_test.php` + `product.php`, then ERP `tools/probe-staging-api.php` and `tools/verify-poip-option-images.php 9759`.
+
 ## Install on OpenCart staging
 
 1. **Backup** OpenCart files and database (owner).
@@ -50,4 +54,4 @@ See `SAFETY-CHECKLIST.md`. Package uses **SELECT-only** SQL. No admin session re
 
 ## Version
 
-Package version: **1.8.3** — OpenCart Read-Only API Foundation
+Package version: **1.8.3.2** — OpenCart Read-Only API + POIP option image COALESCE join
