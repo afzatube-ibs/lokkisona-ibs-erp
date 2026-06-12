@@ -215,6 +215,7 @@ class SyncPreviewWriteService
             'updated_snapshot' => 0,
             'blocked_unmapped' => 0,
             'blocked_invalid_mapping' => 0,
+            'blocked_demo_order' => 0,
             'skipped_missing_status' => 0,
             'return_candidates' => 0,
         ];
@@ -444,6 +445,15 @@ class SyncPreviewWriteService
 
     private function classifyOrder(int $sourceId, array $order): array
     {
+        if (\App\Domain\OrderDemoGuard::shouldSkipInSyncPreview($order)) {
+            return [
+                'mapped_status' => null,
+                'preview_status' => 'blocked_demo_order',
+                'count_key' => 'blocked_demo_order',
+                'extra' => $this->orderPreviewExtra($order),
+            ];
+        }
+
         $sourceStatusId = trim((string) ($order['source_status_id'] ?? ''));
         $sourceStatus = trim((string) ($order['source_status'] ?? ''));
         $sourceRef = trim((string) ($order['source_order_reference'] ?? ''));
@@ -474,7 +484,7 @@ class SyncPreviewWriteService
             ];
         }
 
-        $mappedStatus = (string) $mapping['ibs_status'];
+        $mappedStatus = OrderSyncMappingRules::normalizeIbsStatus((string) $mapping['ibs_status']);
 
         $sourceOrderId = trim((string) ($order['source_order_id'] ?? ''));
         $existing = $this->orders->findExistingForSync($sourceId, $sourceOrderId, $sourceRef);
@@ -483,6 +493,15 @@ class SyncPreviewWriteService
                 'mapped_status' => $mappedStatus,
                 'preview_status' => 'snapshot_update',
                 'count_key' => 'updated_snapshot',
+                'extra' => $extra,
+            ];
+        }
+
+        if (\App\Domain\OrderSyncWorkflowBoundary::isBeyondShipmentCeiling($mappedStatus)) {
+            return [
+                'mapped_status' => $mappedStatus,
+                'preview_status' => 'blocked_invalid_mapping',
+                'count_key' => 'blocked_invalid_mapping',
                 'extra' => $extra,
             ];
         }

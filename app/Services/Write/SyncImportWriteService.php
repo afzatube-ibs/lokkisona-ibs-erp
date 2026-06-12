@@ -5,6 +5,7 @@ namespace App\Services\Write;
 use App\ActivityLog;
 use App\Database\Connection;
 use App\Domain\OrderSyncMappingRules;
+use App\Domain\OrderSyncWorkflowBoundary;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\OrderItemWriteRepository;
 use App\Repositories\Write\OrderWorkflowHistoryWriteRepository;
@@ -232,6 +233,9 @@ class SyncImportWriteService
         }
 
         $ibsStatus = OrderSyncMappingRules::normalizeIbsStatus((string) ($item['mapped_status'] ?? 'new_order'));
+        if (OrderSyncWorkflowBoundary::isBeyondShipmentCeiling($ibsStatus)) {
+            return ['key' => 'errors'];
+        }
         if (!OrderSyncMappingRules::isAllowedInitialStatus($ibsStatus, OrderSyncMappingRules::advancedModeEnabled())) {
             return ['key' => 'errors'];
         }

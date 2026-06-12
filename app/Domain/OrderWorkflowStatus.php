@@ -14,7 +14,7 @@ class OrderWorkflowStatus
 
     public const OUT_FOR_DELIVERY_NOTE = 'Courier/PIT status reflection only. Supplier does not manage courier stages.';
 
-    public const SYNC_IMPORT_RULE_NOTE = 'Order import eligibility is status-mapping-only. Product mapping, cost, and vendor stock affect Product Control — never block order import.';
+    public const SYNC_IMPORT_RULE_NOTE = 'OpenCart sync maps to New / Received / Packaging / Shipped at import only. After Shipped, IBS workflow owns the order. Product/cost/stock never block order import.';
 
     private const LABELS = [
         'new_order' => 'New Order',

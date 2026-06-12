@@ -7,6 +7,7 @@ use App\Auth;
 use App\Database\Connection;
 use App\Domain\DispatchCostSnapshot;
 use App\Domain\DispatchReportReference;
+use App\Domain\OrderDemoGuard;
 use App\Domain\OrderWorkflowStatus;
 use App\Repositories\OrderItemRepository;
 use App\Repositories\UserRepository;
@@ -76,6 +77,10 @@ class DispatchReportWriteService
             $status = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? ''));
             if ($status !== 'shipped') {
                 return WriteResult::fail('Order #' . $orderId . ' is not Shipped.');
+            }
+
+            if (OrderDemoGuard::shouldBlockFromDispatch($order)) {
+                return WriteResult::fail('Order #' . $orderId . ' is a demo/test sync order and cannot be included in a dispatch report.');
             }
 
             if ($this->items->existsForOrderId($orderId)) {

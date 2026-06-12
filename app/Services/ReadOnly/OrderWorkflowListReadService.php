@@ -9,6 +9,7 @@ use App\Domain\OrderWorkflowStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Support\SchemaColumnProbe;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderItemRepository;
 use App\Repositories\OrderWorkflowHistoryRepository;
@@ -394,6 +395,8 @@ class OrderWorkflowListReadService
         $perPage = (int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE);
         $perPage = min(self::MAX_PER_PAGE, max(self::DEFAULT_PER_PAGE, $perPage));
 
+        $showDemo = in_array((string) ($filters['show_demo'] ?? ''), ['1', 'on', 'yes'], true);
+
         return [
             'status' => $status,
             'supplier_id' => max(0, (int) ($filters['supplier_id'] ?? 0)),
@@ -402,6 +405,7 @@ class OrderWorkflowListReadService
             'date_to' => trim((string) ($filters['date_to'] ?? '')),
             'q' => trim((string) ($filters['q'] ?? '')),
             'per_page' => $perPage,
+            'show_demo' => $showDemo,
         ];
     }
 
@@ -449,6 +453,8 @@ class OrderWorkflowListReadService
                 . ' OR o.customer_phone LIKE :q OR p.supplier_model LIKE :q OR p.source_model LIKE :q OR oi.product_name LIKE :q)';
             $params['q'] = '%' . $filters['q'] . '%';
         }
+
+        $this->appendDemoExclusion($where, $params, (bool) ($filters['show_demo'] ?? false));
 
         return [$where, $params, $joinSql];
     }
@@ -593,6 +599,37 @@ class OrderWorkflowListReadService
         }
 
         return ['o.order_id NOT IN (' . implode(', ', $placeholders) . ')', $params];
+    }
+
+    private function appendDemoExclusion(string &$where, array &$params, bool $showDemo): void
+    {
+        if ($showDemo || !(bool) config('opencart.hide_demo_orders_in_workflow', true)) {
+            return;
+        }
+
+        $orderTable = TableName::forModel(Order::class);
+        if (SchemaColumnProbe::tableHasColumn($orderTable, 'sync_source', $this->pdo())) {
+            $where .= " AND (o.sync_source IS NULL OR o.sync_source NOT IN ('demo', 'opencart_demo'))";
+        }
+
+        $prefixes = config('opencart.demo_source_order_reference_prefixes', ['OC-1000']);
+        if (is_array($prefixes)) {
+            foreach (array_values($prefixes) as $index => $prefix) {
+                $prefix = trim((string) $prefix);
+                if ($prefix === '') {
+                    continue;
+                }
+                $key = 'demo_prefix_' . $index;
+                $where .= ' AND (o.source_order_reference IS NULL OR o.source_order_reference NOT LIKE :' . $key . ')';
+                $params[$key] = $prefix . '%';
+            }
+        }
+
+        $floor = (int) config('opencart.order_sync_min_source_order_id', 0);
+        if ($floor > 0) {
+            $where .= ' AND (o.source_order_id IS NULL OR o.source_order_id = \'\' OR CAST(o.source_order_id AS UNSIGNED) >= :sync_floor)';
+            $params['sync_floor'] = $floor;
+        }
     }
 
     /**

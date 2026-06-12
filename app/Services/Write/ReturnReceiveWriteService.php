@@ -6,6 +6,7 @@ use App\ActivityLog;
 use App\Auth;
 use App\Database\Connection;
 use App\Domain\DispatchCostSnapshot;
+use App\Domain\OrderFulfillmentPolicy;
 use App\Domain\OrderWorkflowStatus;
 use App\Domain\ReturnReceiveCondition;
 use App\Domain\ReturnReceiveNote;
@@ -111,6 +112,20 @@ class ReturnReceiveWriteService
             return WriteResult::fail('Order #' . $orderId . ' not found.');
         }
 
+        if ($returnType === ReturnReceiveType::HUB_COURIER_RETURN
+            && OrderFulfillmentPolicy::hubReturnBlockedAfterDispatch($orderId)) {
+            return WriteResult::fail(
+                'Hub courier return cannot be confirmed after dispatch. Use Customer Return to Supplier for post-dispatch returns.'
+            );
+        }
+
+        if ($returnType === ReturnReceiveType::CUSTOMER_RETURN_TO_SUPPLIER
+            && !OrderFulfillmentPolicy::customerReturnRequiresDispatch($orderId)) {
+            return WriteResult::fail(
+                'Customer return to supplier requires a dispatch report first. Pre-dispatch returns use Hub Return workflow only.'
+            );
+        }
+
         $expectedStatus = ReturnReceiveType::ibsStatusFor($returnType);
         $currentStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? ''));
         if ($expectedStatus === null || $currentStatus !== $expectedStatus) {
@@ -125,14 +140,23 @@ class ReturnReceiveWriteService
             return WriteResult::fail('Order #' . $orderId . ' already has a received return record for this type.');
         }
 
+        $dispatchItem = OrderFulfillmentPolicy::lockedDispatchItemForOrder($orderId);
         $lineCost = $this->orderItems->sumSupplierCostByOrderId($orderId);
         $lineQty = $this->orderItems->sumQuantityByOrderId($orderId);
         $snapshot = DispatchCostSnapshot::forOrder($order, $lineCost, $lineQty);
-        $costSnapshot = (float) $snapshot['product_cost_snapshot'];
-        $itemCount = (int) $snapshot['item_count'];
+        if ($dispatchItem !== null) {
+            $costSnapshot = round((float) ($dispatchItem['product_cost_snapshot'] ?? 0), 2);
+            $itemCount = max(1, (int) ($dispatchItem['item_count'] ?? $snapshot['item_count']));
+            $dispatchReference = (string) ($dispatchItem['dispatch_reference'] ?? '');
+        } else {
+            $costSnapshot = (float) $snapshot['product_cost_snapshot'];
+            $itemCount = (int) $snapshot['item_count'];
+            $dispatchReferences = (new DispatchReportRepository())->findIncludedOrderReferences(50);
+            $dispatchReference = $dispatchReferences[$orderId] ?? null;
+        }
 
-        $dispatchReferences = (new DispatchReportRepository())->findIncludedOrderReferences(50);
-        $dispatchReference = $dispatchReferences[$orderId] ?? null;
+        $createReturnReport = OrderFulfillmentPolicy::shouldCreateReturnReport($returnType, $orderId);
+        $adjustmentAmount = $createReturnReport ? round($costSnapshot, 2) : 0.0;
 
         $reference = ReturnReceiveReference::forOrder($orderId, $returnType);
         $receivedBy = $this->resolveChangedById();
@@ -176,6 +200,28 @@ class ReturnReceiveWriteService
                 'received_at' => $receivedAt,
             ]);
 
+            if ($createReturnReport) {
+                $batchId = $this->batches->create([
+                    'return_batch_reference' => $reference,
+                    'supplier_id' => $supplierId,
+                    'total_returns' => 1,
+                    'total_adjustment_amount' => $adjustmentAmount,
+                    'status' => 'received',
+                ]);
+
+                $this->batchItems->create([
+                    'return_batch_id' => $batchId,
+                    'return_receive_id' => $receiveId,
+                    'order_id' => $orderId,
+                    'manual_order_id' => null,
+                    'product_id' => null,
+                    'product_variant_id' => null,
+                    'quantity' => max(1, $itemCount),
+                    'cost_snapshot' => $costSnapshot,
+                    'adjustment_amount' => $adjustmentAmount,
+                    'status' => 'received',
+                ]);
+            }
             $workflowResult = $this->workflow->recordReturnReceived($orderId, $historyNote);
             if (!$workflowResult->success) {
                 throw new \RuntimeException($workflowResult->message);
@@ -206,8 +252,12 @@ class ReturnReceiveWriteService
             'user' => Auth::user(),
         ]);
 
+        $reportNote = $createReturnReport
+            ? ' Return report batch created for payable adjustment.'
+            : ' Workflow closure only — no return report or payable impact.';
+
         return WriteResult::ok(
-            'Return received for order ' . (string) ($order['order_reference'] ?? $orderId) . ' (' . ReturnReceiveType::label($returnType) . ').',
+            'Return received for order ' . (string) ($order['order_reference'] ?? $orderId) . ' (' . ReturnReceiveType::label($returnType) . ').' . $reportNote,
             $receiveId
         );
     }

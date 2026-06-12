@@ -111,6 +111,49 @@ class DispatchReportRepository extends BaseReadOnlyRepository
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function findDispatchItemForOrder(int $orderId): ?array
+    {
+        if ($orderId <= 0 || !$this->tableExists()) {
+            return null;
+        }
+
+        $itemsTable = config('database.prefix', 'ibs_') . 'dispatch_report_items';
+        $reportsTable = config('database.prefix', 'ibs_') . 'dispatch_reports';
+        $database = config('database.database', '');
+
+        try {
+            $check = $this->pdo->prepare(
+                'SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table'
+            );
+
+            foreach ([$itemsTable, $reportsTable] as $tableName) {
+                $check->execute(['schema' => $database, 'table' => $tableName]);
+                $row = $check->fetch(\PDO::FETCH_ASSOC);
+                if (((int) ($row['table_count'] ?? 0)) === 0) {
+                    return null;
+                }
+            }
+
+            $sql = 'SELECT i.*, r.dispatch_reference, r.dispatch_report_id, r.business_source_id AS report_business_source_id, '
+                . 'r.created_at AS dispatch_created_at '
+                . 'FROM `' . $this->escapeIdentifier($itemsTable) . '` i '
+                . 'INNER JOIN `' . $this->escapeIdentifier($reportsTable) . '` r ON r.dispatch_report_id = i.dispatch_report_id '
+                . 'WHERE i.order_id = :order_id AND i.status = :item_status '
+                . 'ORDER BY i.dispatch_report_item_id DESC LIMIT 1';
+            \App\Database\QueryGuard::assertReadOnly($sql);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['order_id' => $orderId, 'item_status' => 'included']);
+            $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+            return $row === false ? null : $row;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * @param array<int, int> $reportIds
      * @return array<int, int> dispatch_report_id => total item qty
      */

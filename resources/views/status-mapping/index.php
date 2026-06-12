@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map origin statuses to IBS <strong>initial</strong> fulfillment status at import only. After import, IBS workflow is independent. Apply migrations 0004 and 0015 manually first.</p>
+    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map origin statuses to IBS <strong>initial</strong> status at first import only: New Order, Order Received, Packaging, or Shipped. After Shipped, IBS workflow actions own the order — sync refreshes snapshot fields only. Post-shipment statuses (Created Report, Out For Delivery, returns) are never set by OpenCart sync. Apply migrations 0004 and 0015 manually first.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.4.1',
-    'release_label' => 'Return Statement UAT Repair',
+    'version' => '2.4.2',
+    'release_label' => 'Order Sync & Workflow Correction',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

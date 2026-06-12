@@ -50,6 +50,7 @@ class OrderWorkflowController extends Controller
                 'date_to' => '',
                 'q' => '',
                 'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
+                'show_demo' => $_GET['show_demo'] ?? '',
             ]
             : [
                 'status' => $statusFilter ?? '',
@@ -59,6 +60,7 @@ class OrderWorkflowController extends Controller
                 'date_to' => $_GET['date_to'] ?? '',
                 'q' => $_GET['q'] ?? '',
                 'per_page' => $_GET['per_page'] ?? OrderWorkflowListReadService::DEFAULT_PER_PAGE,
+                'show_demo' => $_GET['show_demo'] ?? '',
             ];
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $fulfillmentList = $listService->listPage($filters, $page, $supplierId, null);

@@ -15,7 +15,6 @@ class OrderSyncMappingRules
         'order_received',
         'packaging',
         'shipped',
-        'dispatch_report_created',
         'hold',
         'cancelled',
     ];
@@ -38,6 +37,10 @@ class OrderSyncMappingRules
     {
         $normalized = self::normalizeIbsStatus($code);
         if ($normalized === '') {
+            return false;
+        }
+
+        if (OrderSyncWorkflowBoundary::isBeyondShipmentCeiling($normalized)) {
             return false;
         }
 

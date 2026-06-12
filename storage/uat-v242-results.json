@@ -1,0 +1,31 @@
+{
+    "tag": "UAT-20260612122546",
+    "results": {
+        "1-sync-mapping-boundary": {
+            "status": "PASS",
+            "detail": "snapshot-only refresh on order #15 (ibs_status stayed new_order)"
+        },
+        "2-pre-dispatch-hub-return": {
+            "status": "PASS",
+            "detail": "Return received for order IBS-UAT-UAT-20260612122546-HUB-PRE (Hub Return \/ Courier Return). Workflow closure only \u2014 no return report or payable impact."
+        },
+        "3-dispatch-lock": {
+            "status": "PASS",
+            "detail": "locked; rollback blocked: Created Report orders are locked from normal workflow actions."
+        },
+        "4-hub-return-after-dispatch": {
+            "status": "PASS",
+            "detail": "Hub courier return cannot be confirmed after dispatch. Use Customer Return to Supplier for post-dispatch returns."
+        },
+        "5-post-dispatch-customer-return": {
+            "status": "PASS",
+            "detail": "batch adjustment 50 = dispatch snapshot; no posted ledger"
+        },
+        "6-demo-guard": {
+            "status": "PASS",
+            "detail": "hidden by default; dispatch blocked: Order #21 is a demo\/test sync order and cannot be included in a dispatch report."
+        }
+    },
+    "pass": 6,
+    "fail": 0
+}

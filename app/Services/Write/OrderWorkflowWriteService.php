@@ -58,6 +58,12 @@ class OrderWorkflowWriteService
             return WriteResult::fail('Created Report orders are locked from normal workflow actions.');
         }
 
+        if ($this->isDispatchImmutable($orderId, $fromStatus, $pendingToStatus)) {
+            return WriteResult::fail(
+                'This order is locked by a dispatch report. After dispatch, only Delivery Stop and Return workflow actions apply.'
+            );
+        }
+
         if (in_array($fromStatus, ['delivered', 'cancelled', 'hub_return', 'order_returning'], true)) {
             return WriteResult::fail('No workflow action is allowed for ' . OrderWorkflowStatus::label($fromStatus) . ' orders.');
         }
@@ -345,6 +351,31 @@ class OrderWorkflowWriteService
         }
 
         return implode(' ', $parts);
+    }
+
+    private function isDispatchImmutable(int $orderId, string $fromStatus, string $toStatus): bool
+    {
+        if ($orderId <= 0 || OrderWorkflowStatus::isResumeAction($toStatus) || !$this->dispatchReports->tableExists()) {
+            return false;
+        }
+
+        $meta = $this->dispatchReports->findIncludedOrderMeta(500);
+        if (!isset($meta[$orderId])) {
+            return false;
+        }
+
+        $toStatus = OrderWorkflowStatus::normalize($toStatus);
+        if ($toStatus === 'delivery_stop') {
+            return false;
+        }
+
+        if ($fromStatus === 'delivery_stop' && $toStatus === 'hub_return') {
+            return false;
+        }
+
+        $supplierRollbackTargets = ['new_order', 'order_received', 'packaging', 'shipped', 'hold', 'cancelled'];
+
+        return in_array($toStatus, $supplierRollbackTargets, true);
     }
 
     private function isBatchLocked(int $orderId, string $fromStatus, string $toStatus = ''): bool
