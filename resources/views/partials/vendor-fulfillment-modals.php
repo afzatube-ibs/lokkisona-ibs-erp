@@ -154,6 +154,7 @@ $dispatchFlash = $dispatchFlash ?? null;
                 <span id="vfCheckboxLabel"></span>
             </label>
             <div id="vfDeliveryStopWrap" hidden>
+                <input type="hidden" id="vfModalDeliveryStopReason" name="delivery_stop_reason" value="" form="vfActionForm">
                 <?php view('partials.choice-cards', [
                     'name' => 'vf_delivery_stop_reason_ui',
                     'legend' => 'Delivery Stop reason',
@@ -180,3 +181,4 @@ $dispatchFlash = $dispatchFlash ?? null;
 window.__vfDispatchFlash = <?= json_encode($dispatchFlash, JSON_UNESCAPED_UNICODE) ?>;
 </script>
 <?php endif; ?>
+<script src="<?= e(asset('js/order-workflow.js')) ?>?v=<?= e((string) config('app.version')) ?>"></script>

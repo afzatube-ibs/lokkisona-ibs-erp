@@ -21,14 +21,17 @@ class OrderWorkflowStatus
         'order_received' => 'Order Received',
         'packaging' => 'Packaging',
         'shipped' => 'Shipped',
-        'dispatch_report_created' => 'Created Report',
+        'dispatch_report_created' => 'Dispatched',
+        'in_review' => 'In Review',
+        'in_transit' => 'In Transit',
         'out_for_delivery' => 'Out For Delivery',
         'delivered' => 'Delivered',
         'hold' => 'Hold',
         'cancelled' => 'Cancelled',
         'delivery_stop' => 'Delivery Stop',
-        'hub_return' => 'Hub Return',
-        'order_returning' => 'Order Returning',
+        'hub_returning' => 'Hub Returning',
+        'hub_return' => 'Hub Return Confirmed',
+        'order_returning' => 'Customer Returning',
     ];
 
     /** Supplier manual actions only. Courier/PIT stages have no supplier buttons in v0.4.4.0. */
@@ -39,8 +42,11 @@ class OrderWorkflowStatus
         'hold' => ['cancelled'],
         'shipped' => ['dispatch_report_created', 'delivery_stop'],
         'dispatch_report_created' => ['delivery_stop'],
+        'in_review' => ['delivery_stop'],
+        'in_transit' => ['delivery_stop'],
         'out_for_delivery' => ['delivery_stop'],
-        'delivery_stop' => ['hub_return'],
+        'delivery_stop' => ['hub_returning'],
+        'hub_returning' => ['hub_return'],
         'hub_return' => [],
     ];
 
@@ -51,7 +57,8 @@ class OrderWorkflowStatus
         'shipped|dispatch_report_created' => 'Create Daily Dispatch',
         'dispatch_report_created|delivery_stop' => 'Delivery Stop',
         'shipped|delivery_stop' => 'Delivery Stop',
-        'delivery_stop|hub_return' => 'Confirm Hub Return',
+        'delivery_stop|hub_returning' => 'Mark Hub Returning',
+        'hub_returning|hub_return' => 'Confirm Hub Return',
         'hold|cancelled' => 'Cancelled',
         'new_order|hold' => 'Hold',
         'order_received|hold' => 'Hold',
@@ -74,7 +81,10 @@ class OrderWorkflowStatus
         'dispatch_ready' => 'dispatch_report_created',
         'created_report' => 'dispatch_report_created',
         'courier_return' => 'hub_return',
+        'hub_return_confirmed' => 'hub_return',
+        'customer_returning' => 'order_returning',
         'customer_return' => 'order_returning',
+        'dispatched' => 'dispatch_report_created',
     ];
 
     private const NOTES_REQUIRED_TO = [
@@ -82,6 +92,7 @@ class OrderWorkflowStatus
         'cancelled',
         'delivery_stop',
         'dispatch_report_created',
+        'hub_returning',
         'hub_return',
     ];
 
@@ -102,9 +113,12 @@ class OrderWorkflowStatus
         'hold',
         'shipped',
         'dispatch_report_created',
+        'in_review',
+        'in_transit',
         'out_for_delivery',
         'delivered',
         'delivery_stop',
+        'hub_returning',
         'hub_return',
         'order_returning',
         'cancelled',
@@ -202,11 +216,11 @@ class OrderWorkflowStatus
         $normalized = self::normalize($code);
 
         if ($normalized === 'dispatch_report_created') {
-            return 'Created Report';
+            return 'Dispatched';
         }
 
         if ($normalized === 'order_returning') {
-            return 'Order Returning';
+            return 'Customer Returning';
         }
 
         return self::label($code);
@@ -220,7 +234,9 @@ class OrderWorkflowStatus
             ['code' => 'order_received', 'label' => 'Order Received'],
             ['code' => 'packaging', 'label' => 'Packaging'],
             ['code' => 'shipped', 'label' => 'Shipped'],
-            ['code' => 'dispatch_report_created', 'label' => 'Created Report'],
+            ['code' => 'dispatch_report_created', 'label' => 'Dispatched'],
+            ['code' => 'in_review', 'label' => 'In Review'],
+            ['code' => 'in_transit', 'label' => 'In Transit'],
             ['code' => 'out_for_delivery', 'label' => 'Out For Delivery'],
             ['code' => 'delivered', 'label' => 'Delivered'],
         ];
@@ -242,7 +258,7 @@ class OrderWorkflowStatus
             [
                 'key' => 'courier',
                 'label' => 'Courier Flow',
-                'codes' => ['dispatch_report_created', 'out_for_delivery', 'delivered'],
+                'codes' => ['dispatch_report_created', 'in_review', 'in_transit', 'out_for_delivery', 'delivered'],
             ],
         ];
     }
@@ -254,8 +270,9 @@ class OrderWorkflowStatus
             ['code' => 'hold', 'label' => 'Hold'],
             ['code' => 'cancelled', 'label' => 'Cancelled'],
             ['code' => 'delivery_stop', 'label' => 'Delivery Stop'],
-            ['code' => 'hub_return', 'label' => 'Hub Return'],
-            ['code' => 'order_returning', 'label' => 'Order Returning'],
+            ['code' => 'hub_returning', 'label' => 'Hub Returning'],
+            ['code' => 'hub_return', 'label' => 'Hub Return Confirmed'],
+            ['code' => 'order_returning', 'label' => 'Customer Returning'],
         ];
     }
 
@@ -363,7 +380,11 @@ class OrderWorkflowStatus
             return 'Create Daily Dispatch';
         }
 
-        if ($from === 'delivery_stop' && $to === 'hub_return') {
+        if ($from === 'delivery_stop' && $to === 'hub_returning') {
+            return 'Mark Hub Returning';
+        }
+
+        if ($from === 'hub_returning' && $to === 'hub_return') {
             return 'Confirm Hub Return';
         }
 
@@ -431,8 +452,16 @@ class OrderWorkflowStatus
             return self::OUT_FOR_DELIVERY_NOTE;
         }
 
+        if ($status === 'hub_returning') {
+            return 'Pre-dispatch hub return in progress. Next: Confirm Hub Return, then receive on Return List.';
+        }
+
         if ($status === 'hub_return') {
-            return 'Confirm physical return receive on the Return Receive page (v0.4.6.0). Courier flow: Shipped → Delivery Stop → Hub Return.';
+            return 'Hub return confirmed — receive on Return List. No payable or return report (pre-dispatch only).';
+        }
+
+        if ($status === 'in_review' || $status === 'in_transit') {
+            return self::OUT_FOR_DELIVERY_NOTE;
         }
 
         if ($status === 'order_returning') {
@@ -471,7 +500,9 @@ class OrderWorkflowStatus
             ['code' => 'order_received', 'label' => 'Order Received', 'description' => 'Order accepted into Iqbal & Brothers fulfillment. Receive Order action with confirmation.'],
             ['code' => 'packaging', 'label' => 'Packaging', 'description' => 'Start Packaging / Print & Move to Packaging after staff confirms product checked. No invoice generation in v0.4.4.0.'],
             ['code' => 'shipped', 'label' => 'Shipped', 'description' => 'Supplier confirms parcel packed and handed/shipped. Order becomes eligible for daily dispatch report.'],
-            ['code' => 'dispatch_report_created', 'label' => 'Dispatch Report Created', 'description' => 'v0.4.4.0 workflow gate with required note/reference. Courier stages continue by status mapping.'],
+            ['code' => 'dispatch_report_created', 'label' => 'Dispatched', 'description' => 'Financial lock after Daily Dispatch Statement. Courier stages continue forward via sync mapping only.'],
+            ['code' => 'in_review', 'label' => 'In Review', 'description' => 'Courier/PIT forward stage after dispatch. No supplier manual action.'],
+            ['code' => 'in_transit', 'label' => 'In Transit', 'description' => 'Courier/PIT forward stage after dispatch. No supplier manual action.'],
             ['code' => 'out_for_delivery', 'label' => 'Out For Delivery', 'description' => 'Courier/PIT status reflection only. No supplier manual action.'],
             ['code' => 'delivered', 'label' => 'Delivered', 'description' => 'Terminal successful fulfillment state.'],
         ];
@@ -483,8 +514,9 @@ class OrderWorkflowStatus
             ['code' => 'hold', 'label' => 'Hold', 'description' => 'Allowed only from New Order, Order Received, or Packaging. Requires reason. Resume Order or Cancelled only.'],
             ['code' => 'cancelled', 'label' => 'Cancelled', 'description' => 'Allowed before completion from New Order, Order Received, Packaging, or Hold. Terminal.'],
             ['code' => 'delivery_stop', 'label' => 'Delivery Stop', 'description' => 'Manual ERP action after Shipped when customer asks to stop delivery. Requires note and confirmation.'],
-            ['code' => 'hub_return', 'label' => 'Hub Return', 'description' => 'Shipped → Delivery Stop → Hub Return. Supplier marks Return Received. Vendor Returns module later.'],
-            ['code' => 'order_returning', 'label' => 'Order Returning', 'description' => 'From PIT/OpenCart return status mapping. Not a normal supplier manual action in v0.4.4.0.'],
+            ['code' => 'hub_returning', 'label' => 'Hub Returning', 'description' => 'Pre-dispatch only: Shipped → Delivery Stop → Hub Returning. No payable impact.'],
+            ['code' => 'hub_return', 'label' => 'Hub Return Confirmed', 'description' => 'Pre-dispatch only: confirm hub return then receive on Return List. No return report.'],
+            ['code' => 'order_returning', 'label' => 'Customer Returning', 'description' => 'Post-dispatch customer return path. Supplier confirms on Return List → Return Report.'],
         ];
     }
 
@@ -496,11 +528,14 @@ class OrderWorkflowStatus
             'packaging' => 'workflow-accent-purple',
             'shipped' => 'workflow-accent-primary',
             'dispatch_report_created' => 'workflow-accent-cyan',
+            'in_review' => 'workflow-accent-cyan',
+            'in_transit' => 'workflow-accent-cyan',
             'out_for_delivery' => 'workflow-accent-warn',
             'delivered' => 'workflow-accent-success',
             'hold' => 'workflow-accent-warn',
             'cancelled' => 'workflow-accent-muted',
             'delivery_stop' => 'workflow-accent-error',
+            'hub_returning' => 'workflow-accent-warn',
             'hub_return' => 'workflow-accent-warn',
             'order_returning' => 'workflow-accent-error',
             default => 'workflow-accent-muted',

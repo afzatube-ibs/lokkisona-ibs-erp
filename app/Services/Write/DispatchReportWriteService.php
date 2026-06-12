@@ -8,6 +8,7 @@ use App\Database\Connection;
 use App\Domain\DispatchCostSnapshot;
 use App\Domain\DispatchReportReference;
 use App\Domain\OrderDemoGuard;
+use App\Domain\OrderFulfillmentPolicy;
 use App\Domain\OrderWorkflowStatus;
 use App\Repositories\OrderItemRepository;
 use App\Repositories\UserRepository;
@@ -67,6 +68,7 @@ class DispatchReportWriteService
         $supplierId = null;
         $businessSourceId = null;
         $totalMissingLines = 0;
+        $totalUnmappedLines = 0;
 
         foreach ($orderIds as $orderId) {
             $order = $this->orders->find($orderId);
@@ -81,6 +83,10 @@ class DispatchReportWriteService
 
             if (OrderDemoGuard::shouldBlockFromDispatch($order)) {
                 return WriteResult::fail('Order #' . $orderId . ' is a demo/test sync order and cannot be included in a dispatch report.');
+            }
+
+            if (OrderFulfillmentPolicy::isInHubReturnPath($order)) {
+                return WriteResult::fail('Order #' . $orderId . ' is in hub return workflow and cannot be dispatched.');
             }
 
             if ($this->items->existsForOrderId($orderId)) {
@@ -116,7 +122,9 @@ class DispatchReportWriteService
 
             $orderLines = $this->orderItems->findByOrderId($orderId);
             $missingLines = DispatchCostSnapshot::countMissingLineItems($orderLines);
+            $unmappedLines = DispatchCostSnapshot::countUnmappedLineItems($orderLines);
             $totalMissingLines += $missingLines;
+            $totalUnmappedLines += $unmappedLines;
 
             $lineCost = $this->orderItems->sumSupplierCostByOrderId($orderId);
             $lineQty = $this->orderItems->sumQuantityByOrderId($orderId);
@@ -126,6 +134,18 @@ class DispatchReportWriteService
                 'order' => $order,
                 'snapshot' => $snapshot,
             ];
+        }
+
+        if ($totalUnmappedLines > 0) {
+            $itemWord = $totalUnmappedLines === 1 ? 'line' : 'lines';
+
+            return WriteResult::fail(
+                'Cannot create Daily Dispatch Statement: unmapped supplier product on '
+                . $totalUnmappedLines
+                . ' order '
+                . $itemWord
+                . '. Map products in Product Control first.'
+            );
         }
 
         if ($totalMissingLines > 0) {

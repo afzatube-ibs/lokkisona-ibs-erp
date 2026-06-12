@@ -3,7 +3,7 @@
 return [
     'name' => 'IBS-LK Business Manager',
     'version' => '2.4.2',
-    'release_label' => 'Order Sync & Workflow Correction',
+    'release_label' => 'Order Workflow Safety',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -135,6 +135,7 @@ class ManualOrderWriteService
                 'ibs_status' => 'new_order',
                 'cost_snapshot_total' => $costSnapshotTotal,
                 'status' => 'active',
+                'sync_source' => 'manual',
             ]);
 
             foreach ($lineItems as $line) {

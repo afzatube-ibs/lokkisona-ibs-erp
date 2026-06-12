@@ -41,6 +41,23 @@ class DispatchCostSnapshot
     }
 
     /**
+     * Count order lines without a mapped ERP supplier product.
+     *
+     * @param array<int, array<string, mixed>> $lines
+     */
+    public static function countUnmappedLineItems(array $lines): int
+    {
+        $unmapped = 0;
+        foreach ($lines as $line) {
+            if ((int) ($line['product_id'] ?? 0) <= 0) {
+                $unmapped++;
+            }
+        }
+
+        return $unmapped;
+    }
+
+    /**
      * @param array<string, mixed> $order
      */
     public static function hasDispatchOrderNo(array $order): bool

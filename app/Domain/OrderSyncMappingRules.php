@@ -21,9 +21,12 @@ class OrderSyncMappingRules
 
     /** Advanced-only targets (owner/admin explicit enable). */
     public const ADVANCED_INITIAL_STATUSES = [
+        'in_review',
+        'in_transit',
         'out_for_delivery',
         'delivered',
         'delivery_stop',
+        'hub_returning',
         'hub_return',
         'order_returning',
     ];

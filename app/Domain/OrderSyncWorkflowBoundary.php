@@ -12,9 +12,12 @@ class OrderSyncWorkflowBoundary
     /** Statuses that must never be set by OpenCart sync import mapping (default mode). */
     private const POST_SHIPMENT_WORKFLOW_STATUSES = [
         'dispatch_report_created',
+        'in_review',
+        'in_transit',
         'out_for_delivery',
         'delivered',
         'delivery_stop',
+        'hub_returning',
         'hub_return',
         'order_returning',
     ];

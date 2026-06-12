@@ -1,6 +1,10 @@
 (function () {
     'use strict';
 
+    // #region agent log
+    fetch('http://127.0.0.1:7703/ingest/9cca6eed-1352-4e6d-9130-633d9c609349',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f76280'},body:JSON.stringify({sessionId:'f76280',location:'order-workflow.js:init',message:'order-workflow.js loaded',data:{path:window.location.pathname},timestamp:Date.now(),hypothesisId:'F',runId:'post-fix'})}).catch(function(){});
+    // #endregion
+
     var BULK_LABELS = {
         bulk_receive: 'Receive Order',
         bulk_packaging: 'Print & Start Packaging',
@@ -75,17 +79,85 @@
         }
         var stopWrap = qs('#vfDeliveryStopWrap', modal);
         stopWrap.hidden = !config.isDeliveryStop;
-        qsa('input[name="vf_delivery_stop_reason_ui"]', modal).forEach(function (input) {
-            input.checked = false;
-        });
+        clearDeliveryStopReason(modal);
         var note = qs('#vfModalNote', modal);
         note.value = '';
-        qs('#vfNoteRequiredMark', modal).hidden = !config.requiresNote;
+        if (config.isDeliveryStop) {
+            qs('#vfNoteRequiredMark', modal).hidden = true;
+        } else {
+            qs('#vfNoteRequiredMark', modal).hidden = !config.requiresNote;
+        }
         modal.hidden = false;
+    }
+
+    function deliveryStopWrapEl() {
+        return document.getElementById('vfDeliveryStopWrap');
+    }
+
+    function deliveryStopReasonField() {
+        return document.getElementById('vfModalDeliveryStopReason');
+    }
+
+    function clearDeliveryStopReason(root) {
+        var wrap = deliveryStopWrapEl();
+        var modalReason = deliveryStopReasonField();
+        if (modalReason) {
+            modalReason.value = '';
+        }
+        var scope = wrap || root || modal;
+        if (scope) {
+            qsa('input[name="vf_delivery_stop_reason_ui"]', scope).forEach(function (input) {
+                input.checked = false;
+            });
+        }
+    }
+
+    function setDeliveryStopReason(root, code) {
+        if (!code) {
+            return;
+        }
+        var modalReason = deliveryStopReasonField();
+        if (modalReason) {
+            modalReason.value = code;
+        }
+        var wrap = deliveryStopWrapEl();
+        var scope = wrap || root || modal;
+        if (scope) {
+            qsa('input[name="vf_delivery_stop_reason_ui"]', scope).forEach(function (input) {
+                input.checked = input.value === code;
+            });
+        }
+        var noteMark = modal ? qs('#vfNoteRequiredMark', modal) : null;
+        if (noteMark) {
+            noteMark.hidden = code !== 'other';
+        }
+    }
+
+    function getDeliveryStopReason() {
+        var modalReason = deliveryStopReasonField();
+        if (modalReason && modalReason.value.trim() !== '') {
+            return modalReason.value.trim();
+        }
+        var wrap = deliveryStopWrapEl();
+        if (!wrap) {
+            return '';
+        }
+        var selected = qs('input[name="vf_delivery_stop_reason_ui"]:checked', wrap);
+        if (selected) {
+            return selected.value.trim();
+        }
+        var checkedInput = null;
+        qsa('input[name="vf_delivery_stop_reason_ui"]', wrap).forEach(function (input) {
+            if (input.checked) {
+                checkedInput = input;
+            }
+        });
+        return checkedInput ? checkedInput.value.trim() : '';
     }
 
     function closeModal() {
         if (modal) {
+            clearDeliveryStopReason(modal);
             modal.hidden = true;
         }
         pending = null;
@@ -119,7 +191,19 @@
         }
         var noteEl = qs('#vfModalNote', modal);
         var note = noteEl ? noteEl.value.trim() : '';
-        if (pending.requiresNote && note === '') {
+        var deliveryReason = '';
+        if (pending.isDeliveryStop) {
+            deliveryReason = getDeliveryStopReason();
+            if (!deliveryReason) {
+                window.alert('Delivery Stop reason is required.');
+                return;
+            }
+            setDeliveryStopReason(modal, deliveryReason);
+            if (deliveryReason === 'other' && note === '') {
+                window.alert('A note is required when Delivery Stop reason is Other.');
+                return;
+            }
+        } else if (pending.requiresNote && note === '') {
             window.alert('Action note is required.');
             return;
         }
@@ -129,15 +213,6 @@
                 window.alert('Staff confirmation checkbox is required.');
                 return;
             }
-        }
-        var deliveryReason = '';
-        if (pending.isDeliveryStop) {
-            var selected = qs('input[name="vf_delivery_stop_reason_ui"]:checked', modal);
-            if (!selected) {
-                window.alert('Delivery Stop reason is required.');
-                return;
-            }
-            deliveryReason = selected.value;
         }
 
         if (pending.isBulk) {
@@ -159,10 +234,20 @@
 
         qs('#vfActionOrderId', actionForm).value = String(pending.orderId || '');
         qs('#vfActionToStatus', actionForm).value = pending.actionCode || '';
+        // #region agent log
+        fetch('http://127.0.0.1:7703/ingest/9cca6eed-1352-4e6d-9130-633d9c609349',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f76280'},body:JSON.stringify({sessionId:'f76280',location:'order-workflow.js:submitPending',message:'action form submit',data:{orderId:pending.orderId,toStatus:pending.actionCode,isBulk:!!pending.isBulk,isDeliveryStop:!!pending.isDeliveryStop,deliveryStopReason:deliveryReason},timestamp:Date.now(),hypothesisId:'B'})}).catch(function(){});
+        // #endregion
         qs('#vfActionConfirmed', actionForm).value = '1';
         qs('#vfStaffConfirmation', actionForm).value = pending.requiresCheckbox ? '1' : '';
         qs('#vfActionNote', actionForm).value = note;
-        qs('#vfDeliveryStopReason', actionForm).value = deliveryReason;
+        if (pending.isDeliveryStop) {
+            var deliveryStopField = deliveryStopReasonField();
+            if (deliveryStopField) {
+                deliveryStopField.value = deliveryReason;
+            }
+        } else {
+            clearDeliveryStopReason(modal);
+        }
         actionForm.submit();
     }
 
@@ -410,6 +495,9 @@
         btn.addEventListener('click', function () {
             var code = btn.getAttribute('data-action-code') || '';
             var orderId = btn.getAttribute('data-order-id');
+            // #region agent log
+            fetch('http://127.0.0.1:7703/ingest/9cca6eed-1352-4e6d-9130-633d9c609349',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f76280'},body:JSON.stringify({sessionId:'f76280',location:'order-workflow.js:row-action-click',message:'row action clicked',data:{actionCode:code,orderId:orderId,isHubReturn:btn.getAttribute('data-is-hub-return'),isDeliveryStop:btn.getAttribute('data-is-delivery-stop'),isDispatchCreate:btn.getAttribute('data-is-dispatch-create'),isMenuOnly:btn.getAttribute('data-is-menu-only')},timestamp:Date.now(),hypothesisId:'A'})}).catch(function(){});
+            // #endregion
             if (btn.getAttribute('data-is-menu-only') === '1') {
                 if (code === 'view_timeline') {
                     openTimelineModal(orderId);
@@ -420,7 +508,7 @@
                     return;
                 }
             }
-            if (btn.getAttribute('data-is-hub-return') === '1') {
+            if (btn.getAttribute('data-is-hub-return') === '1' && code === 'hub_return') {
                 openHubReturnModal(orderId);
                 return;
             }
@@ -546,6 +634,26 @@
         submitBtn.addEventListener('click', submitPending);
     }
 
+    var deliveryStopWrap = document.getElementById('vfDeliveryStopWrap');
+    if (deliveryStopWrap && modal) {
+        deliveryStopWrap.addEventListener('change', function (e) {
+            if (!e.target || e.target.name !== 'vf_delivery_stop_reason_ui') {
+                return;
+            }
+            setDeliveryStopReason(modal, e.target.value);
+        });
+        deliveryStopWrap.addEventListener('click', function (e) {
+            var card = e.target.closest('.choice-card');
+            if (!card) {
+                return;
+            }
+            var input = qs('input[name="vf_delivery_stop_reason_ui"]', card);
+            if (input) {
+                setDeliveryStopReason(modal, input.value);
+            }
+        });
+    }
+
     if (modal) {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
@@ -614,10 +722,13 @@
             }
             qs('#vfActionOrderId', actionForm).value = String(hubModal._orderId);
             qs('#vfActionToStatus', actionForm).value = 'hub_return';
+            // #region agent log
+            fetch('http://127.0.0.1:7703/ingest/9cca6eed-1352-4e6d-9130-633d9c609349',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f76280'},body:JSON.stringify({sessionId:'f76280',location:'order-workflow.js:hubSubmit',message:'hub modal submit hub_return',data:{orderId:hubModal._orderId,toStatus:'hub_return'},timestamp:Date.now(),hypothesisId:'A'})}).catch(function(){});
+            // #endregion
             qs('#vfActionConfirmed', actionForm).value = '1';
             qs('#vfStaffConfirmation', actionForm).value = '';
             qs('#vfActionNote', actionForm).value = note;
-            qs('#vfDeliveryStopReason', actionForm).value = '';
+            clearDeliveryStopReason();
             actionForm.submit();
         });
     }

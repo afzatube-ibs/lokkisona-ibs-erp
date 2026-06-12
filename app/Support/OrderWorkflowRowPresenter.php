@@ -229,7 +229,7 @@ class OrderWorkflowRowPresenter
 
             return [
                 'primary' => $primary,
-                'menu_items' => self::createdReportMenuItems($normalized),
+                'menu_items' => self::createdReportMenuItems($normalized, true),
                 'selectable' => false,
                 'bulk_action_key' => null,
                 'can_hold_cancel' => false,
@@ -274,7 +274,7 @@ class OrderWorkflowRowPresenter
     /**
      * @return array<int, array<string, mixed>>
      */
-    private static function createdReportMenuItems(string $normalized): array
+    private static function createdReportMenuItems(string $normalized, bool $dispatched = false): array
     {
         $fromStatus = match ($normalized) {
             'delivery_stop' => 'delivery_stop',
@@ -301,8 +301,12 @@ class OrderWorkflowRowPresenter
             $items[] = self::actionMeta($fromStatus, 'delivery_stop', false);
         }
 
-        if ($normalized === 'delivery_stop') {
-            $items[] = self::actionMeta('delivery_stop', 'hub_return', false);
+        if (!$dispatched && $normalized === 'delivery_stop') {
+            $items[] = self::actionMeta('delivery_stop', 'hub_returning', false);
+        }
+
+        if (!$dispatched && $normalized === 'hub_returning') {
+            $items[] = self::actionMeta('hub_returning', 'hub_return', false);
         }
 
         return $items;
@@ -347,7 +351,8 @@ class OrderWorkflowRowPresenter
             'order_received' => 'packaging',
             'packaging' => 'shipped',
             'shipped' => $dispatchModuleReady ? 'create_dispatch_report' : 'dispatch_report_created',
-            'delivery_stop' => 'hub_return',
+            'delivery_stop' => 'hub_returning',
+            'hub_returning' => 'hub_return',
             default => null,
         };
     }
@@ -405,7 +410,9 @@ class OrderWorkflowRowPresenter
             'label' => $useRowLabel
                 ? OrderWorkflowStatus::rowActionLabel($fromStatus, $toStatus)
                 : OrderWorkflowStatus::actionLabel($fromStatus, $toStatus),
-            'requires_note' => OrderWorkflowStatus::requiresNoteForTransition($fromStatus, $toStatus),
+            'requires_note' => $normalizedTo === 'delivery_stop'
+                ? false
+                : OrderWorkflowStatus::requiresNoteForTransition($fromStatus, $toStatus),
             'requires_checkbox' => OrderWorkflowStatus::requiresCheckbox($fromStatus, $toStatus),
             'checkbox_label' => OrderWorkflowStatus::checkboxLabel($fromStatus, $toStatus),
             'requires_confirm' => OrderWorkflowStatus::requiresConfirmDialog($fromStatus, $toStatus),

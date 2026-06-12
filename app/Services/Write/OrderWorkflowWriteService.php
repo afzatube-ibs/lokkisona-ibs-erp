@@ -4,6 +4,7 @@ namespace App\Services\Write;
 
 use App\ActivityLog;
 use App\Auth;
+use App\Domain\OrderFulfillmentPolicy;
 use App\Domain\OrderWorkflowStatus;
 use App\Repositories\DispatchReportRepository;
 use App\Repositories\OrderWorkflowHistoryRepository;
@@ -50,11 +51,37 @@ class OrderWorkflowWriteService
         }
 
         $fromStatus = OrderWorkflowStatus::normalize((string) ($order['ibs_status'] ?? 'new_order'));
+        // #region agent log
+        @file_put_contents(
+            dirname(__DIR__, 3) . '/debug-f76280.log',
+            json_encode([
+                'sessionId' => 'f76280',
+                'timestamp' => (int) round(microtime(true) * 1000),
+                'location' => 'OrderWorkflowWriteService::transition:entry',
+                'message' => 'transition requested',
+                'data' => [
+                    'orderId' => $orderId,
+                    'fromStatus' => $fromStatus,
+                    'rawToStatus' => trim($toStatus),
+                ],
+                'hypothesisId' => 'D',
+            ], JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND
+        );
+        // #endregion
         $rawToStatus = trim($toStatus);
         $pendingToStatus = OrderWorkflowStatus::isResumeAction($rawToStatus)
             ? $rawToStatus
             : OrderWorkflowStatus::normalize($rawToStatus);
         if ($this->isBatchLocked($orderId, $fromStatus, $pendingToStatus)) {
+            $hubTargets = ['hub_returning', 'hub_return'];
+            if (in_array(OrderWorkflowStatus::normalize($pendingToStatus), $hubTargets, true)
+                && OrderFulfillmentPolicy::hubReturnBlockedAfterDispatch($orderId)) {
+                return WriteResult::fail(
+                    'Hub return cannot be confirmed after dispatch. Use Customer Return to Supplier for post-dispatch returns.'
+                );
+            }
+
             return WriteResult::fail('Created Report orders are locked from normal workflow actions.');
         }
 
@@ -66,6 +93,16 @@ class OrderWorkflowWriteService
 
         if (in_array($fromStatus, ['delivered', 'cancelled', 'hub_return', 'order_returning'], true)) {
             return WriteResult::fail('No workflow action is allowed for ' . OrderWorkflowStatus::label($fromStatus) . ' orders.');
+        }
+
+        if (!OrderWorkflowStatus::isResumeAction($rawToStatus)) {
+            $hubTargets = ['hub_returning', 'hub_return'];
+            if (in_array(OrderWorkflowStatus::normalize($pendingToStatus), $hubTargets, true)
+                && OrderFulfillmentPolicy::hubReturnBlockedAfterDispatch($orderId)) {
+                return WriteResult::fail(
+                    'Hub return cannot be confirmed after dispatch. Use Customer Return to Supplier for post-dispatch returns.'
+                );
+            }
         }
 
         $resumeAdjustmentNote = null;
@@ -94,13 +131,26 @@ class OrderWorkflowWriteService
             }
 
             if (!OrderWorkflowStatus::canTransition($fromStatus, $toStatus)) {
-                return WriteResult::fail(
-                    'Invalid workflow transition from '
+                $failMsg = 'Invalid workflow transition from '
                     . OrderWorkflowStatus::label($fromStatus)
                     . ' to '
                     . OrderWorkflowStatus::label($toStatus)
-                    . '.'
+                    . '.';
+                // #region agent log
+                @file_put_contents(
+                    dirname(__DIR__, 3) . '/debug-f76280.log',
+                    json_encode([
+                        'sessionId' => 'f76280',
+                        'timestamp' => (int) round(microtime(true) * 1000),
+                        'location' => 'OrderWorkflowWriteService::transition:invalid',
+                        'message' => 'transition rejected',
+                        'data' => ['orderId' => $orderId, 'fromStatus' => $fromStatus, 'toStatus' => $toStatus, 'failMsg' => $failMsg],
+                        'hypothesisId' => 'D',
+                    ], JSON_UNESCAPED_SLASHES) . PHP_EOL,
+                    FILE_APPEND
                 );
+                // #endregion
+                return WriteResult::fail($failMsg);
             }
 
             if (in_array($toStatus, ['hold', 'cancelled'], true)) {
@@ -355,12 +405,7 @@ class OrderWorkflowWriteService
 
     private function isDispatchImmutable(int $orderId, string $fromStatus, string $toStatus): bool
     {
-        if ($orderId <= 0 || OrderWorkflowStatus::isResumeAction($toStatus) || !$this->dispatchReports->tableExists()) {
-            return false;
-        }
-
-        $meta = $this->dispatchReports->findIncludedOrderMeta(500);
-        if (!isset($meta[$orderId])) {
+        if ($orderId <= 0 || OrderWorkflowStatus::isResumeAction($toStatus) || !$this->orderIsDispatchLocked($orderId)) {
             return false;
         }
 
@@ -369,8 +414,9 @@ class OrderWorkflowWriteService
             return false;
         }
 
-        if ($fromStatus === 'delivery_stop' && $toStatus === 'hub_return') {
-            return false;
+        $hubPathTargets = ['hub_returning', 'hub_return'];
+        if (in_array($toStatus, $hubPathTargets, true)) {
+            return true;
         }
 
         $supplierRollbackTargets = ['new_order', 'order_received', 'packaging', 'shipped', 'hold', 'cancelled'];
@@ -384,21 +430,25 @@ class OrderWorkflowWriteService
             return false;
         }
 
-        if ($fromStatus === 'delivery_stop' && $toStatus === 'hub_return') {
-            return false;
-        }
-
-        if ($fromStatus === 'dispatch_report_created') {
+        $hubPathTargets = ['hub_returning', 'hub_return'];
+        if (in_array($toStatus, $hubPathTargets, true) && $this->orderIsDispatchLocked($orderId)) {
             return true;
         }
 
-        if (!$this->dispatchReports->tableExists()) {
+        if (in_array($fromStatus, ['dispatch_report_created', 'in_review', 'in_transit', 'out_for_delivery'], true)) {
+            return true;
+        }
+
+        return $this->orderIsDispatchLocked($orderId);
+    }
+
+    private function orderIsDispatchLocked(int $orderId): bool
+    {
+        if ($orderId <= 0 || !$this->dispatchReports->tableExists()) {
             return false;
         }
 
-        $meta = $this->dispatchReports->findIncludedOrderMeta(500);
-
-        return isset($meta[$orderId]);
+        return $this->dispatchReports->findDispatchItemForOrder($orderId) !== null;
     }
 
     private function resolveChangedById(): ?int

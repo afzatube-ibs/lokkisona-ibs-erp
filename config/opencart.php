@@ -31,7 +31,7 @@ return [
     'skip_status_names' => ['Missing', 'missing'],
     'supplier_handled_workflow_groups' => ['workflow', 'supplier_handled'],
     'courier_only_workflow_groups' => ['courier', 'courier_reference'],
-    'courier_stage_ibs_statuses' => ['out_for_delivery', 'delivered'],
+    'courier_stage_ibs_statuses' => ['in_review', 'in_transit', 'out_for_delivery', 'delivered', 'order_returning'],
     'order_sync_advanced_mapping' => false,
     'order_sync_min_source_order_id' => 0,
     'hide_demo_orders_in_workflow' => true,

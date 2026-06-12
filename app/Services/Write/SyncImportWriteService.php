@@ -4,8 +4,11 @@ namespace App\Services\Write;
 
 use App\ActivityLog;
 use App\Database\Connection;
+use App\Domain\OrderCourierWorkflowLane;
+use App\Domain\OrderFulfillmentPolicy;
 use App\Domain\OrderSyncMappingRules;
 use App\Domain\OrderSyncWorkflowBoundary;
+use App\Domain\OrderWorkflowStatus;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\OrderItemWriteRepository;
 use App\Repositories\Write\OrderWorkflowHistoryWriteRepository;
@@ -226,8 +229,13 @@ class SyncImportWriteService
                 return ['key' => 'skipped_duplicate'];
             }
 
-            $this->orders->updateOriginSnapshot((int) $existing['order_id'], $snapshot);
+            $orderId = (int) $existing['order_id'];
+            $this->orders->updateOriginSnapshot($orderId, $snapshot);
             $this->recordMappingMatch($sourceId, $orderPayload);
+
+            if (!OrderFulfillmentPolicy::isManualSalesOrder($existing)) {
+                $this->maybePromoteCourierStage($orderId, $existing, (string) ($item['mapped_status'] ?? ''));
+            }
 
             return ['key' => 'updated_snapshot'];
         }
@@ -396,6 +404,35 @@ class SyncImportWriteService
         $context = $this->logs->findContextByPreviewId($previewId, 'test_sync');
 
         return is_array($context['orders_by_ref'] ?? null) ? $context['orders_by_ref'] : [];
+    }
+
+    /**
+     * @param array<string, mixed> $existingOrder
+     */
+    private function maybePromoteCourierStage(int $orderId, array $existingOrder, string $mappedStatus): void
+    {
+        if ($orderId <= 0 || !OrderFulfillmentPolicy::orderWasDispatched($orderId)) {
+            return;
+        }
+
+        $currentStatus = OrderWorkflowStatus::normalize((string) ($existingOrder['ibs_status'] ?? ''));
+        $targetStatus = OrderCourierWorkflowLane::forwardPromotionTarget($currentStatus, $mappedStatus);
+        if ($targetStatus === null || $targetStatus === $currentStatus) {
+            return;
+        }
+
+        $this->orders->updateStatus($orderId, $targetStatus);
+
+        if ($this->history->tableExists()) {
+            $this->history->insert(
+                $orderId,
+                null,
+                $currentStatus,
+                $targetStatus,
+                'courier_sync_forward: mapping → ' . OrderWorkflowStatus::normalize($mappedStatus),
+                null
+            );
+        }
     }
 
     private function resolveCostSnapshot(?int $productId, ?int $variantId): float
