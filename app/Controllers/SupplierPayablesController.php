@@ -303,23 +303,12 @@ class SupplierPayablesController extends Controller
 
     private function netPayableFormula(): array
     {
-        if (SupplierContext::isSupplier()) {
-            return [
-                'summary' => 'Net Payable = Opening Balance + Sales + Supplier Sale Invoice + Additional Sale + Sale Adjustment (Debit) − Return Deduction − Payment Made − Advance Received − Sale Adjustment (Credit)',
-                'points' => [
-                    'Sales use locked dispatch sale amounts only.',
-                    'Return deductions require receive confirmation and owner approval.',
-                    'All financial entries are draft until owner posts them.',
-                ],
-            ];
-        }
-
         return [
-            'summary' => 'Net Payable = Opening Balance + Product Cost Payable + Supplier Invoice + Additional Payable + Debit Adjustment − Return Deduction − Payment Made − Advance Received − Credit Adjustment',
+            'summary' => 'Net Payable = Delivered Supplier Product Cost − Returned Supplier Product Cost − Advance Adjustment − Settlement Paid',
             'points' => [
-                'Product Cost Payable uses locked dispatch cost snapshot only.',
-                'Return deductions require receive confirmation and owner approval.',
-                'All financial entries are draft until owner posts them.',
+                'Delivered and returned amounts use locked supplier product cost snapshots only.',
+                'Invoice/COD sale amounts are display-only on orders — not used in payable calculation.',
+                'No dropshipper profit calculation in SFM v2.4.8.',
             ],
         ];
     }

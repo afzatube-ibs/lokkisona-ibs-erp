@@ -32,6 +32,12 @@ class Permission
         return in_array('*', $permissions, true) || in_array($permission, $permissions, true);
     }
 
+    /** Owner/admin Sync Hub manage gate (v2.4.8). */
+    public static function canSyncHub(): bool
+    {
+        return self::can('sync_api_settings.manage');
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -49,15 +55,17 @@ class Permission
             ['label' => 'Return Reports', 'path' => '/return-reports', 'permission' => 'returns.view', 'tier' => 'fulfillment', 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/><line x1="12" y1="8" x2="12" y2="14"/>'],
 
             // Accounts
-            ['label' => 'Supplier Ledger', 'path' => '/reports', 'match_query' => ['report' => 'supplier_ledger'], 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>'],
-            ['label' => 'Supplier Payments', 'path' => '/supplier-payables', 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>'],
-            ['label' => 'Balance Summary', 'path' => '/supplier-opening-balances', 'permission' => 'supplier_opening_balances.view', 'tier' => 'accounts', 'icon' => '<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/><path d="M18 3v6M21 6h-6"/>'],
+            ['label' => 'Payables', 'path' => '/supplier-payables', 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/>'],
+            ['label' => 'Inventory Report', 'path' => '/reports', 'match_query' => ['report' => 'inventory_snapshot'], 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/>'],
+            ['label' => 'Sales / Order Report', 'short_label' => 'Sales / Orders', 'path' => '/reports', 'match_query' => ['report' => 'product_sales'], 'permission' => 'supplier_payables.view', 'tier' => 'accounts', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
 
-            // Catalog
-            ['label' => 'Products', 'path' => '/product-control', 'permission' => 'product_control.view', 'tier' => 'catalog', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'],
+            // Catalog (owner/admin — hidden for supplier via supplier_hidden)
+            ['label' => 'Products', 'path' => '/product-control', 'permission' => 'product_control.view', 'tier' => 'catalog', 'supplier_hidden' => true, 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'],
 
             // Settings
-            ['label' => 'Business Sources', 'path' => '/business-sources', 'permission' => 'business_sources.view', 'tier' => 'settings', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20"/><path d="M12 2a15.3 15.3 0 0 0 0 20"/>'],
+            ['label' => 'Sync Settings', 'path' => '/sync-api-settings', 'permission' => 'sync_api_settings.view', 'tier' => 'settings', 'supplier_hidden' => true, 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
+            ['label' => 'Status Mapping', 'path' => '/status-mapping', 'permission' => 'status_mapping.view', 'tier' => 'settings', 'supplier_hidden' => true, 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>'],
+            ['label' => 'Business Sources', 'path' => '/business-sources', 'permission' => 'business_sources.view', 'tier' => 'settings', 'supplier_hidden' => true, 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 0 20"/><path d="M12 2a15.3 15.3 0 0 0 0 20"/>'],
             ['label' => 'Users', 'path' => '/users', 'permission' => 'users.view', 'tier' => 'settings', 'icon' => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
             ['label' => 'Roles', 'path' => '/roles-permissions', 'permission' => 'roles_permissions.view', 'tier' => 'settings', 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>'],
             ['label' => 'Activity Log', 'path' => '/activity-log', 'permission' => 'activity_log.view', 'tier' => 'settings', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/>'],
@@ -72,18 +80,18 @@ class Permission
             ['label' => 'Supplier Summary', 'path' => '/reports', 'match_query' => ['report' => 'supplier_statement'], 'permission' => 'supplier_payables.view', 'tier' => 'future_plans', 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>'],
             ['label' => 'Product Summary', 'path' => '/reports', 'match_query' => ['report' => 'product_dispatch'], 'permission' => 'supplier_payables.view', 'tier' => 'future_plans', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'],
             ['label' => 'Return Summary', 'path' => '/reports', 'match_query' => ['report' => 'hub_return'], 'permission' => 'supplier_payables.view', 'tier' => 'future_plans', 'icon' => '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>'],
-            ['label' => 'Sync Preview', 'path' => '/sync-preview', 'permission' => 'sync_preview.view', 'tier' => 'future_plans', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
-            ['label' => 'Status Mapping', 'path' => '/status-mapping', 'permission' => 'status_mapping.view', 'tier' => 'future_plans', 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>'],
+            ['label' => 'Sync Preview', 'path' => '/sync-preview', 'permission' => 'sync_preview.view', 'tier' => 'future_plans', 'supplier_hidden' => true, 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
+            ['label' => 'Status Mapping', 'path' => '/status-mapping', 'permission' => 'status_mapping.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>'],
             ['label' => 'Connector Diagnostics', 'path' => '', 'permission' => 'sync_api_settings.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42"/>'],
             ['label' => 'Advanced Sync', 'path' => '', 'permission' => 'sync_preview.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9V3"/>'],
-            ['label' => 'Sync Settings', 'path' => '/sync-api-settings', 'permission' => 'sync_api_settings.view', 'tier' => 'future_plans', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
+            ['label' => 'Sync Settings', 'path' => '/sync-api-settings', 'permission' => 'sync_api_settings.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
             ['label' => 'Database Safety', 'path' => '/database-safety', 'permission' => 'database_safety.view', 'tier' => 'future_plans', 'icon' => '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M9 12l2 2 4-4"/>'],
             ['label' => 'Suppliers', 'path' => '/suppliers', 'permission' => 'suppliers.view', 'tier' => 'future_plans', 'icon' => '<path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 22V12h6v10"/>'],
             ['label' => 'Settlements', 'path' => '/settlements', 'permission' => 'settlements.view', 'tier' => 'future_plans', 'icon' => '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="18" cy="18" r="3"/>'],
             ['label' => 'Balance Sheet', 'path' => '/reports', 'match_query' => ['report' => 'monthly_payable'], 'permission' => 'supplier_payables.view', 'tier' => 'future_plans', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
             ['label' => 'Sales / Order Reports', 'short_label' => 'Sales / Orders', 'path' => '/reports', 'match_query' => ['report' => 'product_sales'], 'permission' => 'supplier_payables.view', 'tier' => 'future_plans', 'icon' => '<path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/>'],
-            ['label' => 'Supplier Tools', 'path' => '/supplier-tools', 'permission' => 'supplier_quick_invoice.manage', 'tier' => 'future_plans', 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],
-            ['label' => 'Calculator', 'path' => '', 'nav_action' => 'supplierCalculatorModal', 'permission' => 'supplier_calculator.view', 'tier' => 'future_plans', 'icon' => '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/>'],
+            ['label' => 'Supplier Tools', 'path' => '/supplier-tools', 'permission' => 'supplier_quick_invoice.manage', 'tier' => 'future_plans', 'supplier_hidden' => true, 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],
+            ['label' => 'Calculator', 'path' => '', 'nav_action' => 'supplierCalculatorModal', 'permission' => 'supplier_calculator.view', 'tier' => 'future_plans', 'supplier_hidden' => true, 'icon' => '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/>'],
             ['label' => 'Invoice Printing', 'path' => '/invoice-printing', 'permission' => 'invoice_printing.view', 'tier' => 'future_plans', 'icon' => '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>'],
             ['label' => 'Forecasting', 'path' => '', 'permission' => 'health.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<path d="M3 3v18h18"/><path d="M7 14l3-3 3 2 5-6"/>'],
             ['label' => 'AI Tools', 'short_label' => 'AI Tools', 'path' => '', 'permission' => 'health.view', 'tier' => 'future_plans', 'nav_disabled' => true, 'icon' => '<path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V6a4 4 0 0 1 4-4z"/>'],
@@ -97,7 +105,14 @@ class Permission
         ];
 
         $filtered = array_values(array_filter($items, function ($item) {
-            return self::can($item['permission']);
+            if (!self::can($item['permission'])) {
+                return false;
+            }
+            if (!empty($item['supplier_hidden']) && SupplierContext::isSupplier()) {
+                return false;
+            }
+
+            return true;
         }));
 
         return $filtered;

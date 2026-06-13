@@ -6,6 +6,7 @@ use App\Database\Connection;
 use App\Database\QueryGuard;
 use App\Database\TableName;
 use App\Domain\OrderWorkflowStatus;
+use App\Domain\SfmWorkflowStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -146,7 +147,8 @@ class OrderWorkflowListReadService
                 ($dispatchReportId ?? 0) > 0 ? $dispatchReportId : null,
                 $batchLocked,
                 $productLines,
-                OrderWorkflowRowPresenter::resolveSourceOrderStatus($order, $importHistories[$orderId] ?? null)
+                OrderWorkflowRowPresenter::resolveSourceOrderStatus($order, $importHistories[$orderId] ?? null),
+                $supplierId > 0
             );
         }
 
@@ -188,8 +190,8 @@ class OrderWorkflowListReadService
         }
 
         $counts = [];
-        foreach (OrderWorkflowStatus::groupOrder() as $code) {
-            $counts[$code] = 0;
+        foreach (SfmWorkflowStatus::releaseStatusCards() as $card) {
+            $counts[(string) $card['code']] = 0;
         }
 
         if (!$this->tableExists()) {
@@ -211,15 +213,11 @@ class OrderWorkflowListReadService
             $statement->execute($params);
             foreach ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
                 $orderId = (int) ($row['order_id'] ?? 0);
-                $group = OrderWorkflowStatus::filterBucket(
+                $bucket = SfmWorkflowStatus::bucketForInternal(
                     (string) ($row['ibs_status'] ?? 'new_order'),
                     isset($dispatchReferences[$orderId])
                 );
-                if (isset($counts[$group])) {
-                    $counts[$group]++;
-                } else {
-                    $counts[$group] = 1;
-                }
+                $counts[$bucket] = ($counts[$bucket] ?? 0) + 1;
             }
         } catch (\Throwable $e) {
             return $counts;
@@ -388,7 +386,7 @@ class OrderWorkflowListReadService
         $status = trim((string) ($filters['status'] ?? ''));
         if ($status !== '' && !OrderWorkflowStatus::isKnownBucket($status)) {
             $status = '';
-        } elseif ($status !== '') {
+        } elseif ($status !== '' && !SfmWorkflowStatus::isKnownBucket($status)) {
             $status = OrderWorkflowStatus::normalize($status);
         }
 
@@ -512,6 +510,35 @@ class OrderWorkflowListReadService
      */
     private function appendStatusBucketFilter(string &$where, array &$params, string $filterBucket, array $includedOrderIds): void
     {
+        if (SfmWorkflowStatus::isKnownBucket($filterBucket)) {
+            if ($filterBucket === SfmWorkflowStatus::PACKED) {
+                [$statusSql, $statusParams] = $this->statusMatchClause($filterBucket, 'ibs_status');
+                $where .= ' AND ' . $statusSql;
+                $params = array_merge($params, $statusParams);
+                if ($includedOrderIds !== []) {
+                    [$idSql, $idParams] = $this->orderIdNotInClause($includedOrderIds, 'sfm_pack_excl');
+                    $where .= ' AND ' . $idSql;
+                    $params = array_merge($params, $idParams);
+                }
+
+                return;
+            }
+
+            if ($filterBucket === SfmWorkflowStatus::DISPATCHED) {
+                [$statusSql, $statusParams] = $this->statusMatchClause($filterBucket, 'ibs_status');
+                $params = array_merge($params, $statusParams);
+                if ($includedOrderIds !== []) {
+                    [$idSql, $idParams] = $this->orderIdInClause($includedOrderIds, 'sfm_disp_incl');
+                    $where .= ' AND (' . $statusSql . ' OR ' . $idSql . ')';
+                    $params = array_merge($params, $idParams);
+                } else {
+                    $where .= ' AND ' . $statusSql;
+                }
+
+                return;
+            }
+        }
+
         $filterBucket = OrderWorkflowStatus::normalize($filterBucket);
         [$statusSql, $statusParams] = $this->statusMatchClause($filterBucket, 'ibs_status');
 

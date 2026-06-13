@@ -27,7 +27,7 @@ class VersionController extends Controller
             'product' => config('app.name'),
             'version' => config('app.version'),
             'codename' => config('app.release_label'),
-            'release_date' => '2026-06-12',
+            'release_date' => '2026-06-13',
             'production_launch_doc' => 'docs/PRODUCTION-LAUNCH.md',
             'php_version' => PHP_VERSION,
             'php_requirement' => 'PHP 8.2+',
@@ -39,6 +39,7 @@ class VersionController extends Controller
                 'ZIP Installer' => 'None',
             ],
                         'features' => [
+                'v2.4.8 SFM Direction Repair: refocus IBS-LK into lean Supplier Fulfillment Manager — seven SFM status labels (New/Accepted/Packed/Dispatched/Delivered/Returned/Cancelled) on order workflow; sync limits enforced at 20 products and 20 orders per request with single-page product refresh and SyncRequestGuard one-at-a-time lock; re-sync never overwrites workflow status (courier forward promotion disabled); canSyncHub() unlocks Sync Settings for owner/admin; supplier portal scoped to order-assigned products only (no full catalog nav); order list shows OC ID, phone, address, invoice/COD amount; payable formula simplified to delivered cost minus returns minus advance minus settlement; reports trimmed to Inventory Snapshot and Sales/Order only; dispatch bridge warning uses supplier-products copy — no OpenCart writes, no DB migration',
                 'v2.4.2 Order Workflow Safety: OpenCart sync stops at Shipped; status mapping imports only up to Shipped; IBS owns post-shipment workflow; dispatch report freezes order; pre-dispatch hub return path (Shipped → Delivery Stop → Hub Returning → Hub Return Confirmed) with no payable/ledger/return report; post-dispatch courier lane (Dispatched → In Review → In Transit → Out For Delivery → Delivered) forward-only via sync; customer return → Return Report after dispatch; backward movement and hub return blocked after dispatch; dispatch eligibility requires mapped product + cost > 0 + not hub return; manual sales orders (sync_source=manual) never overwritten by sync; demo orders hidden and blocked from dispatch — no ledger, no Product Control changes, no navigation redesign',
                 'v2.4.1 Return Statement UAT Repair: Supplier Return Statement print layout (A4 landscape, fixed column widths, word wrap); screen table wrapping; Return Amount label (was Total Return Adjustment); client mixed-supplier guard alongside mixed-source; ReturnStatementLinePresenter reconciles display to locked ibs_return_report_items.product_cost_snapshot; handoff accounting chain Dispatch → Return → Payment → Balance; v2.5 ledger hook documented to use locked dispatch snapshot not catalog cost — no schema migration',
                 'v2.4.0 Returns Foundation: Supplier Return Statement module (/return-reports, /return-report/{ref}, print) — one-step lock from supplier-confirmed Hub/Customer returns; duplicate/mixed supplier-source/missing cost-reason guards; ReturnStatementLinePresenter with Return Reason + Return Type columns; confirmReceive staging fix (no auto per-order batch); legacy Return Batch UI retired; migration 0007_return_reports_foundation.sql (manual apply) — no ledger posting, independent from Daily Dispatch',

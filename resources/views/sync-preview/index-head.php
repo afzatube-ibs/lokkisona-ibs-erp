@@ -210,7 +210,7 @@ view('partials.write-gate-warning', [
 
         <?php endif; ?>
 
-        <p class="page-description" style="margin-top:1rem;">One request per button — max 50 orders, no background sync. Existing ERP orders refresh OpenCart snapshot fields only; IBS fulfillment status is never reset on re-sync.</p>
+        <p class="page-description" style="margin-top:1rem;">One request per button — max 20 orders, no background sync. Existing ERP orders refresh OpenCart snapshot fields only; SFM workflow status is never reset on re-sync.</p>
 
     </div>
 

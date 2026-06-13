@@ -58,7 +58,7 @@ class ControllerApiIbsProducts extends Controller
 
                 'bridge_available' => false,
 
-                'error' => 'Dispatch Location bridge table not found. Product sync cannot safely identify IBS supplier products.',
+                'error' => 'Dispatch Location bridge table not found. Product sync cannot safely identify supplier products.',
 
                 'page' => $apiAuth->page(),
 

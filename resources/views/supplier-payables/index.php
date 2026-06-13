@@ -241,7 +241,7 @@ view('partials.write-gate-warning', [
                 <li><?= e($point) ?></li>
             <?php endforeach; ?>
         </ul>
-        <p class="page-description">Supplier payable is based on product cost from dispatch snapshots only — never selling price or live changing cost. Return deductions require receive confirmation plus owner approval. Supplier Tools remain independent unless owner posts a ledger entry.</p>
+        <p class="page-description">SFM payable uses supplier product cost from dispatch/return snapshots only — invoice/COD amounts are display-only on orders.</p>
     </div>
 </details>
 <?php endif; ?>

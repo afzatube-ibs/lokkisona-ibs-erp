@@ -1,7 +1,7 @@
 <?php use App\Domain\SupplierTerminology; ?>
 <div class="page-header page-header-compact">
     <h1 class="page-title">Return Reports</h1>
-    <p class="ops-page-subtitle">Supplier Return Statement — one-step lock from supplier-confirmed returns. Locked return cost snapshot only; no ledger posting in v2.4.x. Pending confirmation stays on <a href="<?= e(url('/return-receive')) ?>">Return Receive</a>.</p>
+    <p class="ops-page-subtitle">Return list for SFM <strong>Returned</strong> items — return value = supplier product cost only (locked snapshot). No sale/profit calculation. Pending confirmation stays on <a href="<?= e(url('/return-receive')) ?>">Return Receive</a>.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

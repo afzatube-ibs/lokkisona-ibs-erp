@@ -148,6 +148,10 @@ class OrderWorkflowStatus
      */
     public static function statusCodesForBucket(string $bucket): array
     {
+        if (SfmWorkflowStatus::isKnownBucket($bucket)) {
+            return SfmWorkflowStatus::internalCodesForBucket($bucket);
+        }
+
         $bucket = self::normalize($bucket);
         $codes = [$bucket];
         foreach (self::LEGACY_ALIASES as $legacy => $mapped) {
@@ -172,6 +176,10 @@ class OrderWorkflowStatus
 
     public static function isKnownBucket(string $bucket): bool
     {
+        if (SfmWorkflowStatus::isKnownBucket(trim($bucket))) {
+            return true;
+        }
+
         $bucket = self::normalize($bucket);
         if ($bucket === '') {
             return false;
@@ -213,33 +221,13 @@ class OrderWorkflowStatus
 
     public static function groupDisplayLabel(string $code): string
     {
-        $normalized = self::normalize($code);
-
-        if ($normalized === 'dispatch_report_created') {
-            return 'Dispatched';
-        }
-
-        if ($normalized === 'order_returning') {
-            return 'Customer Returning';
-        }
-
-        return self::label($code);
+        return SfmWorkflowStatus::label($code);
     }
 
-    /** Status cards shown on /order-workflow release UI (operational flow only). */
+    /** Status cards shown on /order-workflow release UI (SFM v2.4.8). */
     public static function releaseStatusCards(): array
     {
-        return [
-            ['code' => 'new_order', 'label' => 'New Order'],
-            ['code' => 'order_received', 'label' => 'Order Received'],
-            ['code' => 'packaging', 'label' => 'Packaging'],
-            ['code' => 'shipped', 'label' => 'Shipped'],
-            ['code' => 'dispatch_report_created', 'label' => 'Dispatched'],
-            ['code' => 'in_review', 'label' => 'In Review'],
-            ['code' => 'in_transit', 'label' => 'In Transit'],
-            ['code' => 'out_for_delivery', 'label' => 'Out For Delivery'],
-            ['code' => 'delivered', 'label' => 'Delivered'],
-        ];
+        return SfmWorkflowStatus::releaseStatusCards();
     }
 
     /**
@@ -249,18 +237,7 @@ class OrderWorkflowStatus
      */
     public static function releaseStatusCardGroups(): array
     {
-        return [
-            [
-                'key' => 'supplier',
-                'label' => 'IBS Workflow',
-                'codes' => ['new_order', 'order_received', 'packaging', 'shipped'],
-            ],
-            [
-                'key' => 'courier',
-                'label' => 'Courier Flow',
-                'codes' => ['dispatch_report_created', 'in_review', 'in_transit', 'out_for_delivery', 'delivered'],
-            ],
-        ];
+        return SfmWorkflowStatus::releaseStatusCardGroups();
     }
 
     /** Exception chips on /order-workflow release UI. */
@@ -523,21 +500,13 @@ class OrderWorkflowStatus
     public static function stageAccentClass(string $code): string
     {
         return match ($code) {
-            'new_order' => 'workflow-accent-warn',
-            'order_received' => 'workflow-accent-success',
-            'packaging' => 'workflow-accent-purple',
-            'shipped' => 'workflow-accent-primary',
-            'dispatch_report_created' => 'workflow-accent-cyan',
-            'in_review' => 'workflow-accent-cyan',
-            'in_transit' => 'workflow-accent-cyan',
-            'out_for_delivery' => 'workflow-accent-warn',
-            'delivered' => 'workflow-accent-success',
-            'hold' => 'workflow-accent-warn',
-            'cancelled' => 'workflow-accent-muted',
-            'delivery_stop' => 'workflow-accent-error',
-            'hub_returning' => 'workflow-accent-warn',
-            'hub_return' => 'workflow-accent-warn',
-            'order_returning' => 'workflow-accent-error',
+            SfmWorkflowStatus::NEW, 'new_order' => 'workflow-accent-warn',
+            SfmWorkflowStatus::ACCEPTED, 'order_received' => 'workflow-accent-success',
+            SfmWorkflowStatus::PACKED, 'packaging', 'shipped' => 'workflow-accent-purple',
+            SfmWorkflowStatus::DISPATCHED, 'dispatch_report_created', 'in_review', 'in_transit', 'out_for_delivery' => 'workflow-accent-cyan',
+            SfmWorkflowStatus::DELIVERED, 'delivered' => 'workflow-accent-success',
+            SfmWorkflowStatus::RETURNED, 'hub_returning', 'hub_return', 'order_returning' => 'workflow-accent-error',
+            SfmWorkflowStatus::CANCELLED, 'hold', 'cancelled', 'delivery_stop' => 'workflow-accent-muted',
             default => 'workflow-accent-muted',
         };
     }

@@ -91,8 +91,7 @@ class SyncImportWriteService
 
         $importItems = array_merge(
             $this->previewItems->forPreview($previewId, 'eligible'),
-            $this->previewItems->forPreview($previewId, 'snapshot_update'),
-            $this->previewItems->forPreview($previewId, 'blocked_not_supplier_handled')
+            $this->previewItems->forPreview($previewId, 'snapshot_update')
         );
 
         if ($importItems === []) {
@@ -113,7 +112,7 @@ class SyncImportWriteService
             }
         }
 
-        $limit = max(1, min((int) config('opencart.max_orders_per_request', 50), 50));
+        $limit = max(1, min((int) config('opencart.max_orders_per_request', 20), 20));
         $importItems = array_slice($importItems, 0, $limit);
         $sourceId = (int) ($preview['business_source_id'] ?? config('opencart.business_source_id', 1));
 
@@ -232,10 +231,6 @@ class SyncImportWriteService
             $orderId = (int) $existing['order_id'];
             $this->orders->updateOriginSnapshot($orderId, $snapshot);
             $this->recordMappingMatch($sourceId, $orderPayload);
-
-            if (!OrderFulfillmentPolicy::isManualSalesOrder($existing)) {
-                $this->maybePromoteCourierStage($orderId, $existing, (string) ($item['mapped_status'] ?? ''));
-            }
 
             return ['key' => 'updated_snapshot'];
         }

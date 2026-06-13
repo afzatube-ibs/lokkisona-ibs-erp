@@ -172,11 +172,37 @@ class OrderWorkflowController extends Controller
                 $this->flash('error', 'Delivery Stop reason is required.');
                 redirect($this->workflowRedirectPath());
             }
+            if (DeliveryStopReason::normalize($deliveryStopReason) === DeliveryStopReason::OTHER
+                && trim((string) ($_POST['action_note'] ?? '')) === '') {
+                $this->flash('error', 'A note is required when Delivery Stop reason is Other.');
+                redirect($this->workflowRedirectPath());
+            }
             $note = DeliveryStopReason::formatActionNote($deliveryStopReason, $note);
         }
         $staffConfirmed = !empty($_POST['staff_confirmation']);
         $actionConfirmed = !empty($_POST['action_confirmed']);
         $result = (new OrderWorkflowWriteService())->transition($orderId, $toStatus, $note, $staffConfirmed, $actionConfirmed);
+        // #region agent log
+        @file_put_contents(
+            dirname(__DIR__, 2) . '/debug-f76280.log',
+            json_encode([
+                'sessionId' => 'f76280',
+                'timestamp' => (int) round(microtime(true) * 1000),
+                'location' => 'OrderWorkflowController::action',
+                'message' => 'workflow action result',
+                'data' => [
+                    'orderId' => $orderId,
+                    'toStatus' => $toStatus,
+                    'csrfValid' => true,
+                    'actionConfirmed' => $actionConfirmed,
+                    'success' => $result->success,
+                    'resultMessage' => $result->message,
+                ],
+                'hypothesisId' => 'C',
+            ], JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND
+        );
+        // #endregion
         if ($result->success) {
             (new OrderWorkflowListReadService())->invalidateCache();
         }
@@ -554,7 +580,7 @@ class OrderWorkflowController extends Controller
                 'count' => $counts[$code] ?? 0,
                 'url' => '/order-workflow?status=' . rawurlencode($code) . '&from_card=1',
                 'active' => $activeStatus === $code,
-                'latest_batch' => $code === 'dispatch_report_created' ? $latestBatchReference : null,
+                'latest_batch' => $code === 'sfm_dispatched' ? $latestBatchReference : null,
             ];
         }
 

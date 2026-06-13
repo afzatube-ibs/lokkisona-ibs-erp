@@ -174,7 +174,7 @@ class SyncPreviewWriteService
 
     private function productImportLimit(): int
     {
-        return max(1, (int) config('opencart.max_products_per_page', 20));
+        return max(1, min((int) config('opencart.max_products_per_request', 20), 20));
     }
 
     public function runTestSync(array $input = []): WriteResult
@@ -371,61 +371,46 @@ class SyncPreviewWriteService
         $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
         $previewService = new ProductSyncPreviewService();
         $page = 1;
-        $maxPages = max(1, (int) config('opencart.product_refresh_max_pages', 50));
         $totalProducts = 0;
         $totalVariants = 0;
-        $pagesProcessed = 0;
         $skippedNonSupplier = 0;
         $lastMessage = '';
 
-        do {
-            $preview = $previewService->previewPage($page, $sourceId);
-            $previewMessage = trim((string) ($preview['message'] ?? ''));
-            if ($previewMessage !== '' && ($preview['import_rows'] ?? []) === [] && ($preview['rows'] ?? []) === []) {
-                if ($pagesProcessed === 0) {
-                    return WriteResult::fail($previewMessage);
-                }
+        $preview = $previewService->previewPage($page, $sourceId);
+        $previewMessage = trim((string) ($preview['message'] ?? ''));
+        if ($previewMessage !== '' && ($preview['import_rows'] ?? []) === [] && ($preview['rows'] ?? []) === []) {
+            return WriteResult::fail($previewMessage);
+        }
 
-                break;
+        $importRows = $this->bridgeImportRows($preview['import_rows'] ?? []);
+        if ($importRows !== []) {
+            $result = (new ProductWriteService())->upsertWarehouseProducts($sourceId, $importRows);
+            if (!$result->success) {
+                return $result;
             }
 
-            $importRows = $this->bridgeImportRows($preview['import_rows'] ?? []);
-            if ($importRows !== []) {
-                $result = (new ProductWriteService())->upsertWarehouseProducts($sourceId, $importRows);
-                if (!$result->success) {
-                    return $result;
-                }
-
-                if (preg_match('/Products imported: (\d+)/', $result->message, $m)) {
-                    $totalProducts += (int) $m[1];
-                }
-                if (preg_match('/Variants imported: (\d+)/', $result->message, $m)) {
-                    $totalVariants += (int) $m[1];
-                }
-                $lastMessage = $result->message;
+            if (preg_match('/Products imported: (\d+)/', $result->message, $m)) {
+                $totalProducts += (int) $m[1];
             }
+            if (preg_match('/Variants imported: (\d+)/', $result->message, $m)) {
+                $totalVariants += (int) $m[1];
+            }
+            $lastMessage = $result->message;
+        }
 
-            $skipStats = is_array($preview['skip_stats'] ?? null)
-                ? $preview['skip_stats']
-                : OpenCartReadClient::emptySkipStats();
-            $skippedNonSupplier += (int) ($skipStats['skipped_not_supplier'] ?? 0)
-                + (int) ($skipStats['skipped_missing_from_warehouse'] ?? 0);
-
-            $pagesProcessed++;
-            $hasNext = !empty($preview['has_next']);
-            $page++;
-        } while ($hasNext && $page <= $maxPages);
+        $skipStats = is_array($preview['skip_stats'] ?? null)
+            ? $preview['skip_stats']
+            : OpenCartReadClient::emptySkipStats();
+        $skippedNonSupplier += (int) ($skipStats['skipped_not_supplier'] ?? 0)
+            + (int) ($skipStats['skipped_missing_from_warehouse'] ?? 0);
 
         ActivityLog::record('product_sync_refresh', 'Product Control warehouse refresh from API', [
-            'pages' => $pagesProcessed,
+            'pages' => 1,
             'products' => $totalProducts,
             'variants' => $totalVariants,
         ]);
 
-        $message = 'Products refreshed from Dispatch Location (from_warehouse = 1).';
-        if ($pagesProcessed > 0) {
-            $message .= ' Pages processed: ' . $pagesProcessed . '.';
-        }
+        $message = 'Products refreshed from Dispatch Location (from_warehouse = 1). Max 20 per request.';
         if ($totalProducts > 0 || $totalVariants > 0) {
             $message .= ' Products updated: ' . $totalProducts . '. Variants updated: ' . $totalVariants . '.';
         } elseif ($lastMessage !== '') {
@@ -436,11 +421,11 @@ class SyncPreviewWriteService
         if ($skippedNonSupplier > 0) {
             $message .= ' Non-supplier rows skipped: ' . $skippedNonSupplier . '.';
         }
-        if ($page > $maxPages && !empty($preview['has_next'] ?? false)) {
-            $message .= ' Stopped at page limit (' . $maxPages . '). Run refresh again if more pages exist.';
+        if (!empty($preview['has_next'])) {
+            $message .= ' More products available — run refresh again for the next page (max 20 per request).';
         }
 
-        return WriteResult::ok($message, $pagesProcessed);
+        return WriteResult::ok($message, 1);
     }
 
     private function classifyOrder(int $sourceId, array $order): array

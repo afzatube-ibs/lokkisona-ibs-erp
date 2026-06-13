@@ -27,23 +27,8 @@ class SupplierReportsReadService
     public function definitions(): array
     {
         return [
-            'supplier_ledger' => ['title' => 'Supplier Ledger Report', 'group' => 'Financial'],
-            'dispatch_payable' => ['title' => 'Dispatch Payable Report', 'group' => 'Dispatch'],
-            'product_dispatch' => ['title' => 'Product-wise Dispatch Report', 'group' => 'Dispatch'],
-            'product_sales' => ['title' => 'Product-wise Sales Report', 'group' => 'Sales'],
-            'category_sales' => ['title' => 'Sales by Supplier Category', 'group' => 'Sales'],
-            'hub_return' => ['title' => 'Hub Return / Courier Return Report', 'group' => 'Returns'],
-            'customer_return' => ['title' => 'Customer Return Report', 'group' => 'Returns'],
-            'vendor_return' => ['title' => 'Vendor Return Report', 'group' => 'Returns'],
-            'owner_return' => ['title' => 'Owner / Lokkisona Return Report', 'group' => 'Returns'],
-            'return_deduction' => ['title' => 'Return Deduction Report', 'group' => 'Financial'],
-            'monthly_payable' => ['title' => 'Monthly Payable Report', 'group' => 'Financial'],
-            'supplier_statement' => ['title' => 'Supplier Statement', 'group' => 'Financial'],
-            'settlement_summary' => ['title' => 'Settlement Report', 'group' => 'Financial'],
-            'payment_history' => ['title' => 'Payment History', 'group' => 'Financial'],
-            'manual_entries' => ['title' => 'Manual Account Entry Report', 'group' => 'Financial'],
-            'supplier_invoice' => ['title' => 'Supplier Invoice Report', 'group' => 'Financial'],
-            'activity_log' => ['title' => 'Activity Log', 'group' => 'Audit'],
+            'inventory_snapshot' => ['title' => 'Inventory Report', 'group' => 'Inventory'],
+            'product_sales' => ['title' => 'Sales / Order Report', 'group' => 'Sales'],
         ];
     }
 
@@ -54,25 +39,55 @@ class SupplierReportsReadService
         }
 
         return match ($key) {
-            'supplier_ledger' => $this->supplierLedgerReport($supplierId),
-            'dispatch_payable' => $this->dispatchPayableReport($supplierId),
-            'product_dispatch' => $this->productDispatchReport($supplierId),
+            'inventory_snapshot' => $this->inventorySnapshotReport($supplierId),
             'product_sales' => $this->productWiseSalesReport($supplierId),
-            'category_sales' => $this->categorySalesReport($supplierId),
-            'hub_return' => $this->returnReport('hub_courier_return', 'Hub Return / Courier Return Report', $supplierId),
-            'customer_return' => $this->returnReport('customer_return_to_supplier', 'Customer Return Report', $supplierId),
-            'vendor_return' => $this->vendorReturnReport($supplierId),
-            'owner_return' => $this->returnReport('lokkisona_warehouse_return', 'Owner / Lokkisona Return Report', $supplierId),
-            'return_deduction' => $this->ledgerTypeReport(PayableLedgerType::RETURN_DEDUCTION, 'Return Deduction Report', $supplierId),
-            'monthly_payable' => $this->monthlyPayableReport($supplierId, $month),
-            'supplier_statement' => $this->supplierStatement($supplierId),
-            'settlement_summary' => $this->settlementSummary($supplierId),
-            'payment_history' => $this->ledgerTypeReport(PayableLedgerType::PAYMENT_MADE, 'Payment History', $supplierId),
-            'manual_entries' => $this->manualEntriesReport($supplierId),
-            'supplier_invoice' => $this->ledgerTypeReport(PayableLedgerType::SUPPLIER_INVOICE, 'Supplier Invoice Report', $supplierId),
-            'activity_log' => $this->activityLogReport(),
             default => $this->emptyReport('Report', 'Not available.'),
         };
+    }
+
+    private function inventorySnapshotReport(int $supplierId): array
+    {
+        if (!$this->tableExists('products')) {
+            return $this->emptyReport('Inventory Report', 'Product table not applied.');
+        }
+
+        $prefix = $this->prefix;
+        $where = 'WHERE p.source_product_id IS NOT NULL AND TRIM(p.source_product_id) != \'\'';
+        $params = [];
+        if ($supplierId > 0) {
+            $where .= ' AND p.supplier_id = :supplier_id';
+            $params['supplier_id'] = $supplierId;
+        }
+
+        $sql = 'SELECT p.product_id, p.product_name, p.source_model, p.supplier_model, p.vendor_stock, '
+            . 'p.low_warning_threshold, p.source_stock FROM `' . $prefix . 'products` p '
+            . $where . ' ORDER BY p.product_name ASC LIMIT 500';
+        QueryGuard::assertReadOnly($sql);
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        $rows = [];
+        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $vendorStock = (int) ($row['vendor_stock'] ?? 0);
+            $lowWarning = (int) ($row['low_warning_threshold'] ?? 0);
+            $health = $vendorStock <= 0 ? 'Out of Stock' : ($lowWarning > 0 && $vendorStock <= $lowWarning ? 'Low Stock' : 'OK');
+            $rows[] = [
+                (string) ($row['product_name'] ?? ''),
+                (string) ($row['source_model'] ?? ''),
+                (string) ($row['supplier_model'] ?? ''),
+                (string) ($row['source_stock'] ?? ''),
+                (string) $vendorStock,
+                (string) $lowWarning,
+                $health,
+            ];
+        }
+
+        return [
+            'title' => 'Inventory Report',
+            'columns' => ['Product', 'OC Model', 'Supplier Model', 'OC Stock', 'Vendor Stock', 'Low Warning', 'Health'],
+            'rows' => $rows,
+            'summary' => 'Products: ' . count($rows),
+            'empty_message' => 'No synced products found.',
+        ];
     }
 
     private function supplierLedgerReport(int $supplierId): array

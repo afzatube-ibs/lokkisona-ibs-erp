@@ -25,7 +25,7 @@ use App\Services\ReadOnly\SupplierReadService;
 use App\Services\Write\ProductCostStockWriteService;
 use App\Services\Write\ProductWorkspaceWriteService;
 use App\Services\Write\ProductWriteService;
-use App\Services\Write\SyncPreviewWriteService;
+use App\Support\SyncRequestGuard;
 use App\SupplierContext;
 use App\Support\RequestTimer;
 use App\Repositories\ProductVariantRepository;
@@ -182,11 +182,20 @@ class ProductControlController extends Controller
             redirect('/product-control');
         }
 
-        $result = (new SyncPreviewWriteService())->refreshWarehouseProductsFromApi($_POST);
-        if ($result->success) {
-            ProductControlListReadService::invalidateCache();
+        if (!SyncRequestGuard::acquire()) {
+            $this->flash('error', SyncRequestGuard::busyMessage());
+            redirect('/product-control');
         }
-        $this->redirectWithWriteResult('/product-control', $result);
+
+        try {
+            $result = (new SyncPreviewWriteService())->refreshWarehouseProductsFromApi($_POST);
+            if ($result->success) {
+                ProductControlListReadService::invalidateCache();
+            }
+            $this->redirectWithWriteResult('/product-control', $result);
+        } finally {
+            SyncRequestGuard::release();
+        }
     }
 
     public function saveWorkspace()

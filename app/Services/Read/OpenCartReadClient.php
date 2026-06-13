@@ -7,7 +7,7 @@ namespace App\Services\Read;
  */
 class OpenCartReadClient
 {
-    public const BRIDGE_WARNING = 'Dispatch Location bridge not found. Product sync cannot safely identify IBS supplier products.';
+    public const BRIDGE_WARNING = 'Dispatch Location bridge not found. Product sync cannot safely identify supplier products.';
 
     public static function emptySkipStats(): array
     {

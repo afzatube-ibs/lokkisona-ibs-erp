@@ -12,7 +12,7 @@ use App\Services\ReadOnly\TestSyncPreviewService;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\Write\ProductSyncResetWriteService;
 use App\Services\Write\SyncImportWriteService;
-use App\Services\Write\SyncPreviewWriteService;
+use App\Support\SyncRequestGuard;
 
 class SyncPreviewController extends Controller
 {
@@ -415,7 +415,7 @@ class SyncPreviewController extends Controller
     private function performanceSyncRules()
     {
         return [
-            'Max 50 orders per sync request.',
+            'Max 20 orders per sync request.',
             'No background auto loops.',
             'No repeated fallback AJAX.',
             'One sync request at a time.',
@@ -592,8 +592,9 @@ class SyncPreviewController extends Controller
             redirect('/sync-preview');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
-        $result = (new SyncPreviewWriteService())->runTestSync($_POST);
-        $this->redirectWithWriteResult('/sync-preview?order_page=' . $page, $result);
+        $this->runWithSyncGuard('/sync-preview?order_page=' . $page, function () {
+            return (new SyncPreviewWriteService())->runTestSync($_POST);
+        });
     }
 
     public function previewProducts()
@@ -605,13 +606,14 @@ class SyncPreviewController extends Controller
             redirect('/product-control');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
-        $result = (new SyncPreviewWriteService())->previewProducts($_POST);
         $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
         if (!in_array($redirect, ['/sync-preview', '/product-control', '/sync-api-settings'], true)) {
             $redirect = '/product-control';
         }
         $suffix = $redirect === '/sync-api-settings' ? '' : '?product_page=' . $page;
-        $this->redirectWithWriteResult($redirect . $suffix, $result);
+        $this->runWithSyncGuard($redirect . $suffix, function () {
+            return (new SyncPreviewWriteService())->previewProducts($_POST);
+        });
     }
 
     public function importProducts()
@@ -623,8 +625,9 @@ class SyncPreviewController extends Controller
             redirect('/product-control');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
-        $result = (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
-        $this->redirectWithWriteResult('/product-control?product_page=' . $page, $result);
+        $this->runWithSyncGuard('/product-control?product_page=' . $page, function () {
+            return (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
+        });
     }
 
     public function resetProductSync()
@@ -665,7 +668,25 @@ class SyncPreviewController extends Controller
         }
         $page = max(1, (int) ($_POST['page'] ?? ($_SESSION['ibs_order_sync_preview']['page'] ?? 1)));
         $_POST['page'] = $page;
-        $result = (new SyncImportWriteService())->importFromPreview($_POST);
-        $this->redirectWithWriteResult('/sync-preview?order_page=' . $page, $result);
+        $this->runWithSyncGuard('/sync-preview?order_page=' . $page, function () {
+            return (new SyncImportWriteService())->importFromPreview($_POST);
+        });
+    }
+
+    /**
+     * @param callable(): \App\Services\Write\WriteResult $callback
+     */
+    private function runWithSyncGuard(string $redirectPath, callable $callback): void
+    {
+        if (!SyncRequestGuard::acquire()) {
+            $this->flash('error', SyncRequestGuard::busyMessage());
+            redirect($redirectPath);
+        }
+
+        try {
+            $this->redirectWithWriteResult($redirectPath, $callback());
+        } finally {
+            SyncRequestGuard::release();
+        }
     }
 }

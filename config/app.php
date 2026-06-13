@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.4.2',
-    'release_label' => 'Order Workflow Safety',
+    'version' => '2.4.8',
+    'release_label' => 'SFM Direction Repair',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

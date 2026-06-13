@@ -4,13 +4,13 @@ use App\Domain\OrderWorkflowStatus;
 $workflowStageNav = $workflowStageNav ?? [];
 $statusFilter = $statusFilter ?? null;
 $stageHints = [
-    'new_order' => 'Awaiting receive',
-    'order_received' => 'Ready to pack',
-    'packaging' => 'Packing stage',
-    'shipped' => 'With courier',
-    'dispatch_report_created' => 'Latest batch',
-    'out_for_delivery' => 'On delivery route',
-    'delivered' => 'Completed orders',
+    'sfm_new' => 'Awaiting accept',
+    'sfm_accepted' => 'Ready to pack',
+    'sfm_packed' => 'Packed / ready for dispatch',
+    'sfm_dispatched' => 'Dispatch statement',
+    'sfm_delivered' => 'Completed',
+    'sfm_returned' => 'Return in progress',
+    'sfm_cancelled' => 'Cancelled / hold',
 ];
 $mainByCode = [];
 foreach ($workflowStageNav['main'] ?? [] as $stage) {
@@ -53,11 +53,11 @@ $exceptionIcons = [
                 continue;
             }
             $count = (int) ($stage['count'] ?? 0);
-            $hint = $stageHints[$code] ?? 'Workflow stage';
+            $hint = $stageHints[$code] ?? 'SFM stage';
             ?>
-            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-stage-card workflow-stage-link vf-stage-kpi-card <?= e(OrderWorkflowStatus::stageAccentClass($code)) ?><?= !empty($stage['active']) ? ' is-active' : '' ?><?= $code === 'dispatch_report_created' ? ' vf-stage-kpi-card--created-report' : '' ?>">
+            <a href="<?= e(url($stage['url'] ?? '/order-workflow')) ?>" class="workflow-stage-card workflow-stage-link vf-stage-kpi-card <?= e(OrderWorkflowStatus::stageAccentClass($code)) ?><?= !empty($stage['active']) ? ' is-active' : '' ?><?= $code === 'sfm_dispatched' ? ' vf-stage-kpi-card--created-report' : '' ?>">
                 <span class="workflow-stage-label kpi-label"><?= e($stage['label']) ?></span>
-                <?php if ($code === 'dispatch_report_created'): ?>
+                <?php if ($code === 'sfm_dispatched'): ?>
                 <span class="workflow-stage-value kpi-value<?= $count === 0 ? ' workflow-stage-value-zero' : '' ?>"><?= e((string) $count) ?> Orders</span>
                 <span class="workflow-stage-hint kpi-hint vf-stage-batch-hint">Latest Batch:<br><strong><?= e($stage['latest_batch'] ?? '--') ?></strong></span>
                 <?php else: ?>

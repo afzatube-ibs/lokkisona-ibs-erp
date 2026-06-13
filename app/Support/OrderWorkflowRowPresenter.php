@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Domain\OrderWorkflowStatus;
+use App\Domain\SfmWorkflowStatus;
 use App\ReadFoundation\WriteGate;
 
 /**
@@ -21,7 +22,8 @@ class OrderWorkflowRowPresenter
         ?int $dispatchReportId,
         bool $batchLocked,
         array $productLines,
-        ?string $sourceOrderStatus
+        ?string $sourceOrderStatus,
+        bool $supplierView = false
     ): array {
         $orderId = (int) ($order['order_id'] ?? 0);
         $rawStatus = (string) ($order['ibs_status'] ?? 'new_order');
@@ -50,20 +52,30 @@ class OrderWorkflowRowPresenter
                 ? url('/dispatch-reports?report_id=' . (int) $dispatchReportId)
                 : null);
         $actions = self::buildActions($displayStatus, $normalized, $batchLocked, $dispatchModuleReady, $viewReportUrl);
+        $sfmBucket = SfmWorkflowStatus::bucketForInternal($normalized, $batchLocked);
+        $ocOrderId = trim((string) ($order['source_order_id'] ?? ''));
+        if ($ocOrderId === '') {
+            $ocOrderId = trim((string) ($order['source_order_reference'] ?? ''));
+        }
 
         return [
             'order_id' => $orderId,
             'order_no' => $orderNo,
+            'oc_order_id' => $ocOrderId !== '' ? $ocOrderId : $orderNo,
             'order_reference' => (string) ($order['order_reference'] ?? ''),
             'source_order_reference' => trim((string) ($order['source_order_reference'] ?? '')) ?: null,
             'customer_name' => (string) ($order['customer_name'] ?? ''),
             'customer_phone' => trim((string) ($order['customer_phone'] ?? '')) ?: null,
+            'customer_address' => trim((string) ($order['customer_address'] ?? '')) ?: null,
+            'invoice_cod_amount' => round((float) ($order['order_total'] ?? 0), 2),
             'product_lines' => $productLines,
             'total_quantity' => $totalQty,
             'total_cost_snapshot' => round($totalCost, 2),
             'missing_cost' => $missingCost,
+            'hide_cost_column' => $supplierView,
             'fulfillment_status' => $displayStatus,
-            'fulfillment_status_label' => OrderWorkflowStatus::groupDisplayLabel($displayStatus),
+            'fulfillment_status_label' => SfmWorkflowStatus::label($sfmBucket),
+            'sfm_status_label' => SfmWorkflowStatus::label($sfmBucket),
             'fulfillment_status_class' => OrderWorkflowStatus::stageAccentClass($displayStatus),
             'ibs_status_raw' => $normalized,
             'courier_status' => trim((string) ($order['courier_status'] ?? '')) ?: null,

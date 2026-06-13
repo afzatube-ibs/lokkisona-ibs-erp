@@ -24,6 +24,11 @@ $chipUrl = static function (string $chipKey) use ($filters): string {
 };
 ?>
 <div class="product-control-release">
+<?php if (!empty($isSupplierView)): ?>
+<div class="workflow-info-banner no-print" style="margin-bottom: 1rem;">
+    Products from your assigned fulfillment orders only — full catalog browse is not available on the supplier portal.
+</div>
+<?php endif; ?>
 <div class="page-header page-header-compact product-control-header pc-page-header">
     <div class="product-control-header-main">
         <div>

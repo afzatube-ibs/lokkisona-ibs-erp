@@ -61,12 +61,12 @@ class OrderSyncMappingRules
     {
         $options = [];
         foreach (self::DEFAULT_INITIAL_STATUSES as $code) {
-            $options[] = ['code' => $code, 'label' => OrderWorkflowStatus::label($code)];
+            $options[] = ['code' => $code, 'label' => SfmWorkflowStatus::label($code)];
         }
 
         if ($advancedMode) {
             foreach (self::ADVANCED_INITIAL_STATUSES as $code) {
-                $options[] = ['code' => $code, 'label' => OrderWorkflowStatus::label($code)];
+                $options[] = ['code' => $code, 'label' => SfmWorkflowStatus::label($code)];
             }
         }
 

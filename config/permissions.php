@@ -293,12 +293,7 @@ return [
             'returns.view',
             'dispatch_reports.view',
             'supplier_payables.view',
-            'supplier_payables.manage',
             'settlements.view',
-            'product_control.view',
-            'product_control.manage',
-            'supplier_quick_invoice.manage',
-            'supplier_calculator.view',
         ],
     ],
 ];

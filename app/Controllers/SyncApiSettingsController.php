@@ -7,7 +7,7 @@ use App\Csrf;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Services\ReadOnly\SyncApiSettingsReadService;
-use App\Services\Write\SyncApiSettingsWriteService;
+use App\Support\SyncRequestGuard;
 
 class SyncApiSettingsController extends Controller
 {
@@ -30,7 +30,8 @@ class SyncApiSettingsController extends Controller
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfField' => Csrf::field(),
-            'canManage' => Permission::can('sync_api_settings.manage'),
+            'canManage' => Permission::canSyncHub(),
+            'canSyncHub' => Permission::canSyncHub(),
             'canResetProductSync' => Permission::can('sync_preview.manage'),
             'productWriteGateReady' => WriteGate::productSyncImport()['ready'],
         ]);
@@ -57,7 +58,16 @@ class SyncApiSettingsController extends Controller
             redirect('/sync-api-settings');
         }
 
-        $this->redirectWithWriteResult('/sync-api-settings', (new SyncApiSettingsWriteService())->testConnection());
+        if (!SyncRequestGuard::acquire()) {
+            $this->flash('error', SyncRequestGuard::busyMessage());
+            redirect('/sync-api-settings');
+        }
+
+        try {
+            $this->redirectWithWriteResult('/sync-api-settings', (new SyncApiSettingsWriteService())->testConnection());
+        } finally {
+            SyncRequestGuard::release();
+        }
     }
 
     public function resetDemo()

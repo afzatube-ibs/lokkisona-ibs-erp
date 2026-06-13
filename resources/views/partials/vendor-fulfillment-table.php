@@ -47,16 +47,18 @@ $pageQuery = array_filter([
                 <thead>
                     <tr>
                         <?php if ($canManage): ?><th class="vf-col-check"><input type="checkbox" id="vfSelectAll" aria-label="Select all rows"></th><?php endif; ?>
-                        <th>Order No</th>
+                        <th>OC Order ID</th>
                         <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Address</th>
                         <th class="vf-col-product">Product Card</th>
                         <th>Qty</th>
-                        <th>Cost</th>
-                        <th>Fulfillment Status</th>
-                        <th>Courier Status</th>
-                        <th>Consignment</th>
+                        <th>Invoice / COD</th>
                         <th>OC Status</th>
-                        <th class="vf-col-actions">Action</th>
+                        <th>SFM Status</th>
+                        <th>Courier Status</th>
+                        <th>Consignment ID</th>
+                        <th class="vf-col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -67,6 +69,7 @@ $pageQuery = array_filter([
                     $primary = $row['primary_action'] ?? null;
                     $menuItems = $row['menu_items'] ?? [];
                     $ibsStatus = (string) ($row['ibs_status_raw'] ?? ($row['fulfillment_status'] ?? ''));
+                    $hideCost = !empty($row['hide_cost_column']);
                     ?>
                     <tr class="vf-row" data-order-id="<?= e((string) $orderId) ?>" data-bulk-key="<?= e((string) ($row['bulk_action_key'] ?? '')) ?>" data-ibs-status="<?= e($ibsStatus) ?>" data-can-hold-cancel="<?= !empty($row['can_hold_cancel']) ? '1' : '0' ?>">
                         <?php if ($canManage): ?>
@@ -77,7 +80,7 @@ $pageQuery = array_filter([
                         </td>
                         <?php endif; ?>
                         <td class="vf-col-order">
-                            <strong class="vf-order-no"><?= e((string) ($row['order_no'] ?? '')) ?></strong>
+                            <strong class="vf-order-no"><?= e((string) ($row['oc_order_id'] ?? $row['order_no'] ?? '')) ?></strong>
                             <?php if (!empty($row['dispatch_report_reference'])): ?>
                             <span class="vf-batch-ref"><?= e((string) $row['dispatch_report_reference']) ?></span>
                             <?php endif; ?>
@@ -87,10 +90,9 @@ $pageQuery = array_filter([
                         </td>
                         <td class="vf-col-customer">
                             <span class="vf-customer-name"><?= e((string) ($row['customer_name'] ?? '')) ?></span>
-                            <?php if (!empty($row['customer_phone'])): ?>
-                            <span class="vf-customer-phone"><?= e((string) $row['customer_phone']) ?></span>
-                            <?php endif; ?>
                         </td>
+                        <td><?= e((string) ($row['customer_phone'] ?? '—')) ?></td>
+                        <td class="vf-col-address"><?= e((string) ($row['customer_address'] ?? '—')) ?></td>
                         <td class="vf-col-product">
                             <?php foreach (($row['product_lines'] ?? []) as $line): ?>
                             <div class="vf-product-card">
@@ -103,7 +105,11 @@ $pageQuery = array_filter([
                                 </div>
                                 <div class="vf-product-body">
                                     <strong class="vf-product-model"><?= e((string) ($line['model'] ?? '')) ?></strong>
+                                    <?php if (!$hideCost): ?>
                                     <span class="vf-product-cost-line">x<?= e((string) ($line['quantity'] ?? 0)) ?> = <?= e(number_format((float) ($line['cost_snapshot'] ?? 0), 2)) ?></span>
+                                    <?php else: ?>
+                                    <span class="vf-product-cost-line">x<?= e((string) ($line['quantity'] ?? 0)) ?></span>
+                                    <?php endif; ?>
                                     <?php foreach (($line['option_chips'] ?? []) as $chip): ?>
                                     <span class="vf-option-chip<?= !empty($chip['empty_option']) ? ' vf-option-chip-empty' : '' ?>">
                                         <?= e((string) ($chip['label'] ?? '')) ?>
@@ -117,27 +123,23 @@ $pageQuery = array_filter([
                             <?php endforeach; ?>
                         </td>
                         <td><span class="vf-qty-pill"><?= e((string) ($row['total_quantity'] ?? 0)) ?></span></td>
-                        <td class="vf-col-cost">
-                            <?php if (!empty($row['missing_cost'])): ?>
-                            <span class="badge badge-warn">Missing Cost</span>
-                            <?php endif; ?>
-                            <strong><?= e(number_format((float) ($row['total_cost_snapshot'] ?? 0), 2)) ?></strong>
+                        <td class="vf-col-invoice">
+                            <strong><?= e(number_format((float) ($row['invoice_cod_amount'] ?? 0), 2)) ?></strong>
                         </td>
-                        <td>
-                            <span class="badge vf-status-badge <?= e((string) ($row['fulfillment_status_class'] ?? '')) ?>">
-                                <?= e((string) ($row['fulfillment_status_label'] ?? '')) ?>
-                            </span>
-                        </td>
-                        <td><?= e((string) ($row['courier_status'] ?? '—')) ?></td>
-                        <td><?= e((string) ($row['consignment_id'] ?? 'Not Assigned')) ?></td>
                         <td>
                             <?php if (!empty($row['oc_order_status'])): ?>
                             <span class="badge badge-info vf-oc-badge"><?= e((string) $row['oc_order_status']) ?></span>
-                            <span class="vf-oc-origin">Origin: <?= e((string) $row['oc_order_status']) ?></span>
                             <?php else: ?>
                             —
                             <?php endif; ?>
                         </td>
+                        <td>
+                            <span class="badge vf-status-badge <?= e((string) ($row['fulfillment_status_class'] ?? '')) ?>">
+                                <?= e((string) ($row['sfm_status_label'] ?? $row['fulfillment_status_label'] ?? '')) ?>
+                            </span>
+                        </td>
+                        <td><?= e((string) ($row['courier_status'] ?? '—')) ?></td>
+                        <td><?= e((string) ($row['consignment_id'] ?? 'Not Assigned')) ?></td>
                         <td class="vf-col-actions">
                             <div class="vf-row-actions">
                                 <button type="button"
@@ -214,7 +216,6 @@ $pageQuery = array_filter([
     <input type="hidden" name="action_confirmed" id="vfActionConfirmed" value="0">
     <input type="hidden" name="staff_confirmation" id="vfStaffConfirmation" value="">
     <input type="hidden" name="action_note" id="vfActionNote" value="">
-    <input type="hidden" name="delivery_stop_reason" id="vfDeliveryStopReason" value="">
     <?php if ($statusFilter !== null): ?>
     <input type="hidden" name="return_status" value="<?= e($statusFilter) ?>">
     <?php endif; ?>

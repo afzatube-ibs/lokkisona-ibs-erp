@@ -10,7 +10,7 @@ use PDO;
  */
 class OpenCartSchemaProbe
 {
-    public const BRIDGE_WARNING = 'Dispatch Location bridge not found. Product sync cannot safely identify IBS supplier products.';
+    public const BRIDGE_WARNING = 'Dispatch Location bridge not found. Product sync cannot safely identify supplier products.';
 
     public function probeExtensions(): array
     {

@@ -75,7 +75,7 @@ class ProductControlListReadService
             ];
         }
 
-        $where = $this->baseWhereSql($supplierId);
+        $where = $this->baseWhereSql($supplierId, $isSupplierView);
         $params = $this->baseWhereParams($supplierId);
         $this->appendFilterSql($normalized, $where, $params);
 
@@ -338,7 +338,7 @@ class ProductControlListReadService
         return $this->tableExists();
     }
 
-    private function baseWhereSql(int $supplierId): string
+    private function baseWhereSql(int $supplierId, bool $orderAssignedOnly = false): string
     {
         $sql = 'p.source_product_id IS NOT NULL AND TRIM(p.source_product_id) != \'\' '
             . 'AND p.last_synced_at IS NOT NULL';
@@ -353,6 +353,14 @@ class ProductControlListReadService
         }
         if ($supplierId > 0) {
             $sql .= ' AND p.supplier_id = :supplier_id';
+        }
+        if ($orderAssignedOnly && $supplierId > 0) {
+            $orderTable = TableName::forModel(\App\Models\Order::class);
+            $orderItemTable = TableName::forModel(\App\Models\OrderItem::class);
+            $sql .= ' AND p.product_id IN (SELECT DISTINCT oi.product_id FROM `'
+                . $this->esc($orderItemTable) . '` oi INNER JOIN `'
+                . $this->esc($orderTable) . '` o ON o.order_id = oi.order_id '
+                . 'WHERE o.supplier_id = :supplier_id AND oi.product_id IS NOT NULL AND oi.product_id > 0)';
         }
 
         return $sql;

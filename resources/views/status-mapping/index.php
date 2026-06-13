@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Map origin statuses to IBS <strong>initial</strong> status at first import only: New Order, Order Received, Packaging, or Shipped. After Shipped, IBS workflow owns the order — re-sync refreshes snapshot fields only. Post-dispatch courier stages (Dispatched, In Review, In Transit, Out For Delivery, Customer Returning) advance forward only on dispatched orders. Apply migrations 0004 and 0015 manually first.</p>
+    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Import orders by <strong>mapped OC status only</strong> — not by product mapping. First import sets the mapped SFM status (New, Accepted, Packed, etc.). Re-sync updates snapshot fields only and never overwrites SFM workflow status. Apply migrations 0004 and 0015 manually first.</p>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

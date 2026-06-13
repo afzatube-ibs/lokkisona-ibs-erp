@@ -167,7 +167,7 @@ view('partials.ops-safety-strip', [
         </div>
     </div>
 
-    <?php if (!empty($canManage)): ?>
+    <?php if (!empty($canSyncHub) || !empty($canManage)): ?>
     <div class="card sync-settings-form-card">
         <div class="card-header"><h2 class="card-title">Edit Settings</h2></div>
         <div class="card-body">
@@ -270,7 +270,8 @@ view('partials.ops-safety-strip', [
     <?php else: ?>
     <div class="card">
         <div class="card-body">
-            <p class="page-description">You have view-only access. An owner can change Sync Settings.</p>
+            <p class="page-description">You have view-only access. An owner or admin with Sync Hub permission can change Sync Settings.</p>
+            <p class="form-help">Session role: <strong><?= e((string) ($accessMode['role'] ?? 'unknown')) ?></strong> · canSyncHub: <strong><?= !empty($canSyncHub) ? 'yes' : 'no' ?></strong></p>
         </div>
     </div>
     <?php endif; ?>
