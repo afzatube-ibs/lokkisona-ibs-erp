@@ -126,6 +126,7 @@ class SyncApiSettingsReadService
             'api_key_mask' => $this->maskedApiKeyHint($apiKey),
             'product_api_status' => $this->productApiStatusLabelForPage($productStatus, $connectionOk, $mode),
             'order_api_status' => $this->orderApiStatusLabelForPage($connectionOk, $mode),
+            'queue_api_status' => $this->queueApiStatusLabelForPage($connectionOk, $mode),
             'last_connection_test_at' => (string) ($lastConnectionTest['time'] ?? ''),
             'last_connection_test_message' => (string) ($lastConnectionTest['message'] ?? ''),
             'last_connection_test_ok' => $lastConnectionTest !== null && $this->lastConnectionTestPassed($lastConnectionTest),
@@ -196,6 +197,25 @@ class SyncApiSettingsReadService
 
         if ($mode === 'demo') {
             return 'Demo — ready';
+        }
+
+        return $connectionOk ? 'Configured — ready' : 'Not tested';
+    }
+
+    private function queueApiStatusLabelForPage(bool $connectionOk, string $mode): string
+    {
+        $route = trim((string) config('opencart.order_queue_api_route', 'api/ibs/order_queue_statuses'));
+        if ($route === '') {
+            return 'Route not configured';
+        }
+
+        if ($mode === 'demo') {
+            return 'Demo — ready';
+        }
+
+        $session = $_SESSION['ibs_connector_queue_statuses'] ?? null;
+        if (is_array($session) && (int) ($session['loaded_at'] ?? 0) > 0) {
+            return 'Loaded';
         }
 
         return $connectionOk ? 'Configured — ready' : 'Not tested';

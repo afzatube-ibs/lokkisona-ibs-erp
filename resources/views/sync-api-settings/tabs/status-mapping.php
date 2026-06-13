@@ -13,8 +13,8 @@ $statusRows = $allStatuses !== [] ? $allStatuses : $queueStatuses;
 ?>
 <div class="card sync-hub-card-wide">
     <div class="card-header">
-        <h2 class="card-title">Entry Status Mapping</h2>
-        <p class="page-description mb-0">OpenCart queue status → <strong>Import as NEW</strong> or <strong>Ignore</strong>.</p>
+        <h2 class="card-title">Entry Mapping</h2>
+        <p class="page-description mb-0">OC queue status → Import as NEW or Ignore.</p>
     </div>
     <div class="card-body">
         <?php if (!empty($canSyncHub)): ?>
@@ -89,8 +89,8 @@ $statusRows = $allStatuses !== [] ? $allStatuses : $queueStatuses;
         <?php endif; ?>
 
         <div class="sync-hub-section-block">
-            <h3 class="card-title">Final Result Mapping</h3>
-            <p class="page-description">Applies only after order is <strong>Dispatched</strong> in IBS.</p>
+            <h3 class="card-title">Final Mapping</h3>
+            <p class="page-description mb-0">After Dispatched in IBS, map OC complete/delivered and return statuses.</p>
             <?php if ($allStatuses !== []): ?>
             <form method="post" action="<?= e(url('/sync-api-settings/save-final-result-mappings')) ?>">
                 <?= $csrfField ?? '' ?>

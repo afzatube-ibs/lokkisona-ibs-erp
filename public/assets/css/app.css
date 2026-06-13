@@ -8364,6 +8364,72 @@ body.modal-open { overflow: hidden; }
     font-weight: 600;
 }
 
+.sync-hub-layout {
+    display: grid;
+    grid-template-columns: minmax(10rem, 13rem) minmax(0, 1fr);
+    gap: 1.25rem 1.5rem;
+    margin-top: 1.25rem;
+    align-items: start;
+}
+
+.sync-hub-side-tabs {
+    position: sticky;
+    top: calc(var(--ops-sticky-offset, 0px) + 0.75rem);
+}
+
+.sync-hub-side-tabs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sync-hub-side-tab {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.sync-hub-content {
+    min-width: 0;
+}
+
+.sync-hub-connection-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.75rem 1.25rem;
+    margin: 0 0 1.25rem;
+}
+
+.sync-hub-summary-row {
+    margin: 0;
+}
+
+.sync-hub-summary-row dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    margin: 0 0 0.2rem;
+}
+
+.sync-hub-summary-row dd {
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+.sync-hub-connection-view[hidden],
+.sync-hub-connection-edit[hidden] {
+    display: none !important;
+}
+
+.sync-hub-inline-form {
+    display: inline;
+}
+
 .sync-hub-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -8550,6 +8616,32 @@ body.modal-open { overflow: hidden; }
 }
 
 @media (max-width: 768px) {
+    .sync-hub-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sync-hub-side-tabs {
+        position: static;
+    }
+
+    .sync-hub-side-tabs-list {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sync-hub-side-tab {
+        width: auto;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .sync-hub-connection-summary {
+        grid-template-columns: 1fr;
+    }
+
     .sync-hub-reset-grid {
         grid-template-columns: 1fr;
     }

@@ -38,7 +38,7 @@ class SyncApiSettingsController extends Controller
 
     /** @var array<int, string> */
 
-    private const ALLOWED_TABS = ['connection', 'mapping', 'products', 'sync'];
+    private const ALLOWED_TABS = ['connection', 'mapping', 'products', 'orders', 'maintenance', 'activity'];
 
 
 
@@ -368,7 +368,7 @@ class SyncApiSettingsController extends Controller
 
     {
 
-        $this->hubSyncAction('sync_preview.manage', 'sync', function () {
+        $this->hubSyncAction('sync_preview.manage', 'orders', function () {
 
             return (new SyncPreviewWriteService())->runTestSync($_POST);
 
@@ -382,7 +382,7 @@ class SyncApiSettingsController extends Controller
 
     {
 
-        $this->hubSyncAction('sync_preview.manage', 'sync', function () {
+        $this->hubSyncAction('sync_preview.manage', 'orders', function () {
 
             return (new SyncImportWriteService())->importFromPreview($_POST);
 
@@ -542,7 +542,7 @@ class SyncApiSettingsController extends Controller
 
             $this->flash('error', 'Invalid security token.');
 
-            redirect($this->hubPath('sync'));
+            redirect($this->hubPath($this->resolveRedirectTab()));
 
         }
 
@@ -552,13 +552,13 @@ class SyncApiSettingsController extends Controller
 
             $this->flash('error', 'Sync Hub permission required.');
 
-            redirect($this->hubPath('sync'));
+            redirect($this->hubPath($this->resolveRedirectTab()));
 
         }
 
 
 
-        $this->redirectWithWriteResult($this->hubPath('sync'), $callback());
+        $this->redirectWithWriteResult($this->hubPath($this->resolveRedirectTab()), $callback());
 
     }
 
@@ -570,9 +570,27 @@ class SyncApiSettingsController extends Controller
 
         $tab = strtolower(trim((string) ($_GET['tab'] ?? 'connection')));
 
-
+        if ($tab === 'sync') {
+            $tab = 'orders';
+        }
 
         return in_array($tab, self::ALLOWED_TABS, true) ? $tab : 'connection';
+
+    }
+
+
+
+    private function resolveRedirectTab(): string
+
+    {
+
+        $tab = strtolower(trim((string) ($_POST['tab'] ?? 'maintenance')));
+
+        if ($tab === 'sync') {
+            $tab = 'orders';
+        }
+
+        return in_array($tab, self::ALLOWED_TABS, true) ? $tab : 'maintenance';
 
     }
 
@@ -581,6 +599,10 @@ class SyncApiSettingsController extends Controller
     private function hubPath(string $tab): string
 
     {
+
+        if ($tab === 'sync') {
+            $tab = 'orders';
+        }
 
         $tab = in_array($tab, self::ALLOWED_TABS, true) ? $tab : 'connection';
 
