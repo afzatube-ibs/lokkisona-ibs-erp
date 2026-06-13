@@ -58,7 +58,7 @@
     activateTab(initial, false);
 
     var searchInput = page.querySelector('[data-sync-hub-status-search]');
-    var showAllToggle = page.querySelector('[data-sync-hub-show-all]');
+    var devPanel = page.querySelector('[data-sync-hub-dev-panel]');
     var statusTable = page.querySelector('[data-sync-hub-status-table]');
 
     function filterStatusRows() {
@@ -66,7 +66,7 @@
             return;
         }
         var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        var showAll = showAllToggle ? showAllToggle.checked : false;
+        var showAll = devPanel ? devPanel.open : false;
         statusTable.querySelectorAll('tbody tr').forEach(function (row) {
             var isQueue = row.getAttribute('data-queue-row') === '1';
             var text = (row.getAttribute('data-search') || row.textContent || '').toLowerCase();
@@ -79,8 +79,8 @@
     if (searchInput) {
         searchInput.addEventListener('input', filterStatusRows);
     }
-    if (showAllToggle) {
-        showAllToggle.addEventListener('change', filterStatusRows);
+    if (devPanel) {
+        devPanel.addEventListener('toggle', filterStatusRows);
     }
     filterStatusRows();
 

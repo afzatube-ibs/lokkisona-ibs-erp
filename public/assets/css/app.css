@@ -8526,6 +8526,82 @@ body.modal-open { overflow: hidden; }
     max-width: 16rem;
 }
 
+.sync-hub-mapping-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sync-hub-mapping-card .card-header {
+    padding-bottom: 0.75rem;
+}
+
+.sync-hub-card-lead {
+    margin-top: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+}
+
+.sync-hub-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.sync-hub-mapping-form {
+    margin: 0;
+}
+
+.sync-hub-mapping-table .sync-hub-mapping-select {
+    min-width: 10rem;
+    max-width: 14rem;
+}
+
+.sync-hub-dev-panel {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.sync-hub-dev-panel summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.sync-hub-dev-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.sync-hub-dev-panel summary::before {
+    content: '+ ';
+    font-weight: 600;
+}
+
+.sync-hub-dev-panel[open] summary::before {
+    content: '− ';
+}
+
+.sync-hub-mapping-hint {
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--warn) 22%, transparent);
+    background: var(--warn-soft);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.sync-hub-mapping-hint[hidden] {
+    display: none !important;
+}
+
+.sync-hub-final-mapping-grid {
+    margin-bottom: 0;
+}
+
 .sync-hub-show-all {
     display: inline-flex;
     align-items: center;

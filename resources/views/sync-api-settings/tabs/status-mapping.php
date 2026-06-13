@@ -10,97 +10,110 @@ $entryOptions = is_array($entryMapping['entry_options'] ?? null) ? $entryMapping
 $entryLoadedAt = (int) ($entryMapping['connector_loaded_at'] ?? 0);
 $sourceId = (int) ($entryMapping['business_source_id'] ?? config('opencart.business_source_id', 1));
 $statusRows = $allStatuses !== [] ? $allStatuses : $queueStatuses;
+$actionLabels = [
+    EntryMappingOptions::IMPORT_NEW => 'Import as New',
+    EntryMappingOptions::IGNORE => 'Ignore',
+];
 ?>
-<div class="card sync-hub-card-wide">
-    <div class="card-header">
-        <h2 class="card-title">Entry Mapping</h2>
-        <p class="page-description mb-0">OC queue status → Import as NEW or Ignore.</p>
-    </div>
-    <div class="card-body">
-        <?php if (!empty($canSyncHub)): ?>
-        <form method="post" action="<?= e(url('/sync-api-settings/load-queue-statuses')) ?>" class="sync-hub-mapping-toolbar">
-            <?= $csrfField ?? '' ?>
-            <input type="hidden" name="tab" value="mapping">
-            <button type="submit" class="btn btn-secondary">Load Queue Statuses</button>
-            <?php if ($entryLoadedAt > 0): ?>
-            <span class="form-help"><?= count($queueStatuses) ?> in queue · <?= count($allStatuses) ?> total loaded</span>
-            <?php endif; ?>
-        </form>
+<div class="sync-hub-mapping-stack">
+    <?php if (!empty($canSyncHub)): ?>
 
-        <?php if ($statusRows !== []): ?>
-        <div class="sync-hub-mapping-toolbar">
-            <input type="search" class="form-input" data-sync-hub-status-search placeholder="Search by ID or name…" aria-label="Search statuses">
-            <label class="sync-hub-show-all">
-                <input type="checkbox" data-sync-hub-show-all value="1">
-                Show all statuses (debug)
-            </label>
+    <div class="card sync-hub-card-wide sync-hub-mapping-card">
+        <div class="card-header">
+            <h2 class="card-title">New Order Import Mapping</h2>
+            <p class="sync-hub-card-lead mb-0">Selected OpenCart statuses will enter IBS as New orders.</p>
         </div>
-        <form method="post" action="<?= e(url('/sync-api-settings/save-entry-mappings')) ?>">
-            <?= $csrfField ?? '' ?>
-            <input type="hidden" name="tab" value="mapping">
-            <input type="hidden" name="business_source_id" value="<?= e((string) $sourceId) ?>">
-            <div class="sync-hub-table-wrap">
-                <table class="data-table" data-sync-hub-status-table>
-                    <thead>
-                        <tr>
-                            <th>OC ID</th>
-                            <th>OC Status</th>
-                            <th>In Queue</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($statusRows as $status):
-                            if (!is_array($status)) continue;
-                            $statusId = trim((string) ($status['status_id'] ?? ''));
-                            if ($statusId === '') continue;
-                            $name = trim((string) ($status['name'] ?? ''));
-                            $selected = !empty($status['selected']);
-                            $saved = $savedByStatus[$statusId] ?? null;
-                            $currentAction = $saved !== null ? EntryMappingOptions::IMPORT_NEW : EntryMappingOptions::IGNORE;
-                            $searchText = $statusId . ' ' . $name;
-                        ?>
-                        <tr data-queue-row="<?= $selected ? '1' : '0' ?>" data-search="<?= e(strtolower($searchText)) ?>" class="<?= $selected ? '' : 'text-muted' ?>">
-                            <td><code><?= e($statusId) ?></code></td>
-                            <td><?= e($name) ?></td>
-                            <td><span class="badge <?= $selected ? 'badge-ok' : 'badge-muted' ?>"><?= $selected ? 'Yes' : 'No' ?></span></td>
-                            <td>
-                                <?php if ($selected): ?>
-                                <select name="entry_mapping[<?= e($statusId) ?>]" class="form-input">
-                                    <?php foreach ($entryOptions as $option): ?>
-                                    <option value="<?= e((string) ($option['code'] ?? '')) ?>" <?= $currentAction === ($option['code'] ?? '') ? 'selected' : '' ?>><?= e((string) ($option['label'] ?? '')) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php else: ?>
-                                <span class="form-help">Debug only</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="sync-settings-actions mt-15">
-                <button type="submit" class="btn btn-primary">Save Entry Mapping</button>
-            </div>
-        </form>
-        <?php else: ?>
-        <div class="sync-hub-empty">Click <strong>Load Queue Statuses</strong> to configure entry mapping.</div>
-        <?php endif; ?>
+        <div class="card-body">
+            <form method="post" action="<?= e(url('/sync-api-settings/load-queue-statuses')) ?>" class="sync-hub-mapping-toolbar">
+                <?= $csrfField ?? '' ?>
+                <input type="hidden" name="tab" value="mapping">
+                <button type="submit" class="btn btn-secondary">Load Queue Statuses</button>
+                <?php if ($entryLoadedAt > 0): ?>
+                <span class="form-help"><?= count($queueStatuses) ?> queue status<?= count($queueStatuses) === 1 ? '' : 'es' ?> loaded</span>
+                <?php endif; ?>
+            </form>
 
-        <div class="sync-hub-section-block">
-            <h3 class="card-title">Final Mapping</h3>
-            <p class="page-description mb-0">After Dispatched in IBS, map OC complete/delivered and return statuses.</p>
-            <?php if ($allStatuses !== []): ?>
-            <form method="post" action="<?= e(url('/sync-api-settings/save-final-result-mappings')) ?>">
+            <?php if ($statusRows !== []): ?>
+            <form method="post" action="<?= e(url('/sync-api-settings/save-entry-mappings')) ?>" class="sync-hub-mapping-form">
                 <?= $csrfField ?? '' ?>
                 <input type="hidden" name="tab" value="mapping">
                 <input type="hidden" name="business_source_id" value="<?= e((string) $sourceId) ?>">
-                <div class="sync-settings-form-grid">
+
+                <div class="sync-hub-mapping-toolbar">
+                    <input type="search" class="form-input" data-sync-hub-status-search placeholder="Search statuses…" aria-label="Search statuses">
+                    <details class="sync-hub-dev-panel" data-sync-hub-dev-panel>
+                        <summary>Developer: show all OpenCart statuses</summary>
+                    </details>
+                </div>
+
+                <div class="sync-hub-table-wrap">
+                    <table class="data-table sync-hub-mapping-table" data-sync-hub-status-table>
+                        <thead>
+                            <tr>
+                                <th>OC ID</th>
+                                <th>OpenCart Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($statusRows as $status):
+                                if (!is_array($status)) continue;
+                                $statusId = trim((string) ($status['status_id'] ?? ''));
+                                if ($statusId === '') continue;
+                                $name = trim((string) ($status['name'] ?? ''));
+                                $selected = !empty($status['selected']);
+                                $saved = $savedByStatus[$statusId] ?? null;
+                                $currentAction = $saved !== null ? EntryMappingOptions::IMPORT_NEW : EntryMappingOptions::IGNORE;
+                                $searchText = $statusId . ' ' . $name;
+                            ?>
+                            <tr data-queue-row="<?= $selected ? '1' : '0' ?>" data-search="<?= e(strtolower($searchText)) ?>" class="<?= $selected ? '' : 'sync-hub-dev-row' ?>">
+                                <td><code><?= e($statusId) ?></code></td>
+                                <td><?= e($name) ?></td>
+                                <td>
+                                    <?php if ($selected): ?>
+                                    <select name="entry_mapping[<?= e($statusId) ?>]" class="form-input sync-hub-mapping-select">
+                                        <?php foreach ($entryOptions as $option):
+                                            $code = (string) ($option['code'] ?? '');
+                                        ?>
+                                        <option value="<?= e($code) ?>" <?= $currentAction === $code ? 'selected' : '' ?>><?= e($actionLabels[$code] ?? (string) ($option['label'] ?? '')) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <?php else: ?>
+                                    <span class="form-help sync-hub-dev-only">Developer view</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sync-hub-card-footer">
+                    <button type="submit" class="btn btn-primary">Save Import Mapping</button>
+                </div>
+            </form>
+            <?php else: ?>
+            <div class="sync-hub-empty">Load queue statuses to choose which orders import as New.</div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card sync-hub-card-wide sync-hub-mapping-card">
+        <div class="card-header">
+            <h2 class="card-title">Delivered / Returned Mapping</h2>
+            <p class="sync-hub-card-lead mb-0">Only applies after supplier marks the order Dispatched.</p>
+        </div>
+        <div class="card-body">
+            <?php if ($allStatuses !== []): ?>
+            <form method="post" action="<?= e(url('/sync-api-settings/save-final-result-mappings')) ?>" class="sync-hub-mapping-form">
+                <?= $csrfField ?? '' ?>
+                <input type="hidden" name="tab" value="mapping">
+                <input type="hidden" name="business_source_id" value="<?= e((string) $sourceId) ?>">
+                <div class="sync-settings-form-grid sync-hub-final-mapping-grid">
                     <div class="form-group">
-                        <label for="final_delivered_status_id">OC status → Delivered</label>
+                        <label for="final_delivered_status_id">Delivered status</label>
                         <select id="final_delivered_status_id" name="final_delivered_status_id" class="form-input">
-                            <option value="">— Not mapped —</option>
+                            <option value="">— Select status —</option>
                             <?php foreach ($allStatuses as $status):
                                 if (!is_array($status)) continue;
                                 $statusId = trim((string) ($status['status_id'] ?? ''));
@@ -112,9 +125,9 @@ $statusRows = $allStatuses !== [] ? $allStatuses : $queueStatuses;
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="final_returned_status_id">OC status → Returned</label>
+                        <label for="final_returned_status_id">Returned status</label>
                         <select id="final_returned_status_id" name="final_returned_status_id" class="form-input">
-                            <option value="">— Not mapped —</option>
+                            <option value="">— Select status —</option>
                             <?php foreach ($allStatuses as $status):
                                 if (!is_array($status)) continue;
                                 $statusId = trim((string) ($status['status_id'] ?? ''));
@@ -126,16 +139,21 @@ $statusRows = $allStatuses !== [] ? $allStatuses : $queueStatuses;
                         </select>
                     </div>
                 </div>
-                <div class="sync-settings-actions mt-15">
-                    <button type="submit" class="btn btn-primary">Save Final Result Mapping</button>
+                <div class="sync-hub-card-footer">
+                    <button type="submit" class="btn btn-primary">Save Delivered / Returned Mapping</button>
                 </div>
             </form>
             <?php else: ?>
-            <div class="sync-hub-empty">Load queue statuses first.</div>
+            <div class="sync-hub-empty">Load queue statuses above first.</div>
             <?php endif; ?>
         </div>
-        <?php else: ?>
-        <p class="page-description">View-only · <?= (int) ($entryMapping['mapping_count'] ?? 0) ?> Import-as-NEW mapping(s) saved.</p>
-        <?php endif; ?>
     </div>
+
+    <?php else: ?>
+    <div class="card sync-hub-card-wide sync-hub-mapping-card">
+        <div class="card-body">
+            <p class="page-description mb-0">View-only · <?= (int) ($entryMapping['mapping_count'] ?? 0) ?> Import-as-New mapping<?= (int) ($entryMapping['mapping_count'] ?? 0) === 1 ? '' : 's' ?> saved.</p>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>

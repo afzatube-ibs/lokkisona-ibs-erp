@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.5.3',
-    'release_label' => 'Sync Settings Release Polish',
+    'version' => '2.5.3.1',
+    'release_label' => 'Sync Mapping Section Polish',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,
