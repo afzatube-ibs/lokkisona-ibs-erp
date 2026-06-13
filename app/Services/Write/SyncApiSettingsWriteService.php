@@ -3,6 +3,8 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
+use App\Domain\OrderSyncMappingRules;
+use App\Repositories\Write\StatusMappingWriteRepository;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\SyncApiSettingsReadService;
 
@@ -50,7 +52,9 @@ class SyncApiSettingsWriteService
             'demo_mode' => $sourceMode === 'demo',
             'api_base_url' => $apiBaseUrl,
             'product_api_route' => $productRoute,
-            'order_api_route' => $orderRoute !== '' ? $orderRoute : 'api/order',
+            'order_api_route' => $orderRoute !== '' ? $orderRoute : 'api/ibs/orders',
+            'order_queue_api_route' => trim((string) config('opencart.order_queue_api_route', 'api/ibs/order_queue_statuses')),
+            'order_sync_mode' => 'connector_queue',
             'read_only_lock' => true,
             'max_rows_per_page' => 20,
             'max_orders_per_request' => 20,
@@ -115,6 +119,76 @@ class SyncApiSettingsWriteService
         return WriteResult::ok('Connection test OK — ' . (string) ($test['message'] ?? ''));
     }
 
+    public function loadQueueStatuses(): WriteResult
+    {
+        $fetch = (new OpenCartReadClient())->fetchOrderQueueStatuses();
+        if (!($fetch['ok'] ?? false)) {
+            return WriteResult::fail((string) ($fetch['message'] ?? 'Failed to load queue statuses from connector.'));
+        }
+
+        $_SESSION['ibs_connector_queue_statuses'] = [
+            'loaded_at' => time(),
+            'statuses' => $fetch['statuses'] ?? [],
+            'queue_status_ids' => $fetch['queue_status_ids'] ?? [],
+            'bridge_available' => $fetch['bridge_available'] ?? null,
+        ];
+
+        $selectedCount = count($fetch['queue_status_ids'] ?? []);
+        ActivityLog::record('sync_queue_statuses_loaded', 'Supplier order queue statuses loaded from connector', [
+            'selected_count' => $selectedCount,
+            'total_count' => is_array($fetch['statuses'] ?? null) ? count($fetch['statuses']) : 0,
+        ]);
+
+        return WriteResult::ok(
+            'Loaded queue statuses from connector. '
+            . $selectedCount . ' selected in OpenCart admin · '
+            . (is_array($fetch['statuses'] ?? null) ? count($fetch['statuses']) : 0) . ' total statuses.'
+        );
+    }
+
+    public function saveQueueMappings(array $input): WriteResult
+    {
+        $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
+        $mappings = $input['queue_mapping'] ?? [];
+        if (!is_array($mappings) || $mappings === []) {
+            return WriteResult::fail('No queue mappings submitted.');
+        }
+
+        $repo = new StatusMappingWriteRepository();
+        $saved = 0;
+        $savedStatusIds = [];
+
+        foreach ($mappings as $queueStatusId => $ibsStatus) {
+            $queueStatusId = trim((string) $queueStatusId);
+            $ibsStatus = trim((string) $ibsStatus);
+            if ($queueStatusId === '' || $ibsStatus === '') {
+                continue;
+            }
+
+            $validation = OrderSyncMappingRules::validationMessageForStatus($ibsStatus);
+            if ($validation !== null) {
+                return WriteResult::fail('Queue status #' . $queueStatusId . ': ' . $validation);
+            }
+
+            $repo->upsertQueueMapping($sourceId, $queueStatusId, OrderSyncMappingRules::normalizeIbsStatus($ibsStatus));
+            $savedStatusIds[] = $queueStatusId;
+            $saved++;
+        }
+
+        if ($saved === 0) {
+            return WriteResult::fail('Select at least one SFM status mapping for a connector queue status.');
+        }
+
+        $repo->deactivateQueueMappingsNotIn($sourceId, $savedStatusIds);
+
+        ActivityLog::record('sync_queue_mappings_saved', 'Supplier order queue mappings saved', [
+            'business_source_id' => $sourceId,
+            'saved_count' => $saved,
+        ]);
+
+        return WriteResult::ok('Saved ' . $saved . ' connector queue → SFM mapping' . ($saved === 1 ? '' : 's') . '.');
+    }
+
     public function resetToDemo(): WriteResult
     {
         $productRoute = trim((string) config('opencart.product_api_route', ''));
@@ -127,7 +201,7 @@ class SyncApiSettingsWriteService
             'api_base_url' => '',
             'api_key' => '',
             'product_api_route' => $productRoute,
-            'order_api_route' => trim((string) config('opencart.order_api_route', '')) ?: 'api/order',
+            'order_api_route' => trim((string) config('opencart.order_api_route', '')) ?: 'api/ibs/orders',
             'product_sync_enabled' => '1',
             'order_sync_enabled' => '1',
             'dispatch_bridge_required' => '1',

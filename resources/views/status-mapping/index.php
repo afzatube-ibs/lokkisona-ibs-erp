@@ -1,6 +1,12 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Lokkisona OpenCart order status mapping — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Import orders by <strong>mapped OC status only</strong> — not by product mapping. First import sets the mapped SFM status (New, Accepted, Packed, etc.). Re-sync updates snapshot fields only and never overwrites SFM workflow status. Apply migrations 0004 and 0015 manually first.</p>
+    <p class="page-description">Legacy / debug only — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Active order import mapping lives in <a href="<?= e(url('/sync-api-settings')) ?>">Sync Settings → Supplier Order Queue Mapping</a>. This page is retained for inspection and legacy rows only.</p>
+</div>
+
+<div class="card card-warn-border mb-15">
+    <div class="card-body">
+        <p class="page-description mb-0"><strong>Not used for order import (v2.4.9+).</strong> Configure Connector Queue Status → SFM Status in Sync Settings. Re-sync still updates snapshot fields only and never overwrites SFM workflow status.</p>
+    </div>
 </div>
 
 <?php view('partials.flash-messages', ['flashSuccess' => $flashSuccess ?? null, 'flashError' => $flashError ?? null]); ?>

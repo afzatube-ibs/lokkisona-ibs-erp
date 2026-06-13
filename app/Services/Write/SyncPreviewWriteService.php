@@ -188,13 +188,17 @@ class SyncPreviewWriteService
         }
 
         $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
-        if ($this->mappings->countActiveForSource($sourceId) === 0) {
-            return WriteResult::fail('At least one active status mapping is required before order preview.');
+        if ($this->mappings->countActiveQueueMappings($sourceId) === 0) {
+            return WriteResult::fail('Configure Supplier Order Queue mappings in System → Sync Settings before order preview.');
         }
 
         $page = max(1, (int) ($input['page'] ?? 1));
         $fetch = $this->client->fetchSupplierOrdersPage($page);
         $orders = $fetch['rows'] ?? [];
+        $fetchMessage = trim((string) ($fetch['message'] ?? ''));
+        if ($orders === [] && $fetchMessage !== '') {
+            return WriteResult::fail($fetchMessage);
+        }
 
         $previewRef = 'TS-' . date('YmdHis') . '-' . random_int(100, 999);
         $previewId = $this->previews->create([
@@ -439,18 +443,20 @@ class SyncPreviewWriteService
             ];
         }
 
-        $sourceStatusId = trim((string) ($order['source_status_id'] ?? ''));
-        $sourceStatus = trim((string) ($order['source_status'] ?? ''));
+        $queueStatusId = trim((string) ($order['connector_queue_status'] ?? $order['source_status_id'] ?? ''));
+        $queueStatusLabel = trim((string) ($order['connector_queue_label'] ?? $order['source_status'] ?? ''));
         $sourceRef = trim((string) ($order['source_order_reference'] ?? ''));
         $extra = $this->orderPreviewExtra($order);
-        $matchProbe = $this->mappings->probeActiveMapping($sourceId, $sourceStatusId, $sourceStatus);
-        $extra['origin_status_id'] = $sourceStatusId;
-        $extra['origin_status_name'] = $sourceStatus;
+        $matchProbe = $this->mappings->probeQueueMapping($sourceId, $queueStatusId);
+        $extra['origin_status_id'] = $queueStatusId;
+        $extra['origin_status_name'] = $queueStatusLabel;
+        $extra['connector_queue_status'] = $queueStatusId;
+        $extra['connector_queue_label'] = $queueStatusLabel;
         $extra['mapping_matched'] = !empty($matchProbe['matched']) ? 'YES' : 'NO';
         $extra['mapping_match_mode'] = (string) ($matchProbe['match_mode'] ?? '');
         $extra['mapping_matched_key'] = (string) ($matchProbe['matched_key'] ?? '');
 
-        if ($this->shouldSkipMissing($sourceStatusId, $sourceStatus)) {
+        if ($this->shouldSkipMissing($queueStatusId, $queueStatusLabel)) {
             return [
                 'mapped_status' => null,
                 'preview_status' => 'skipped_missing',
@@ -459,13 +465,15 @@ class SyncPreviewWriteService
             ];
         }
 
-        $mapping = $this->resolveMapping($sourceId, $sourceStatusId, $sourceStatus);
+        $mapping = $this->resolveQueueMapping($sourceId, $queueStatusId);
         if ($mapping === null) {
             return [
                 'mapped_status' => null,
                 'preview_status' => 'blocked_unmapped',
                 'count_key' => 'blocked_unmapped',
-                'extra' => $extra,
+                'extra' => array_merge($extra, [
+                    'block_reason' => 'Map queue status #' . $queueStatusId . ' in System → Sync Settings.',
+                ]),
             ];
         }
 
@@ -562,8 +570,8 @@ class SyncPreviewWriteService
         return in_array(strtolower($statusName), array_map('strtolower', $skipNames), true);
     }
 
-    private function resolveMapping(int $sourceId, string $statusId, string $statusName): ?array
+    private function resolveQueueMapping(int $sourceId, string $queueStatusId): ?array
     {
-        return $this->mappings->resolveActiveMapping($sourceId, $statusId, $statusName);
+        return $this->mappings->resolveQueueMapping($sourceId, $queueStatusId);
     }
 }

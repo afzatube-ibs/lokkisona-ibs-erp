@@ -7,6 +7,7 @@ use App\Csrf;
 use App\Permission;
 use App\ReadFoundation\WriteGate;
 use App\Services\ReadOnly\SyncApiSettingsReadService;
+use App\Services\Write\SyncApiSettingsWriteService;
 use App\Support\SyncRequestGuard;
 
 class SyncApiSettingsController extends Controller
@@ -34,6 +35,7 @@ class SyncApiSettingsController extends Controller
             'canSyncHub' => Permission::canSyncHub(),
             'canResetProductSync' => Permission::can('sync_preview.manage'),
             'productWriteGateReady' => WriteGate::productSyncImport()['ready'],
+            'queueMapping' => $read->queueMappingState(),
         ]);
     }
 
@@ -80,5 +82,43 @@ class SyncApiSettingsController extends Controller
         }
 
         $this->redirectWithWriteResult('/sync-api-settings', (new SyncApiSettingsWriteService())->resetToDemo());
+    }
+
+    public function loadQueueStatuses()
+    {
+        $this->authorize('sync_api_settings.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-api-settings');
+        }
+
+        if (!SyncRequestGuard::acquire()) {
+            $this->flash('error', SyncRequestGuard::busyMessage());
+            redirect('/sync-api-settings');
+        }
+
+        try {
+            $this->redirectWithWriteResult('/sync-api-settings', (new SyncApiSettingsWriteService())->loadQueueStatuses());
+        } finally {
+            SyncRequestGuard::release();
+        }
+    }
+
+    public function saveQueueMappings()
+    {
+        $this->authorize('sync_api_settings.manage');
+        $this->requirePost();
+        if (!$this->validateCsrf()) {
+            $this->flash('error', 'Invalid security token.');
+            redirect('/sync-api-settings');
+        }
+
+        if (!Permission::canSyncHub()) {
+            $this->flash('error', 'Sync Hub permission required to save queue mappings.');
+            redirect('/sync-api-settings');
+        }
+
+        $this->redirectWithWriteResult('/sync-api-settings', (new SyncApiSettingsWriteService())->saveQueueMappings($_POST));
     }
 }

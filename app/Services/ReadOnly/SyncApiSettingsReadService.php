@@ -6,8 +6,10 @@ use App\ActivityLog;
 use App\Database\Connection;
 use App\Database\QueryGuard;
 use App\Database\TableName;
+use App\Domain\OrderSyncMappingRules;
 use App\Models\Order;
 use App\ReadFoundation\WriteGate;
+use App\Repositories\Write\StatusMappingWriteRepository;
 use App\Services\Read\OpenCartReadClient;
 use PDO;
 
@@ -33,6 +35,8 @@ class SyncApiSettingsReadService
             'api_key_mask' => $this->maskedApiKeyHint($apiKey),
             'product_api_route' => trim((string) config('opencart.product_api_route', '')),
             'order_api_route' => trim((string) config('opencart.order_api_route', '')),
+            'order_queue_api_route' => trim((string) config('opencart.order_queue_api_route', 'api/ibs/order_queue_statuses')),
+            'order_sync_mode' => trim((string) config('opencart.order_sync_mode', 'connector_queue')),
             'read_only_lock' => true,
             'max_rows_per_page' => 20,
             'product_sync_enabled' => (bool) config('opencart.product_sync_enabled', true),
@@ -92,6 +96,39 @@ class SyncApiSettingsReadService
             'last_order_sync_at' => $this->lastOrderSyncAt(),
             'header_badge' => $this->headerBadge($mode, $connectionOk),
             'storage' => $this->storageBadge($localExists, $exampleExists),
+        ];
+    }
+
+    public function queueMappingState(?int $businessSourceId = null): array
+    {
+        $sourceId = ($businessSourceId ?? 0) > 0
+            ? (int) $businessSourceId
+            : (int) config('opencart.business_source_id', 1);
+        $repo = new StatusMappingWriteRepository();
+        $saved = $repo->findActiveQueueMappings($sourceId);
+        $savedByStatus = [];
+        foreach ($saved as $row) {
+            $key = trim((string) ($row['source_status'] ?? ''));
+            if ($key !== '') {
+                $savedByStatus[$key] = $row;
+            }
+        }
+
+        $session = $_SESSION['ibs_connector_queue_statuses'] ?? null;
+        $connectorStatuses = is_array($session) ? ($session['statuses'] ?? []) : [];
+        if (!is_array($connectorStatuses)) {
+            $connectorStatuses = [];
+        }
+
+        return [
+            'business_source_id' => $sourceId,
+            'saved_mappings' => $saved,
+            'saved_by_status' => $savedByStatus,
+            'mapping_count' => count($saved),
+            'connector_statuses' => $connectorStatuses,
+            'connector_queue_status_ids' => is_array($session) ? ($session['queue_status_ids'] ?? []) : [],
+            'connector_loaded_at' => is_array($session) ? (int) ($session['loaded_at'] ?? 0) : 0,
+            'initial_status_options' => OrderSyncMappingRules::initialStatusOptions(OrderSyncMappingRules::advancedModeEnabled()),
         ];
     }
 

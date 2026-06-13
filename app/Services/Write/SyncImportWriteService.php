@@ -380,15 +380,8 @@ class SyncImportWriteService
      */
     private function recordMappingMatch(int $sourceId, array $orderPayload): void
     {
-        $statusId = trim((string) ($orderPayload['source_status_id'] ?? ''));
-        $statusName = trim((string) ($orderPayload['source_status'] ?? ''));
-        $mapping = null;
-        if ($statusName !== '') {
-            $mapping = $this->mappings->findBySourceStatus($sourceId, $statusName);
-        }
-        if ($mapping === null && $statusId !== '') {
-            $mapping = $this->mappings->findBySourceStatus($sourceId, $statusId);
-        }
+        $queueStatusId = trim((string) ($orderPayload['connector_queue_status'] ?? $orderPayload['source_status_id'] ?? ''));
+        $mapping = $this->mappings->resolveQueueMapping($sourceId, $queueStatusId);
         if ($mapping !== null) {
             $this->mappings->recordMatch((int) ($mapping['status_mapping_id'] ?? 0));
         }
@@ -472,6 +465,6 @@ class SyncImportWriteService
         return 'No eligible preview rows to import or update. '
             . 'Preview #' . $previewId . ' has ' . $fetched . ' row(s): ' . $summary . '. '
             . 'Order import eligibility is status-mapping-only — product/cost/stock never blocks import. '
-            . 'Add matching status mappings at Status Mapping, run Test Order Sync again, and check Import Result.';
+            . 'Configure Connector Queue → SFM mappings in Sync Settings, run Test Order Sync again, and check Import Result.';
     }
 }

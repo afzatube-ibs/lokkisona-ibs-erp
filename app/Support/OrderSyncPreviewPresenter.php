@@ -6,7 +6,7 @@ use App\Domain\OrderWorkflowStatus;
 
 /**
  * Order sync preview display labels (v1.9.6+).
- * Eligibility is status-mapping-only — product/cost/stock never affect these labels.
+ * Eligibility is connector queue mapping only — product/cost/stock never affect these labels.
  */
 class OrderSyncPreviewPresenter
 {
@@ -58,7 +58,7 @@ class OrderSyncPreviewPresenter
         return match ($previewStatus) {
             'eligible' => 'Status mapping matched — new order will import.',
             'snapshot_update' => 'Already in ERP — OpenCart snapshot fields refresh only.',
-            'blocked_unmapped' => 'Blocked Unmapped Status — add mapping at Status Mapping.',
+            'blocked_unmapped' => 'Blocked Unmapped Queue Status — map in Sync Settings → Supplier Order Queue Mapping.',
             'blocked_invalid_mapping' => 'Mapping target is not an allowed initial IBS status.',
             'skipped_missing' => 'OpenCart status missing or status id 0 — skipped by sync rules.',
             'blocked_not_supplier_handled' => 'Status mapping matched (legacy preview row).',

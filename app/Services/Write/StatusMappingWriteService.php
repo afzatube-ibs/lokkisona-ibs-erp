@@ -51,6 +51,7 @@ class StatusMappingWriteService
             'return_type' => trim((string) ($input['return_type'] ?? '')) ?: null,
             'courier_status' => trim((string) ($input['courier_status'] ?? '')) ?: null,
             'notes' => trim((string) ($input['notes'] ?? '')) ?: null,
+            'mapping_type' => StatusMappingWriteRepository::TYPE_LEGACY_OPENCART,
             'is_active' => !empty($input['is_active']) ? 1 : 1,
             'created_by' => null,
         ]);

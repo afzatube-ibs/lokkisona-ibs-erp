@@ -1,10 +1,9 @@
-# Build installable OpenCart extension zip: dist/ibs-opencart-sync-connector-v1.0.0.ocmod.zip
+# Build installable OpenCart extension zip: dist/ibs-opencart-sync-connector-v1.1.0.ocmod.zip
 # Uses forward-slash zip entry paths for Linux OpenCart servers.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Resolve-Path (Join-Path $root '..\..')
-$distDir = Join-Path $repoRoot 'dist'
-$version = '1.0.0'
+$distDir = Join-Path $root 'dist'
+$version = '1.1.0'
 $zipName = "ibs-opencart-sync-connector-v$version.ocmod.zip"
 $zipPath = Join-Path $distDir $zipName
 $stage = Join-Path $env:TEMP "ibs-sync-connector-build-$version"

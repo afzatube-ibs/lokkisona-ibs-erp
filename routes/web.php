@@ -21,6 +21,8 @@ $router->get('/version', 'VersionController@index');
 $router->get('/sync-api-settings', 'SyncApiSettingsController@index');
 $router->post('/sync-api-settings/save', 'SyncApiSettingsController@save');
 $router->post('/sync-api-settings/test-connection', 'SyncApiSettingsController@testConnection');
+$router->post('/sync-api-settings/load-queue-statuses', 'SyncApiSettingsController@loadQueueStatuses');
+$router->post('/sync-api-settings/save-queue-mappings', 'SyncApiSettingsController@saveQueueMappings');
 $router->post('/sync-api-settings/reset-demo', 'SyncApiSettingsController@resetDemo');
 $router->get('/activity-log', 'ActivityLogController@index');
 $router->get('/roles-permissions', 'RolesPermissionsController@index');

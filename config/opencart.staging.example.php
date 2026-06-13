@@ -21,6 +21,8 @@ return [
     'max_orders_per_request' => 20,
     'max_products_per_request' => 20,
     'order_api_route' => 'api/ibs/orders',
+    'order_queue_api_route' => 'api/ibs/order_queue_statuses',
+    'order_sync_mode' => 'connector_queue',
     'connection_test_api_route' => 'api/ibs/connection_test',
     // OpenCart IBS read-only connector (v1.8.3 package): api/ibs/products
     'product_api_route' => 'api/ibs/products',

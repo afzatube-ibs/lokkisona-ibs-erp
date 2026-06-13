@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.4.8',
-    'release_label' => 'SFM Direction Repair',
+    'version' => '2.4.9',
+    'release_label' => 'OpenCart Supplier Queue Connector',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -205,7 +205,12 @@ view('partials.ops-safety-strip', [
                     </div>
                     <div class="form-group">
                         <label for="order_api_route">Order API Route</label>
-                        <input id="order_api_route" name="order_api_route" type="text" class="form-input" value="<?= e($settings['order_api_route'] ?? '') ?>" placeholder="api/order">
+                        <input id="order_api_route" name="order_api_route" type="text" class="form-input" value="<?= e($settings['order_api_route'] ?? '') ?>" placeholder="api/ibs/orders">
+                    </div>
+                    <div class="form-group">
+                        <label for="order_queue_api_route">Order Queue API Route</label>
+                        <input id="order_queue_api_route" name="order_queue_api_route" type="text" class="form-input" value="<?= e($settings['order_queue_api_route'] ?? 'api/ibs/order_queue_statuses') ?>" readonly disabled>
+                        <p class="form-help">Fixed for IBS Sync Connector v1.1.0 — loads queue statuses for mapping.</p>
                     </div>
                 </div>
 
@@ -278,6 +283,98 @@ view('partials.ops-safety-strip', [
 </div>
 
 <?php
+$queueMapping = $queueMapping ?? [];
+$connectorStatuses = is_array($queueMapping['connector_statuses'] ?? null) ? $queueMapping['connector_statuses'] : [];
+$savedByStatus = is_array($queueMapping['saved_by_status'] ?? null) ? $queueMapping['saved_by_status'] : [];
+$initialStatusOptions = is_array($queueMapping['initial_status_options'] ?? null) ? $queueMapping['initial_status_options'] : [];
+$queueLoadedAt = (int) ($queueMapping['connector_loaded_at'] ?? 0);
+?>
+<div class="card mb-15">
+    <div class="card-header">
+        <h2 class="card-title">Supplier Order Queue Mapping</h2>
+        <p class="page-description mb-0">Active order import mapping — Connector Queue Status → SFM Status. Only queue orders with warehouse lines are fetched (max 20).</p>
+    </div>
+    <div class="card-body">
+        <div class="kpi-grid kpi-grid-inline mb-15">
+            <div class="kpi-card kpi-accent-info">
+                <span class="kpi-label">Saved Mappings</span>
+                <span class="kpi-value"><?= e((string) ($queueMapping['mapping_count'] ?? 0)) ?></span>
+            </div>
+            <div class="kpi-card kpi-accent-muted">
+                <span class="kpi-label">Connector Queue</span>
+                <span class="kpi-value kpi-value-sm"><?= count($connectorStatuses) ?> statuses<?= $queueLoadedAt > 0 ? ' · loaded' : '' ?></span>
+            </div>
+        </div>
+
+        <?php if (!empty($canSyncHub)): ?>
+        <form method="post" action="<?= e(url('/sync-api-settings/load-queue-statuses')) ?>" class="mb-15">
+            <?= $csrfField ?? '' ?>
+            <button type="submit" class="btn btn-secondary">Load Queue Statuses from Connector</button>
+            <p class="form-help">Read-only — loads OpenCart queue picker values. Map each selected queue status below.</p>
+        </form>
+
+        <?php if ($connectorStatuses !== []): ?>
+        <form method="post" action="<?= e(url('/sync-api-settings/save-queue-mappings')) ?>">
+            <?= $csrfField ?? '' ?>
+            <input type="hidden" name="business_source_id" value="<?= e((string) ($queueMapping['business_source_id'] ?? 1)) ?>">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Queue ID</th>
+                            <th>Connector Label</th>
+                            <th>In OC Queue</th>
+                            <th>SFM Initial Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($connectorStatuses as $status): ?>
+                        <?php
+                        if (!is_array($status)) {
+                            continue;
+                        }
+                        $statusId = trim((string) ($status['status_id'] ?? ''));
+                        if ($statusId === '') {
+                            continue;
+                        }
+                        $saved = $savedByStatus[$statusId] ?? null;
+                        $selected = !empty($status['selected']);
+                        ?>
+                        <tr class="<?= $selected ? '' : 'text-muted' ?>">
+                            <td><code><?= e($statusId) ?></code></td>
+                            <td><?= e((string) ($status['name'] ?? '')) ?></td>
+                            <td><?= $selected ? 'Yes' : 'No' ?></td>
+                            <td>
+                                <?php if ($selected): ?>
+                                <select name="queue_mapping[<?= e($statusId) ?>]" class="form-input">
+                                    <option value="">— Select SFM status —</option>
+                                    <?php foreach ($initialStatusOptions as $option): ?>
+                                    <option value="<?= e((string) ($option['code'] ?? '')) ?>" <?= ($saved['ibs_status'] ?? '') === ($option['code'] ?? '') ? 'selected' : '' ?>><?= e((string) ($option['label'] ?? '')) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php else: ?>
+                                <span class="form-help">Not in connector queue</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sync-settings-actions mt-15">
+                <button type="submit" class="btn btn-primary">Save Queue Mappings</button>
+            </div>
+        </form>
+        <?php else: ?>
+        <p class="page-description">Load queue statuses from the connector to configure mappings. Legacy <a href="<?= e(url('/status-mapping')) ?>">Status Mapping</a> is debug-only and not used for order import.</p>
+        <?php endif; ?>
+        <?php else: ?>
+        <p class="page-description">View-only. An owner or admin with Sync Hub permission can load and save queue mappings.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php
 view('partials.product-sync-reset-form', [
     'canManage' => !empty($canResetProductSync),
     'productWriteGateReady' => $productWriteGateReady ?? false,
@@ -294,6 +391,7 @@ view('partials.product-sync-reset-form', [
             <li><strong>Staging:</strong> use <code><?= e($settings['default_urls']['staging'] ?? '') ?></code></li>
             <li><strong>Live:</strong> use <code><?= e($settings['default_urls']['live'] ?? '') ?></code></li>
             <li>Product route and Order route are required for sync preview.</li>
+            <li>Map <strong>Supplier Order Queue</strong> statuses in Sync Settings before order preview.</li>
             <li>Run <strong>Test Connection</strong> before using Analytics (Sync Preview).</li>
         </ul>
     </div>

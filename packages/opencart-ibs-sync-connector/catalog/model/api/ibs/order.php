@@ -3,7 +3,7 @@
 require_once DIR_SYSTEM . 'library/ibs/api_settings.php';
 
 /**
- * Read-only order queries for IBS Sync Connector.
+ * Read-only order queries for IBS Sync Connector (supplier queue + warehouse lines only).
  */
 class ModelApiIbsOrder extends Model
 {
@@ -12,13 +12,34 @@ class ModelApiIbsOrder extends Model
 
     public function getPagedOrders(int $page, int $limit, array $filters = []): array
     {
+        $settings = $this->settings();
+        $queueIds = $settings['queue_status_ids'] ?? [];
+        $bridgeTable = trim((string) ($settings['bridge_table'] ?? 'dispatch_location_product'));
+        if ($bridgeTable === '') {
+            $bridgeTable = 'dispatch_location_product';
+        }
+
+        if ($queueIds === []) {
+            return [
+                'orders' => [],
+                'total' => 0,
+                'filter_applied' => 'queue_empty',
+                'queue_status_ids' => [],
+                'warning' => 'No supplier queue statuses configured in connector admin.',
+            ];
+        }
+
         $languageId = (int) $this->config->get('config_language_id');
         $offset = ($page - 1) * $limit;
-        $where = ['1=1'];
-        $statusId = isset($filters['status_id']) ? (int) $filters['status_id'] : 0;
-        if ($statusId > 0) {
-            $where[] = 'o.order_status_id = ' . $statusId;
-        }
+        $bridge = DB_PREFIX . $bridgeTable;
+        $queueIdList = implode(',', array_map('intval', $queueIds));
+
+        $where = ['o.order_status_id IN (' . $queueIdList . ')'];
+        $where[] = 'EXISTS ('
+            . 'SELECT 1 FROM `' . DB_PREFIX . 'order_product` op '
+            . 'INNER JOIN `' . $bridge . '` dlp ON dlp.product_id = op.product_id AND dlp.from_warehouse = 1 '
+            . 'WHERE op.order_id = o.order_id'
+            . ')';
 
         $dateFrom = trim((string) ($filters['date_from'] ?? ''));
         if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
@@ -64,13 +85,26 @@ class ModelApiIbsOrder extends Model
         }
 
         if ($orderIds !== []) {
-            $productsByOrder = $this->getProductsForOrders($orderIds);
+            $productsByOrder = $this->getWarehouseProductsForOrders($orderIds, $bridgeTable);
             foreach ($productsByOrder as $orderId => $products) {
-                if (isset($orders[$orderId])) {
-                    $orders[$orderId]['products'] = $products;
-                    $orders[$orderId]['total_quantity'] = array_sum(array_map(function (array $item) {
-                        return (int) ($item['quantity'] ?? 0);
-                    }, $products));
+                if (!isset($orders[$orderId])) {
+                    continue;
+                }
+                if ($products === []) {
+                    unset($orders[$orderId]);
+                    continue;
+                }
+
+                $orders[$orderId]['products'] = $products;
+                $orders[$orderId]['total_quantity'] = array_sum(array_map(function (array $item) {
+                    return (int) ($item['quantity'] ?? 0);
+                }, $products));
+                $orders[$orderId]['has_warehouse_product'] = true;
+            }
+
+            foreach ($orderIds as $orderId) {
+                if (isset($orders[$orderId]) && ($orders[$orderId]['products'] ?? []) === []) {
+                    unset($orders[$orderId]);
                 }
             }
         }
@@ -78,27 +112,47 @@ class ModelApiIbsOrder extends Model
         return [
             'orders' => array_values($orders),
             'total' => $total,
+            'filter_applied' => 'queue_and_warehouse',
+            'queue_status_ids' => array_values(array_map('strval', $queueIds)),
         ];
     }
 
     private function mapOrderRow(array $row): array
     {
         $map = $this->settings()['order_field_map'] ?? [];
+        $firstName = trim((string) ($row['firstname'] ?? ''));
+        $lastName = trim((string) ($row['lastname'] ?? ''));
+        $customerName = trim($firstName . ' ' . $lastName);
+        $addressParts = array_filter([
+            trim((string) ($row['shipping_address_1'] ?? '')),
+            trim((string) ($row['shipping_address_2'] ?? '')),
+            trim((string) ($row['shipping_city'] ?? '')),
+        ]);
+        $orderStatusId = (string) ($row['order_status_id'] ?? '');
+        $orderStatusName = (string) ($row['order_status'] ?? '');
 
         return [
             'order_id' => (string) ($row['order_id'] ?? ''),
             'invoice_no' => (string) ($row['invoice_no'] ?? ''),
-            'firstname' => (string) ($row['firstname'] ?? ''),
-            'lastname' => (string) ($row['lastname'] ?? ''),
+            'firstname' => $firstName,
+            'lastname' => $lastName,
+            'customer_name' => $customerName,
             'telephone' => (string) ($row['telephone'] ?? ''),
+            'customer_phone' => (string) ($row['telephone'] ?? ''),
             'email' => (string) ($row['email'] ?? ''),
-            'order_status_id' => (string) ($row['order_status_id'] ?? ''),
-            'order_status' => (string) ($row['order_status'] ?? ''),
+            'order_status_id' => $orderStatusId,
+            'order_status' => $orderStatusName,
+            'connector_queue_status' => $orderStatusId,
+            'connector_queue_label' => $orderStatusName,
+            'in_supplier_queue' => true,
+            'has_warehouse_product' => false,
             'total' => round((float) ($row['total'] ?? 0), 2),
+            'order_total' => round((float) ($row['total'] ?? 0), 2),
             'date_added' => (string) ($row['date_added'] ?? ''),
             'shipping_address_1' => (string) ($row['shipping_address_1'] ?? ''),
             'shipping_address_2' => (string) ($row['shipping_address_2'] ?? ''),
             'shipping_city' => (string) ($row['shipping_city'] ?? ''),
+            'customer_address' => implode(', ', $addressParts),
             'payment_method' => (string) ($row['payment_method'] ?? ''),
             'shipping_method' => (string) ($row['shipping_method'] ?? ''),
             'courier_status' => $this->resolveMappedField($row, $map['courier_status'] ?? ['courier_status', 'shipping_status']),
@@ -124,7 +178,12 @@ class ModelApiIbsOrder extends Model
         return '';
     }
 
-    private function getProductsForOrders(array $orderIds): array
+    /**
+     * Line-level filter: only order_product rows linked to dispatch bridge from_warehouse = 1.
+     *
+     * @param array<int, int> $orderIds
+     */
+    private function getWarehouseProductsForOrders(array $orderIds, string $bridgeTable): array
     {
         $ids = array_values(array_filter(array_map('intval', $orderIds), function ($id) {
             return (int) $id > 0;
@@ -133,12 +192,15 @@ class ModelApiIbsOrder extends Model
             return [];
         }
 
+        $bridge = DB_PREFIX . $bridgeTable;
         $idList = implode(',', $ids);
         $query = $this->db->query(
-            'SELECT order_product_id, order_id, product_id, name, model, quantity, price, total, tax '
-            . 'FROM `' . DB_PREFIX . 'order_product` '
-            . 'WHERE order_id IN (' . $idList . ') '
-            . 'ORDER BY order_id ASC, order_product_id ASC'
+            'SELECT op.order_product_id, op.order_id, op.product_id, op.name, op.model, op.quantity, op.price, op.total, op.tax, '
+            . 'dlp.from_warehouse '
+            . 'FROM `' . DB_PREFIX . 'order_product` op '
+            . 'INNER JOIN `' . $bridge . '` dlp ON dlp.product_id = op.product_id AND dlp.from_warehouse = 1 '
+            . 'WHERE op.order_id IN (' . $idList . ') '
+            . 'ORDER BY op.order_id ASC, op.order_product_id ASC'
         );
 
         $optionsByLine = $this->getOrderOptionsForOrders($ids);
@@ -162,6 +224,7 @@ class ModelApiIbsOrder extends Model
                 'total' => round((float) ($row['total'] ?? 0), 2),
                 'sku' => (string) ($row['model'] ?? ''),
                 'option' => $optionLabel,
+                'from_warehouse' => 1,
             ];
         }
 

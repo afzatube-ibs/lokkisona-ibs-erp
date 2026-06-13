@@ -118,21 +118,123 @@ class OpenCartReadClient
         }
 
         if ($this->isLiveReadEnabled()) {
-            return $this->paginateResult(
-                $this->fetchLiveOrdersPage($page, $limit),
-                $page,
-                $limit,
-                null
-            );
+            return $this->fetchLiveSupplierOrdersPage($page, $limit);
         }
 
         if ($this->isDemoMode()) {
-            $all = $this->normalizeOrders(config('opencart.demo_orders', []));
-
-            return $this->paginateArray($all, $page, $limit);
+            return $this->fetchDemoSupplierOrdersPage($page, $limit);
         }
 
         return $this->emptyPageWithMessage($page, $limit, 'OpenCart connection disabled.');
+    }
+
+    /**
+     * @return array{ok: bool, statuses: array<int, array<string, mixed>>, queue_status_ids: array<int, string>, message: ?string, bridge_available: ?bool}
+     */
+    public function fetchOrderQueueStatuses(): array
+    {
+        if ($this->isDemoMode()) {
+            $statuses = config('opencart.demo_queue_statuses', []);
+            if (!is_array($statuses)) {
+                $statuses = [];
+            }
+            $queueIds = [];
+            foreach ($statuses as $row) {
+                if (!is_array($row) || empty($row['selected'])) {
+                    continue;
+                }
+                $id = trim((string) ($row['status_id'] ?? ''));
+                if ($id !== '') {
+                    $queueIds[] = $id;
+                }
+            }
+
+            return [
+                'ok' => true,
+                'statuses' => $statuses,
+                'queue_status_ids' => $queueIds,
+                'message' => null,
+                'bridge_available' => true,
+            ];
+        }
+
+        if (!$this->isLiveReadEnabled()) {
+            return [
+                'ok' => false,
+                'statuses' => [],
+                'queue_status_ids' => [],
+                'message' => 'OpenCart connection disabled.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $baseUrl = rtrim((string) config('opencart.api_base_url', ''), '/');
+        $apiKey = (string) config('opencart.api_key', '');
+        if ($baseUrl === '' || $apiKey === '') {
+            return [
+                'ok' => false,
+                'statuses' => [],
+                'queue_status_ids' => [],
+                'message' => 'Missing api_base_url or api_key.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $route = trim((string) config('opencart.order_queue_api_route', 'api/ibs/order_queue_statuses'));
+        if ($route === '') {
+            return [
+                'ok' => false,
+                'statuses' => [],
+                'queue_status_ids' => [],
+                'message' => 'Order queue API route is not configured.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $url = $baseUrl . '/index.php?route=' . ltrim($route, '=')
+            . '&api_token=' . rawurlencode($apiKey);
+
+        $response = $this->httpGet($url);
+        if ($response === null) {
+            return [
+                'ok' => false,
+                'statuses' => [],
+                'queue_status_ids' => [],
+                'message' => 'Order queue API request failed or timed out.',
+                'bridge_available' => null,
+            ];
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded) || !$this->isApiResponseOk($decoded)) {
+            $message = is_array($decoded) ? $this->extractApiMessage($decoded) : 'Invalid JSON';
+
+            return [
+                'ok' => false,
+                'statuses' => [],
+                'queue_status_ids' => [],
+                'message' => $message !== '' ? $message : 'Order queue API returned an error.',
+                'bridge_available' => is_array($decoded) ? ($decoded['bridge_available'] ?? null) : null,
+            ];
+        }
+
+        $statuses = $decoded['queue_statuses'] ?? [];
+        if (!is_array($statuses)) {
+            $statuses = [];
+        }
+
+        $queueIds = $decoded['queue_status_ids'] ?? [];
+        if (!is_array($queueIds)) {
+            $queueIds = [];
+        }
+
+        return [
+            'ok' => true,
+            'statuses' => $statuses,
+            'queue_status_ids' => array_values(array_map('strval', $queueIds)),
+            'message' => null,
+            'bridge_available' => $decoded['bridge_available'] ?? null,
+        ];
     }
 
     /** @deprecated Use fetchWarehouseProductsPage for v1.7.1 preview flow */
@@ -377,15 +479,15 @@ class OpenCartReadClient
         ];
     }
 
-    private function fetchLiveOrdersPage(int $page, int $limit): array
+    private function fetchLiveSupplierOrdersPage(int $page, int $limit): array
     {
         $baseUrl = rtrim((string) config('opencart.api_base_url', ''), '/');
         $apiKey = (string) config('opencart.api_key', '');
         if ($baseUrl === '' || $apiKey === '') {
-            return [];
+            return $this->emptyPageWithMessage($page, $limit, 'Missing api_base_url or api_key.');
         }
 
-        $route = trim((string) config('opencart.order_api_route', 'api/order'));
+        $route = trim((string) config('opencart.order_api_route', 'api/ibs/orders'));
         $pageParam = (string) config('opencart.api_page_param', 'page');
         $limitParam = (string) config('opencart.api_limit_param', 'limit');
         $url = $baseUrl . '/index.php?route=' . ltrim($route, '=')
@@ -395,17 +497,106 @@ class OpenCartReadClient
 
         $response = $this->httpGet($url);
         if ($response === null) {
-            return [];
+            return $this->emptyPageWithMessage($page, $limit, 'Order API request failed or timed out.');
         }
 
         $decoded = json_decode($response, true);
         if (!is_array($decoded)) {
-            return [];
+            return $this->emptyPageWithMessage($page, $limit, 'Order API returned invalid JSON.');
         }
 
-        $orders = $decoded['orders'] ?? $decoded['data'] ?? $decoded;
+        if ($this->isExplicitApiFailure($decoded)) {
+            $message = $this->extractApiMessage($decoded);
 
-        return is_array($orders) ? $this->normalizeOrders($orders) : [];
+            return $this->emptyPageWithMessage(
+                $page,
+                $limit,
+                $message !== '' ? $message : 'Order API returned an error.'
+            );
+        }
+
+        $orders = $decoded['orders'] ?? $decoded['data'] ?? [];
+        if (!is_array($orders)) {
+            $orders = [];
+        }
+
+        $filterApplied = (string) ($decoded['filter_applied'] ?? '');
+        $message = null;
+        if ($filterApplied === 'queue_empty') {
+            $message = trim((string) ($decoded['warning'] ?? 'No supplier queue statuses configured in OpenCart connector admin.'));
+        }
+
+        $rows = $this->normalizeOrders($orders);
+
+        return [
+            'bridge_available' => $decoded['bridge_available'] ?? null,
+            'bridge_warning' => null,
+            'rows' => array_slice($rows, 0, $limit),
+            'page' => $page,
+            'per_page' => $limit,
+            'has_previous' => (bool) ($decoded['has_previous'] ?? $page > 1),
+            'has_next' => (bool) ($decoded['has_next'] ?? false),
+            'message' => $message,
+            'filter_applied' => $filterApplied !== '' ? $filterApplied : null,
+            'queue_status_ids' => is_array($decoded['queue_status_ids'] ?? null) ? $decoded['queue_status_ids'] : [],
+        ];
+    }
+
+    private function fetchDemoSupplierOrdersPage(int $page, int $limit): array
+    {
+        $queueFetch = $this->fetchOrderQueueStatuses();
+        $queueIds = $queueFetch['queue_status_ids'] ?? [];
+        $rawOrders = config('opencart.demo_orders', []);
+        if (!is_array($rawOrders)) {
+            $rawOrders = [];
+        }
+
+        $filtered = [];
+        foreach ($rawOrders as $order) {
+            if (!is_array($order)) {
+                continue;
+            }
+
+            $queueStatus = trim((string) ($order['connector_queue_status'] ?? $order['order_status_id'] ?? $order['source_status_id'] ?? ''));
+            if ($queueIds !== [] && !in_array($queueStatus, $queueIds, true)) {
+                continue;
+            }
+
+            if (empty($order['in_supplier_queue']) && $queueIds !== []) {
+                continue;
+            }
+
+            $products = is_array($order['products'] ?? null) ? $order['products'] : ($order['items'] ?? []);
+            $warehouseLines = [];
+            foreach ($products as $line) {
+                if (!is_array($line)) {
+                    continue;
+                }
+                $fromWarehouse = $line['from_warehouse'] ?? null;
+                if ($fromWarehouse === null || self::isStrictFromWarehouseValue($fromWarehouse)) {
+                    if ($fromWarehouse !== null && !self::isStrictFromWarehouseValue($fromWarehouse)) {
+                        continue;
+                    }
+                    $warehouseLines[] = $line;
+                }
+            }
+
+            if ($warehouseLines === [] && $products !== []) {
+                continue;
+            }
+
+            $orderCopy = $order;
+            $orderCopy['products'] = $warehouseLines;
+            $filtered[] = $orderCopy;
+        }
+
+        $normalized = $this->normalizeOrders($filtered);
+        $result = $this->paginateArray($normalized, $page, $limit, true);
+        if ($queueIds === []) {
+            $result['message'] = 'No supplier queue statuses configured in demo data.';
+        }
+
+        return $result;
     }
 
     private function normalizeOrders(array $orders): array
@@ -422,6 +613,10 @@ class OpenCartReadClient
                 if (!is_array($item)) {
                     continue;
                 }
+                $fromWarehouse = $item['from_warehouse'] ?? null;
+                if ($fromWarehouse !== null && !self::isStrictFromWarehouseValue($fromWarehouse)) {
+                    continue;
+                }
                 $qty = (int) ($item['quantity'] ?? 1);
                 $totalQty += $qty;
                 $items[] = [
@@ -432,15 +627,27 @@ class OpenCartReadClient
                     'selling_price' => (float) ($item['price'] ?? $item['selling_price'] ?? 0),
                     'sku' => $item['sku'] ?? $item['model'] ?? null,
                     'image' => trim((string) ($item['image'] ?? '')) ?: null,
+                    'from_warehouse' => 1,
                 ];
             }
+
+            if ($items === [] && ($order['products'] ?? $order['items'] ?? []) !== []) {
+                continue;
+            }
+
+            $queueStatusId = (string) ($order['connector_queue_status'] ?? $order['order_status_id'] ?? $order['source_status_id'] ?? '');
+            $queueStatusLabel = (string) ($order['connector_queue_label'] ?? $order['order_status'] ?? $order['source_status'] ?? '');
 
             $normalized[] = [
                 'source_order_id' => (string) ($order['order_id'] ?? $order['source_order_id'] ?? ''),
                 'source_order_reference' => (string) ($order['order_id'] ?? $order['source_order_reference'] ?? ''),
                 'source_invoice_reference' => $order['invoice_no'] ?? $order['source_invoice_reference'] ?? null,
-                'source_status_id' => (string) ($order['order_status_id'] ?? $order['source_status_id'] ?? ''),
-                'source_status' => (string) ($order['order_status'] ?? $order['source_status'] ?? ''),
+                'source_status_id' => $queueStatusId,
+                'source_status' => $queueStatusLabel,
+                'connector_queue_status' => $queueStatusId,
+                'connector_queue_label' => $queueStatusLabel,
+                'in_supplier_queue' => (bool) ($order['in_supplier_queue'] ?? true),
+                'has_warehouse_product' => $items !== [],
                 'customer_name' => trim((string) ($order['firstname'] ?? '') . ' ' . (string) ($order['lastname'] ?? $order['customer_name'] ?? '')),
                 'customer_phone' => (string) ($order['telephone'] ?? $order['customer_phone'] ?? ''),
                 'customer_address' => (string) ($order['shipping_address_1'] ?? $order['customer_address'] ?? ''),

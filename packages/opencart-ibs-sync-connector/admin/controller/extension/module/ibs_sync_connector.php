@@ -12,8 +12,14 @@ class ControllerExtensionModuleIbsSyncConnector extends Controller
         $this->load->language('extension/module/ibs_sync_connector');
         $this->document->setTitle($this->language->get('heading_title'));
         $this->load->model('setting/setting');
+        $this->load->model('localisation/order_status');
 
         if (($this->request->server['REQUEST_METHOD'] === 'POST') && $this->validate()) {
+            $this->request->post['module_ibs_sync_connector_bridge_table'] = 'dispatch_location_product';
+            if (!isset($this->request->post['module_ibs_sync_connector_queue_status_ids'])
+                || !is_array($this->request->post['module_ibs_sync_connector_queue_status_ids'])) {
+                $this->request->post['module_ibs_sync_connector_queue_status_ids'] = [];
+            }
             $this->model_setting_setting->editSetting('module_ibs_sync_connector', $this->request->post);
             $this->session->data['success'] = $this->language->get('text_success');
             $this->response->redirect($this->url->link(
@@ -51,16 +57,28 @@ class ControllerExtensionModuleIbsSyncConnector extends Controller
             ?? $this->config->get('module_ibs_sync_connector_status');
         $data['module_ibs_sync_connector_api_token'] = $this->request->post['module_ibs_sync_connector_api_token']
             ?? $this->config->get('module_ibs_sync_connector_api_token');
-        $data['module_ibs_sync_connector_bridge_table'] = $this->request->post['module_ibs_sync_connector_bridge_table']
-            ?? ($this->config->get('module_ibs_sync_connector_bridge_table') ?: 'dispatch_location_product');
+        $data['module_ibs_sync_connector_bridge_table'] = 'dispatch_location_product';
         $data['module_ibs_sync_connector_max_limit'] = $this->request->post['module_ibs_sync_connector_max_limit']
             ?? ($this->config->get('module_ibs_sync_connector_max_limit') ?: 20);
+
+        $savedQueueIds = $this->config->get('module_ibs_sync_connector_queue_status_ids');
+        if (!is_array($savedQueueIds)) {
+            $savedQueueIds = [];
+        }
+        $postedQueueIds = $this->request->post['module_ibs_sync_connector_queue_status_ids'] ?? null;
+        $data['module_ibs_sync_connector_queue_status_ids'] = is_array($postedQueueIds)
+            ? $postedQueueIds
+            : $savedQueueIds;
+
+        $data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
 
         $catalogBase = (defined('HTTPS_CATALOG') && HTTPS_CATALOG) ? HTTPS_CATALOG : HTTP_CATALOG;
         $token = (string) $data['module_ibs_sync_connector_api_token'];
         $data['connection_test_url'] = $catalogBase . 'index.php?route=api/ibs/connection_test&api_token=' . rawurlencode($token);
         $data['products_url'] = $catalogBase . 'index.php?route=api/ibs/products&api_token=' . rawurlencode($token) . '&page=1&limit=20';
-        $data['connector_version'] = '1.0.0';
+        $data['order_queue_statuses_url'] = $catalogBase . 'index.php?route=api/ibs/order_queue_statuses&api_token=' . rawurlencode($token);
+        $data['orders_url'] = $catalogBase . 'index.php?route=api/ibs/orders&api_token=' . rawurlencode($token) . '&page=1&limit=20';
+        $data['connector_version'] = '1.1.0';
 
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
@@ -97,6 +115,7 @@ class ControllerExtensionModuleIbsSyncConnector extends Controller
             'module_ibs_sync_connector_api_token' => bin2hex(random_bytes(24)),
             'module_ibs_sync_connector_bridge_table' => 'dispatch_location_product',
             'module_ibs_sync_connector_max_limit' => 20,
+            'module_ibs_sync_connector_queue_status_ids' => [],
             'module_ibs_sync_connector_order_field_map' => json_encode([
                 'courier_status' => ['courier_status', 'shipping_status'],
                 'consignment_id' => ['consignment_id', 'tracking_number', 'tracking_no'],
@@ -115,6 +134,12 @@ class ControllerExtensionModuleIbsSyncConnector extends Controller
     {
         if (!$this->user->hasPermission('modify', 'extension/module/ibs_sync_connector')) {
             $this->error['warning'] = $this->language->get('error_permission');
+        }
+
+        $enabled = (int) ($this->request->post['module_ibs_sync_connector_status'] ?? 0) === 1;
+        $queueIds = $this->request->post['module_ibs_sync_connector_queue_status_ids'] ?? [];
+        if ($enabled && (!is_array($queueIds) || $queueIds === [])) {
+            $this->error['warning'] = $this->language->get('error_queue_empty');
         }
 
         return $this->error === [] || !isset($this->error['warning']);

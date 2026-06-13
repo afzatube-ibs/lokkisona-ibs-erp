@@ -7,6 +7,8 @@ namespace ibs;
  */
 class api_settings
 {
+    private const BRIDGE_TABLE = 'dispatch_location_product';
+
     private $config;
 
     public function __construct($registry)
@@ -18,9 +20,9 @@ class api_settings
     {
         $token = trim((string) $this->config->get('module_ibs_sync_connector_api_token'));
         $status = (int) $this->config->get('module_ibs_sync_connector_status');
-        $bridgeTable = trim((string) $this->config->get('module_ibs_sync_connector_bridge_table'));
         $maxLimit = (int) $this->config->get('module_ibs_sync_connector_max_limit');
         $allowedIps = $this->config->get('module_ibs_sync_connector_allowed_ips');
+        $queueStatusIds = $this->queueStatusIds();
 
         if ($token === '' && !is_file(DIR_SYSTEM . 'config/ibs_api.php')) {
             return $this->legacyDefaults();
@@ -30,9 +32,6 @@ class api_settings
             $legacy = $this->legacyFile();
             if ($token === '') {
                 $token = trim((string) ($legacy['api_token'] ?? ''));
-            }
-            if ($bridgeTable === '') {
-                $bridgeTable = trim((string) ($legacy['bridge_table'] ?? 'dispatch_location_product'));
             }
             if ($maxLimit <= 0) {
                 $maxLimit = (int) ($legacy['max_limit'] ?? 20);
@@ -52,9 +51,36 @@ class api_settings
             'api_token' => $token,
             'max_limit' => max(1, min($maxLimit > 0 ? $maxLimit : 20, 20)),
             'allowed_ips' => is_array($allowedIps) ? $allowedIps : [],
-            'bridge_table' => $bridgeTable !== '' ? $bridgeTable : 'dispatch_location_product',
+            'bridge_table' => self::BRIDGE_TABLE,
+            'queue_status_ids' => $queueStatusIds,
             'order_field_map' => $orderFieldMap,
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function queueStatusIds(): array
+    {
+        $raw = $this->config->get('module_ibs_sync_connector_queue_status_ids');
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($raw as $id) {
+            $id = trim((string) $id);
+            if ($id !== '' && !in_array($id, $ids, true)) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    public function bridgeTable(): string
+    {
+        return self::BRIDGE_TABLE;
     }
 
     public function isEnabled(): bool
@@ -78,7 +104,8 @@ class api_settings
             'api_token' => '',
             'max_limit' => 20,
             'allowed_ips' => [],
-            'bridge_table' => 'dispatch_location_product',
+            'bridge_table' => self::BRIDGE_TABLE,
+            'queue_status_ids' => [],
             'order_field_map' => $this->defaultOrderFieldMap(),
         ];
     }
