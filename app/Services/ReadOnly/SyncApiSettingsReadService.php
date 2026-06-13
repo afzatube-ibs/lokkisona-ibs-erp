@@ -6,7 +6,8 @@ use App\ActivityLog;
 use App\Database\Connection;
 use App\Database\QueryGuard;
 use App\Database\TableName;
-use App\Domain\OrderSyncMappingRules;
+use App\Domain\EntryMappingOptions;
+use App\Domain\FinalResultMappingOptions;
 use App\Models\Order;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\StatusMappingWriteRepository;
@@ -64,21 +65,57 @@ class SyncApiSettingsReadService
         $productStatus = $client->productSyncStatus();
         $mode = $this->resolvedSourceMode();
         $connectionOk = (bool) ($test['ok'] ?? false);
+
+        return $this->buildConnectionSummary(
+            $mode,
+            $connectionOk,
+            (string) ($test['message'] ?? ''),
+            $test['bridge_available'] ?? null,
+            $productStatus
+        );
+    }
+
+    /**
+     * Lightweight hub page summary — no live OpenCart HTTP on GET.
+     */
+    public function connectionSummaryForPage(): array
+    {
+        $mode = $this->resolvedSourceMode();
+        $lastConnectionTest = $this->latestActivityEntry('sync_api_connection_test');
+        $connectionOk = $this->cachedConnectionOk($mode, $lastConnectionTest);
+        $message = $lastConnectionTest !== null
+            ? (string) ($lastConnectionTest['message'] ?? '')
+            : ($mode === 'demo' ? 'Demo mode — local sample data.' : 'Not tested yet — use Test connection.');
+
+        return $this->buildConnectionSummary($mode, $connectionOk, $message, null, []);
+    }
+
+    /**
+     * @param array<string, mixed> $productStatus
+     */
+    private function buildConnectionSummary(
+        string $mode,
+        bool $connectionOk,
+        string $connectionMessage,
+        $bridgeAvailable,
+        array $productStatus
+    ): array {
         $apiKey = trim((string) config('opencart.api_key', ''));
         $localExists = file_exists($this->localConfigPath());
         $exampleExists = file_exists($this->exampleConfigPath());
         $lastConnectionTest = $this->latestActivityEntry('sync_api_connection_test');
-        $supplierId = (int) config('app.auth.supplier_id', 1);
-        $productFreshness = (new ProductControlListReadService())->snapshotFreshness($supplierId);
+        $productRoute = trim((string) config('opencart.product_api_route', ''));
+        $orderRoute = trim((string) config('opencart.order_api_route', ''));
 
         return [
             'source_mode' => $mode,
             'connection_ok' => $connectionOk,
-            'connection_message' => (string) ($test['message'] ?? ''),
-            'bridge_available' => $test['bridge_available'] ?? null,
-            'bridge_status' => $this->bridgeStatusLabel($test['bridge_available'] ?? null),
-            'product_route' => trim((string) config('opencart.product_api_route', '')),
-            'order_api_route' => trim((string) config('opencart.order_api_route', '')),
+            'connection_message' => $connectionMessage,
+            'bridge_available' => $bridgeAvailable,
+            'bridge_status' => $this->bridgeStatusLabel($bridgeAvailable),
+            'product_route' => $productRoute,
+            'order_api_route' => $orderRoute,
+            'order_queue_api_route' => trim((string) config('opencart.order_queue_api_route', 'api/ibs/order_queue_statuses')),
             'api_base_url' => trim((string) config('opencart.api_base_url', '')),
             'saved_api_base_url' => trim((string) config('opencart.api_base_url', '')),
             'read_only_lock' => true,
@@ -87,19 +124,101 @@ class SyncApiSettingsReadService
             'dispatch_bridge_required' => (bool) config('opencart.dispatch_bridge_required', true),
             'api_key_status' => $apiKey !== '' ? 'Configured' : 'Not configured',
             'api_key_mask' => $this->maskedApiKeyHint($apiKey),
-            'product_api_status' => $this->productApiStatusLabel($productStatus, $connectionOk),
-            'order_api_status' => $this->orderApiStatusLabel($connectionOk),
+            'product_api_status' => $this->productApiStatusLabelForPage($productStatus, $connectionOk, $mode),
+            'order_api_status' => $this->orderApiStatusLabelForPage($connectionOk, $mode),
             'last_connection_test_at' => (string) ($lastConnectionTest['time'] ?? ''),
             'last_connection_test_message' => (string) ($lastConnectionTest['message'] ?? ''),
-            'last_connection_test_ok' => $lastConnectionTest !== null,
-            'last_product_sync_at' => (string) ($productFreshness['last_synced_at'] ?? ''),
+            'last_connection_test_ok' => $lastConnectionTest !== null && $this->lastConnectionTestPassed($lastConnectionTest),
+            'last_product_sync_at' => $this->lastProductSyncAt(),
             'last_order_sync_at' => $this->lastOrderSyncAt(),
             'header_badge' => $this->headerBadge($mode, $connectionOk),
             'storage' => $this->storageBadge($localExists, $exampleExists),
         ];
     }
 
+    /**
+     * @param array<string, mixed>|null $lastConnectionTest
+     */
+    private function cachedConnectionOk(string $mode, ?array $lastConnectionTest): bool
+    {
+        if ($mode === 'demo') {
+            return true;
+        }
+
+        return $lastConnectionTest !== null && $this->lastConnectionTestPassed($lastConnectionTest);
+    }
+
+    /**
+     * @param array<string, mixed> $lastConnectionTest
+     */
+    private function lastConnectionTestPassed(array $lastConnectionTest): bool
+    {
+        $message = strtolower(trim((string) ($lastConnectionTest['message'] ?? '')));
+        if ($message !== '' && (str_contains($message, 'failed') || str_contains($message, 'error'))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function productApiStatusLabelForPage(array $productStatus, bool $connectionOk, string $mode): string
+    {
+        if ($productStatus !== []) {
+            return $this->productApiStatusLabel($productStatus, $connectionOk);
+        }
+
+        if (!(bool) config('opencart.product_sync_enabled', true)) {
+            return 'Off';
+        }
+
+        $route = trim((string) config('opencart.product_api_route', ''));
+        if ($route === '') {
+            return 'Route not configured';
+        }
+
+        if ($mode === 'demo') {
+            return 'Demo — ready';
+        }
+
+        return $connectionOk ? 'Configured — ready' : 'Not tested';
+    }
+
+    private function orderApiStatusLabelForPage(bool $connectionOk, string $mode): string
+    {
+        if (!(bool) config('opencart.order_sync_enabled', true)) {
+            return 'Off';
+        }
+
+        $route = trim((string) config('opencart.order_api_route', ''));
+        if ($route === '') {
+            return 'Route not configured';
+        }
+
+        if ($mode === 'demo') {
+            return 'Demo — ready';
+        }
+
+        return $connectionOk ? 'Configured — ready' : 'Not tested';
+    }
+
+    private function lastProductSyncAt(): string
+    {
+        foreach (['product_sync_refresh', 'product_sync_preview', 'product_sync_reset'] as $action) {
+            $entry = $this->latestActivityEntry($action);
+            if ($entry !== null && ($entry['time'] ?? '') !== '') {
+                return (string) $entry['time'];
+            }
+        }
+
+        return '';
+    }
+
     public function queueMappingState(?int $businessSourceId = null): array
+    {
+        return $this->entryMappingState($businessSourceId);
+    }
+
+    public function entryMappingState(?int $businessSourceId = null): array
     {
         $sourceId = ($businessSourceId ?? 0) > 0
             ? (int) $businessSourceId
@@ -120,16 +239,255 @@ class SyncApiSettingsReadService
             $connectorStatuses = [];
         }
 
+        $queueStatuses = [];
+        foreach ($connectorStatuses as $status) {
+            if (is_array($status) && !empty($status['selected'])) {
+                $queueStatuses[] = $status;
+            }
+        }
+
         return [
             'business_source_id' => $sourceId,
             'saved_mappings' => $saved,
             'saved_by_status' => $savedByStatus,
             'mapping_count' => count($saved),
             'connector_statuses' => $connectorStatuses,
+            'queue_statuses' => $queueStatuses,
+            'all_statuses' => $connectorStatuses,
             'connector_queue_status_ids' => is_array($session) ? ($session['queue_status_ids'] ?? []) : [],
             'connector_loaded_at' => is_array($session) ? (int) ($session['loaded_at'] ?? 0) : 0,
-            'initial_status_options' => OrderSyncMappingRules::initialStatusOptions(OrderSyncMappingRules::advancedModeEnabled()),
+            'entry_options' => EntryMappingOptions::dropdownOptions(),
+            'mapping_attention_count' => $this->mappingAttentionCount($queueStatuses, $savedByStatus),
         ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $queueStatuses
+     * @param array<string, array<string, mixed>> $savedByStatus
+     */
+    public function mappingAttentionCount(array $queueStatuses, array $savedByStatus): int
+    {
+        $count = 0;
+        foreach ($queueStatuses as $status) {
+            $id = trim((string) ($status['status_id'] ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            if (!isset($savedByStatus[$id])) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function finalResultMappingState(?int $businessSourceId = null): array
+    {
+        $sourceId = ($businessSourceId ?? 0) > 0
+            ? (int) $businessSourceId
+            : (int) config('opencart.business_source_id', 1);
+        $repo = new StatusMappingWriteRepository();
+        $pickers = $repo->finalResultPickerState($sourceId);
+        $entry = $this->entryMappingState($sourceId);
+
+        return array_merge($pickers, [
+            'business_source_id' => $sourceId,
+            'connector_statuses' => $entry['connector_statuses'],
+            'connector_loaded_at' => $entry['connector_loaded_at'],
+            'target_options' => FinalResultMappingOptions::targetOptions(),
+        ]);
+    }
+
+    public function hubState(?int $businessSourceId = null): array
+    {
+        $sourceId = ($businessSourceId ?? 0) > 0
+            ? (int) $businessSourceId
+            : (int) config('opencart.business_source_id', 1);
+        $orderSession = $_SESSION['ibs_order_sync_preview'] ?? null;
+        $productSession = $_SESSION['ibs_product_sync_preview'] ?? null;
+        $entryMapping = $this->entryMappingState($sourceId);
+
+        return [
+            'connection' => $this->connectionSummaryForPage(),
+            'settings' => $this->formState(),
+            'entry_mapping' => $entryMapping,
+            'final_result_mapping' => $this->finalResultMappingState($sourceId),
+            'product_sync' => $this->productSyncHubState($productSession),
+            'order_sync' => [
+                'preview' => is_array($orderSession) ? $this->orderPreviewFromSession($orderSession) : null,
+                'session_active' => is_array($orderSession),
+            ],
+            'sync_history' => $this->syncHistoryEntries(5),
+            'mapping_attention_count' => (int) ($entryMapping['mapping_attention_count'] ?? 0),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed>|null $productSession
+     * @return array{state: string, rows: array<int, array<string, mixed>>, importable: bool, session_active: bool}
+     */
+    public function productSyncHubState(?array $productSession): array
+    {
+        if (!is_array($productSession) || !isset($productSession['fetched_at'])) {
+            return [
+                'state' => 'initial',
+                'rows' => [],
+                'importable' => false,
+                'session_active' => false,
+            ];
+        }
+
+        $rows = $this->normalizeProductPreviewRows($productSession);
+        if ($rows === []) {
+            return [
+                'state' => 'empty_result',
+                'rows' => [],
+                'importable' => false,
+                'session_active' => true,
+            ];
+        }
+
+        return [
+            'state' => 'has_rows',
+            'rows' => $rows,
+            'importable' => true,
+            'session_active' => true,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $productSession
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeProductPreviewRows(array $productSession): array
+    {
+        $display = is_array($productSession['display'] ?? null) ? $productSession['display'] : [];
+        $importRows = is_array($productSession['products'] ?? null) ? $productSession['products'] : [];
+        $warehouseBySourceId = [];
+
+        foreach ($importRows as $importRow) {
+            if (!is_array($importRow)) {
+                continue;
+            }
+            $sourceProductId = trim((string) ($importRow['source_product_id'] ?? ''));
+            if ($sourceProductId === '') {
+                continue;
+            }
+            $warehouseBySourceId[$sourceProductId] = OpenCartReadClient::isStrictSupplierProduct($importRow);
+        }
+
+        $normalized = [];
+        foreach ($display['rows'] ?? [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $sourceProductId = trim((string) ($row['source_product_id'] ?? ''));
+            $model = trim((string) ($row['source_model'] ?? $row['model'] ?? ''));
+            $name = trim((string) ($row['product_name'] ?? $row['name'] ?? ''));
+            if ($model === '' && $name === '' && $sourceProductId === '') {
+                continue;
+            }
+
+            $optionCount = (int) ($row['option_count'] ?? 0);
+            if ($optionCount === 0) {
+                $optionCount = count(is_array($row['options'] ?? null) ? $row['options'] : []);
+            }
+
+            $fromWarehouse = $warehouseBySourceId[$sourceProductId]
+                ?? OpenCartReadClient::isStrictSupplierProduct($row);
+
+            $normalized[] = [
+                'model' => $model,
+                'name' => $name,
+                'from_warehouse' => $fromWarehouse,
+                'option_count' => $optionCount,
+            ];
+        }
+
+        return array_slice($normalized, 0, 20);
+    }
+
+    public function mappingConfigAlertNeeded(int $businessSourceId): bool
+    {
+        $repo = new StatusMappingWriteRepository();
+
+        return $repo->countActiveQueueMappings($businessSourceId) === 0;
+    }
+
+    /**
+     * @return array{label: string, class: string}
+     */
+    public function connectionChipState(array $connectionSummary): array
+    {
+        $mode = (string) ($connectionSummary['source_mode'] ?? 'demo');
+        $lastTestOk = !empty($connectionSummary['last_connection_test_ok']);
+        $lastTestAt = trim((string) ($connectionSummary['last_connection_test_at'] ?? ''));
+
+        if ($mode === 'demo') {
+            return ['label' => 'Connection OK', 'class' => 'is-ok'];
+        }
+
+        if ($lastTestOk) {
+            return ['label' => 'Connection OK', 'class' => 'is-ok'];
+        }
+
+        if ($lastTestAt === '') {
+            return ['label' => 'Not tested', 'class' => 'is-untested'];
+        }
+
+        return ['label' => 'Not ready', 'class' => 'is-warn'];
+    }
+
+    /**
+     * @param array<string, mixed> $session
+     * @return array<string, mixed>
+     */
+    private function orderPreviewFromSession(array $session): array
+    {
+        $counts = is_array($session['counts'] ?? null) ? $session['counts'] : [];
+        $labeled = \App\Support\OrderSyncPreviewPresenter::labeledPreviewCounts($counts);
+
+        return [
+            'display_rows' => is_array($session['display_rows'] ?? null) ? $session['display_rows'] : [],
+            'preview_counts' => $labeled,
+            'importable_count' => (int) ($counts['eligible'] ?? 0) + (int) ($counts['updated_snapshot'] ?? 0),
+            'active_preview_id' => (int) ($session['preview_id'] ?? 0),
+            'pagination' => is_array($session['pagination'] ?? null) ? $session['pagination'] : [],
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function syncHistoryEntries(int $limit = 20): array
+    {
+        $actions = [
+            'sync_api_settings_saved',
+            'sync_api_connection_test',
+            'sync_queue_statuses_loaded',
+            'sync_entry_mappings_saved',
+            'sync_final_result_mappings_saved',
+            'sync_queue_mappings_saved',
+            'product_sync_preview',
+            'product_sync_refresh',
+            'product_sync_reset',
+            'sync_test_preview',
+            'sync_import',
+        ];
+
+        $entries = [];
+        foreach (ActivityLog::recent(200) as $entry) {
+            if (!in_array((string) ($entry['action'] ?? ''), $actions, true)) {
+                continue;
+            }
+            $entries[] = $entry;
+            if (count($entries) >= $limit) {
+                break;
+            }
+        }
+
+        return $entries;
     }
 
     private function maskedApiKeyHint(string $apiKey): string

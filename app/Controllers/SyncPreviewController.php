@@ -607,11 +607,11 @@ class SyncPreviewController extends Controller
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
-        if (!in_array($redirect, ['/sync-preview', '/product-control', '/sync-api-settings'], true)) {
+        if (!str_starts_with($redirect, '/sync-api-settings') && !in_array($redirect, ['/sync-preview', '/product-control'], true)) {
             $redirect = '/product-control';
         }
-        $suffix = $redirect === '/sync-api-settings' ? '' : '?product_page=' . $page;
-        $this->runWithSyncGuard($redirect . $suffix, function () {
+        $target = str_starts_with($redirect, '/sync-api-settings') ? $redirect : $redirect . '?product_page=' . $page;
+        $this->runWithSyncGuard($target, function () {
             return (new SyncPreviewWriteService())->previewProducts($_POST);
         });
     }
@@ -625,7 +625,12 @@ class SyncPreviewController extends Controller
             redirect('/product-control');
         }
         $page = max(1, (int) ($_POST['page'] ?? 1));
-        $this->runWithSyncGuard('/product-control?product_page=' . $page, function () {
+        $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
+        if (!str_starts_with($redirect, '/sync-api-settings') && !in_array($redirect, ['/sync-preview', '/product-control'], true)) {
+            $redirect = '/product-control';
+        }
+        $target = str_starts_with($redirect, '/sync-api-settings') ? $redirect : $redirect . '?product_page=' . $page;
+        $this->runWithSyncGuard($target, function () {
             return (new SyncPreviewWriteService())->importProductsFromPreview($_POST);
         });
     }
@@ -640,7 +645,7 @@ class SyncPreviewController extends Controller
         }
 
         $redirect = trim((string) ($_POST['redirect_to'] ?? '/product-control'));
-        if (!in_array($redirect, ['/sync-preview', '/product-control', '/sync-api-settings'], true)) {
+        if (!str_starts_with($redirect, '/sync-api-settings') && !in_array($redirect, ['/sync-preview', '/product-control'], true)) {
             $redirect = '/product-control';
         }
 

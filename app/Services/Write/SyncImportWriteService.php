@@ -4,10 +4,10 @@ namespace App\Services\Write;
 
 use App\ActivityLog;
 use App\Database\Connection;
+use App\Domain\EntryMappingOptions;
+use App\Domain\FinalResultMappingOptions;
 use App\Domain\OrderCourierWorkflowLane;
 use App\Domain\OrderFulfillmentPolicy;
-use App\Domain\OrderSyncMappingRules;
-use App\Domain\OrderSyncWorkflowBoundary;
 use App\Domain\OrderWorkflowStatus;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\OrderItemWriteRepository;
@@ -232,16 +232,17 @@ class SyncImportWriteService
             $this->orders->updateOriginSnapshot($orderId, $snapshot);
             $this->recordMappingMatch($sourceId, $orderPayload);
 
+            $issueSummary = trim((string) ($item['issue_summary'] ?? ''));
+            $extra = $issueSummary !== '' ? json_decode($issueSummary, true) : [];
+            $finalTarget = is_array($extra) ? trim((string) ($extra['final_result'] ?? '')) : '';
+            if ($finalTarget !== '' && is_array($extra) && ($extra['resync_mode'] ?? '') === 'final_result') {
+                $this->maybePromoteFinalResult($orderId, $existing, $finalTarget);
+            }
+
             return ['key' => 'updated_snapshot'];
         }
 
-        $ibsStatus = OrderSyncMappingRules::normalizeIbsStatus((string) ($item['mapped_status'] ?? 'new_order'));
-        if (OrderSyncWorkflowBoundary::isBeyondShipmentCeiling($ibsStatus)) {
-            return ['key' => 'errors'];
-        }
-        if (!OrderSyncMappingRules::isAllowedInitialStatus($ibsStatus, OrderSyncMappingRules::advancedModeEnabled())) {
-            return ['key' => 'errors'];
-        }
+        $ibsStatus = EntryMappingOptions::IBS_STATUS_FOR_IMPORT;
 
         $costTotal = 0.0;
         $lineItems = $this->buildLineItems($orderPayload, $sourceId, $costTotal);
@@ -397,14 +398,18 @@ class SyncImportWriteService
     /**
      * @param array<string, mixed> $existingOrder
      */
-    private function maybePromoteCourierStage(int $orderId, array $existingOrder, string $mappedStatus): void
+    private function maybePromoteFinalResult(int $orderId, array $existingOrder, string $finalTarget): void
     {
-        if ($orderId <= 0 || !OrderFulfillmentPolicy::orderWasDispatched($orderId)) {
+        if ($orderId <= 0 || !FinalResultMappingOptions::isValidTarget($finalTarget)) {
+            return;
+        }
+
+        if (!$this->orderReadyForFinalResult($orderId, $existingOrder)) {
             return;
         }
 
         $currentStatus = OrderWorkflowStatus::normalize((string) ($existingOrder['ibs_status'] ?? ''));
-        $targetStatus = OrderCourierWorkflowLane::forwardPromotionTarget($currentStatus, $mappedStatus);
+        $targetStatus = OrderCourierWorkflowLane::forwardPromotionTarget($currentStatus, $finalTarget);
         if ($targetStatus === null || $targetStatus === $currentStatus) {
             return;
         }
@@ -417,10 +422,30 @@ class SyncImportWriteService
                 null,
                 $currentStatus,
                 $targetStatus,
-                'courier_sync_forward: mapping → ' . OrderWorkflowStatus::normalize($mappedStatus),
+                'opencart_final_result: OpenCart → ' . FinalResultMappingOptions::targetLabel($finalTarget),
                 null
             );
         }
+    }
+
+    /**
+     * @param array<string, mixed> $existingOrder
+     */
+    private function orderReadyForFinalResult(int $orderId, array $existingOrder): bool
+    {
+        if (OrderFulfillmentPolicy::orderWasDispatched($orderId)) {
+            return true;
+        }
+
+        $status = OrderWorkflowStatus::normalize((string) ($existingOrder['ibs_status'] ?? ''));
+        $group = OrderWorkflowStatus::groupOrder();
+        $ceilingIndex = array_search('shipped', $group, true);
+        $statusIndex = array_search($status, $group, true);
+        if ($ceilingIndex === false || $statusIndex === false) {
+            return false;
+        }
+
+        return $statusIndex >= (int) $ceilingIndex;
     }
 
     private function resolveCostSnapshot(?int $productId, ?int $variantId): float

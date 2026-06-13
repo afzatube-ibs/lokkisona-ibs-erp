@@ -2,7 +2,7 @@
 
     <h1 class="page-title">Sync Preview</h1>
 
-    <p class="ops-page-subtitle">Order sync preview — status mapping controls import eligibility. Product cost, vendor stock, and Product Control health never block order import.</p>
+    <p class="ops-page-subtitle">Debug only — order and product sync moved to <a href="<?= e(url('/sync-api-settings')) ?>">Sync & Mapping Settings</a>.</p>
 
 </div>
 
@@ -10,11 +10,7 @@
 
 <div class="ops-safety-strip mb-15">
 
-    <strong>Status Mapping → Eligible / Blocked.</strong> Product sync lives on
-
-    <a href="<?= e(url('/product-control')) ?>">Product Control</a> (cost, payables, warnings only).
-
-    Map OpenCart statuses at <a href="<?= e(url('/status-mapping')) ?>">Status Mapping</a> before preview.
+    <strong>Debug route.</strong> Owners use Sync & Mapping Settings for connection, entry mapping, final result mapping, product sync, and order import.
 
 </div>
 

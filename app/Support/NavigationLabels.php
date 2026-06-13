@@ -55,7 +55,7 @@ class NavigationLabels
             '/business-sources' => ['Settings', 'Business Sources', 'Business Sources'],
             '/users' => ['Settings', 'Users', 'Users'],
             '/roles-permissions' => ['Settings', 'Roles', 'Roles'],
-            '/sync-api-settings' => ['Future Plan', 'Sync Settings', 'Sync Settings'],
+            '/sync-api-settings' => ['Settings', 'Sync & Mapping', 'Sync & Mapping'],
             '/sync-preview' => ['Future Plan', 'Sync Preview', 'Sync Preview'],
             '/status-mapping' => ['Future Plan', 'Status Mapping', 'Status Mapping'],
             '/activity-log' => ['Settings', 'Activity Log', 'Activity Log'],

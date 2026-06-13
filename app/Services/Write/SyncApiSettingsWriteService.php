@@ -3,7 +3,7 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
-use App\Domain\OrderSyncMappingRules;
+use App\Domain\EntryMappingOptions;
 use App\Repositories\Write\StatusMappingWriteRepository;
 use App\Services\Read\OpenCartReadClient;
 use App\Services\ReadOnly\SyncApiSettingsReadService;
@@ -148,45 +148,95 @@ class SyncApiSettingsWriteService
 
     public function saveQueueMappings(array $input): WriteResult
     {
+        return $this->saveEntryMappings($input);
+    }
+
+    public function saveEntryMappings(array $input): WriteResult
+    {
         $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
-        $mappings = $input['queue_mapping'] ?? [];
+        $mappings = $input['entry_mapping'] ?? $input['queue_mapping'] ?? [];
         if (!is_array($mappings) || $mappings === []) {
-            return WriteResult::fail('No queue mappings submitted.');
+            return WriteResult::fail('No entry mappings submitted.');
         }
 
         $repo = new StatusMappingWriteRepository();
         $saved = 0;
         $savedStatusIds = [];
 
-        foreach ($mappings as $queueStatusId => $ibsStatus) {
+        foreach ($mappings as $queueStatusId => $action) {
             $queueStatusId = trim((string) $queueStatusId);
-            $ibsStatus = trim((string) $ibsStatus);
-            if ($queueStatusId === '' || $ibsStatus === '') {
+            $action = trim((string) $action);
+            if ($queueStatusId === '' || $action === '') {
                 continue;
             }
 
-            $validation = OrderSyncMappingRules::validationMessageForStatus($ibsStatus);
-            if ($validation !== null) {
-                return WriteResult::fail('Queue status #' . $queueStatusId . ': ' . $validation);
+            if (!EntryMappingOptions::isValid($action)) {
+                return WriteResult::fail('Queue status #' . $queueStatusId . ': choose Import as NEW or Ignore.');
             }
 
-            $repo->upsertQueueMapping($sourceId, $queueStatusId, OrderSyncMappingRules::normalizeIbsStatus($ibsStatus));
+            if ($action === EntryMappingOptions::IGNORE) {
+                $existing = $repo->resolveQueueMapping($sourceId, $queueStatusId);
+                if ($existing !== null) {
+                    $repo->setActive((int) ($existing['status_mapping_id'] ?? 0), false);
+                }
+                continue;
+            }
+
+            $repo->upsertQueueMapping($sourceId, $queueStatusId, EntryMappingOptions::IBS_STATUS_FOR_IMPORT);
             $savedStatusIds[] = $queueStatusId;
             $saved++;
         }
 
-        if ($saved === 0) {
-            return WriteResult::fail('Select at least one SFM status mapping for a connector queue status.');
+        if ($saved === 0 && $savedStatusIds === []) {
+            $hasIgnoreOnly = false;
+            foreach ($mappings as $action) {
+                if (trim((string) $action) === EntryMappingOptions::IGNORE) {
+                    $hasIgnoreOnly = true;
+                    break;
+                }
+            }
+            if (!$hasIgnoreOnly) {
+                return WriteResult::fail('Select Import as NEW for at least one OpenCart queue status.');
+            }
         }
 
         $repo->deactivateQueueMappingsNotIn($sourceId, $savedStatusIds);
 
-        ActivityLog::record('sync_queue_mappings_saved', 'Supplier order queue mappings saved', [
+        ActivityLog::record('sync_entry_mappings_saved', 'Entry status mappings saved (Import as NEW / Ignore)', [
             'business_source_id' => $sourceId,
-            'saved_count' => $saved,
+            'import_new_count' => $saved,
         ]);
 
-        return WriteResult::ok('Saved ' . $saved . ' connector queue → SFM mapping' . ($saved === 1 ? '' : 's') . '.');
+        return WriteResult::ok('Saved entry mappings: ' . $saved . ' Import as NEW' . ($saved === 1 ? '' : ' statuses') . '.');
+    }
+
+    public function saveFinalResultMappings(array $input): WriteResult
+    {
+        $sourceId = (int) ($input['business_source_id'] ?? config('opencart.business_source_id', 1));
+        $deliveredStatusId = trim((string) ($input['final_delivered_status_id'] ?? ''));
+        $returnedStatusId = trim((string) ($input['final_returned_status_id'] ?? ''));
+
+        if ($deliveredStatusId === '' && $returnedStatusId === '') {
+            (new StatusMappingWriteRepository())->deactivateAllFinalResultMappings($sourceId);
+
+            return WriteResult::ok('Final result mappings cleared.');
+        }
+
+        $repo = new StatusMappingWriteRepository();
+
+        try {
+            $repo->saveFinalResultMappings($sourceId, $deliveredStatusId, $returnedStatusId);
+        } catch (\InvalidArgumentException $e) {
+            return WriteResult::fail($e->getMessage());
+        }
+
+        ActivityLog::record('sync_final_result_mappings_saved', 'Final result mappings saved (Delivered / Returned)', [
+            'business_source_id' => $sourceId,
+            'delivered_status_id' => $deliveredStatusId,
+            'returned_status_id' => $returnedStatusId,
+        ]);
+
+        return WriteResult::ok('Final result mapping saved. Applies only after order is Dispatched in IBS.');
     }
 
     public function resetToDemo(): WriteResult

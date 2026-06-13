@@ -3,7 +3,10 @@
 namespace App\Services\Write;
 
 use App\ActivityLog;
-use App\Domain\OrderSyncMappingRules;
+use App\Domain\EntryMappingOptions;
+use App\Domain\FinalResultMappingOptions;
+use App\Domain\OrderFulfillmentPolicy;
+use App\Domain\OrderWorkflowStatus;
 use App\ReadFoundation\WriteGate;
 use App\Repositories\Write\OrderWriteRepository;
 use App\Repositories\Write\StatusMappingWriteRepository;
@@ -61,6 +64,22 @@ class SyncPreviewWriteService
         }
 
         if ($importRows === [] && $displayRows === []) {
+            $_SESSION['ibs_product_sync_preview'] = [
+                'page' => $page,
+                'business_source_id' => $sourceId,
+                'fetched_at' => time(),
+                'empty_result' => true,
+                'products' => [],
+                'skip_stats' => $preview['skip_stats'] ?? OpenCartReadClient::emptySkipStats(),
+                'pagination' => [
+                    'page' => $page,
+                    'per_page' => (int) ($preview['per_page'] ?? 20),
+                    'has_previous' => $page > 1,
+                    'has_next' => false,
+                ],
+                'display' => ['rows' => []],
+            ];
+
             $skipStats = is_array($preview['skip_stats'] ?? null)
                 ? $preview['skip_stats']
                 : OpenCartReadClient::emptySkipStats();
@@ -466,44 +485,47 @@ class SyncPreviewWriteService
         }
 
         $mapping = $this->resolveQueueMapping($sourceId, $queueStatusId);
+        $entryAction = $mapping !== null ? EntryMappingOptions::IMPORT_NEW : EntryMappingOptions::IGNORE;
+        $extra['entry_action'] = $entryAction;
+        $extra['entry_action_label'] = $entryAction === EntryMappingOptions::IMPORT_NEW ? 'Import as NEW' : 'Ignore';
+
         if ($mapping === null) {
             return [
                 'mapped_status' => null,
                 'preview_status' => 'blocked_unmapped',
                 'count_key' => 'blocked_unmapped',
                 'extra' => array_merge($extra, [
-                    'block_reason' => 'Map queue status #' . $queueStatusId . ' in System → Sync Settings.',
+                    'block_reason' => 'Map queue status #' . $queueStatusId . ' in Sync & Mapping Settings → Entry Status Mapping.',
                 ]),
             ];
         }
 
-        $mappedStatus = OrderSyncMappingRules::normalizeIbsStatus((string) $mapping['ibs_status']);
+        $mappedStatus = EntryMappingOptions::IBS_STATUS_FOR_IMPORT;
+        $extra['mapped_status_label'] = 'Import as NEW';
 
         $sourceOrderId = trim((string) ($order['source_order_id'] ?? ''));
         $existing = $this->orders->findExistingForSync($sourceId, $sourceOrderId, $sourceRef);
         if ($existing !== null) {
+            $finalMapping = $this->mappings->resolveFinalResultMapping($sourceId, $queueStatusId);
+            $finalTarget = $finalMapping !== null
+                ? OrderWorkflowStatus::normalize((string) ($finalMapping['ibs_status'] ?? ''))
+                : '';
+            $extra['resync_mode'] = 'snapshot_only';
+            $extra['resync_mode_label'] = 'Snapshot only';
+
+            if ($finalTarget !== '' && $this->orderReadyForFinalResult($existing)) {
+                $extra['final_result'] = $finalTarget;
+                $extra['final_result_label'] = FinalResultMappingOptions::targetLabel($finalTarget);
+                $extra['resync_mode'] = 'final_result';
+                $extra['resync_mode_label'] = '→ ' . FinalResultMappingOptions::targetLabel($finalTarget);
+            }
+
             return [
-                'mapped_status' => $mappedStatus,
+                'mapped_status' => $finalTarget !== '' && ($extra['resync_mode'] ?? '') === 'final_result'
+                    ? $finalTarget
+                    : $mappedStatus,
                 'preview_status' => 'snapshot_update',
                 'count_key' => 'updated_snapshot',
-                'extra' => $extra,
-            ];
-        }
-
-        if (\App\Domain\OrderSyncWorkflowBoundary::isBeyondShipmentCeiling($mappedStatus)) {
-            return [
-                'mapped_status' => $mappedStatus,
-                'preview_status' => 'blocked_invalid_mapping',
-                'count_key' => 'blocked_invalid_mapping',
-                'extra' => $extra,
-            ];
-        }
-
-        if (!OrderSyncMappingRules::isAllowedInitialStatus($mappedStatus, OrderSyncMappingRules::advancedModeEnabled())) {
-            return [
-                'mapped_status' => $mappedStatus,
-                'preview_status' => 'blocked_invalid_mapping',
-                'count_key' => 'blocked_invalid_mapping',
                 'extra' => $extra,
             ];
         }
@@ -514,6 +536,27 @@ class SyncPreviewWriteService
             'count_key' => 'eligible',
             'extra' => $extra,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $existing
+     */
+    private function orderReadyForFinalResult(array $existing): bool
+    {
+        $orderId = (int) ($existing['order_id'] ?? 0);
+        if ($orderId > 0 && OrderFulfillmentPolicy::orderWasDispatched($orderId)) {
+            return true;
+        }
+
+        $status = OrderWorkflowStatus::normalize((string) ($existing['ibs_status'] ?? ''));
+        $group = OrderWorkflowStatus::groupOrder();
+        $ceilingIndex = array_search('shipped', $group, true);
+        $statusIndex = array_search($status, $group, true);
+        if ($ceilingIndex === false || $statusIndex === false) {
+            return false;
+        }
+
+        return $statusIndex >= (int) $ceilingIndex;
     }
 
     private function orderPreviewExtra(array $order): array

@@ -2,12 +2,14 @@
 
 namespace App\Repositories\Write;
 
+use App\Domain\FinalResultMappingOptions;
 use App\Models\StatusMapping;
 use App\Support\SchemaColumnProbe;
 
 class StatusMappingWriteRepository extends BaseWriteRepository
 {
     public const TYPE_CONNECTOR_QUEUE = 'connector_queue';
+    public const TYPE_FINAL_RESULT = 'final_result';
     public const TYPE_LEGACY_OPENCART = 'legacy_opencart_status';
 
     public function modelClass(): string
@@ -359,6 +361,210 @@ class StatusMappingWriteRepository extends BaseWriteRepository
                 $this->setActive((int) ($row['status_mapping_id'] ?? 0), false);
             }
         }
+    }
+
+    public function deactivateAllQueueMappings(int $businessSourceId): int
+    {
+        if (!$this->tableExists() || !$this->hasMappingTypeColumn()) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($this->findActiveQueueMappings($businessSourceId) as $row) {
+            if ($this->setActive((int) ($row['status_mapping_id'] ?? 0), false)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function findActiveFinalResultMappings(int $businessSourceId): array
+    {
+        if (!$this->tableExists() || !$this->hasMappingTypeColumn()) {
+            return [];
+        }
+
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE business_source_id = :source_id AND is_active = 1 AND mapping_type = :mapping_type '
+            . 'ORDER BY status_mapping_id ASC';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'source_id' => $businessSourceId,
+            'mapping_type' => self::TYPE_FINAL_RESULT,
+        ]);
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * @return array{delivered_status_id: string, returned_status_id: string}
+     */
+    public function finalResultPickerState(int $businessSourceId): array
+    {
+        $delivered = '';
+        $returned = '';
+        foreach ($this->findActiveFinalResultMappings($businessSourceId) as $row) {
+            $ibs = trim((string) ($row['ibs_status'] ?? ''));
+            $source = trim((string) ($row['source_status'] ?? ''));
+            if ($source === '') {
+                continue;
+            }
+            if ($ibs === FinalResultMappingOptions::TARGET_DELIVERED) {
+                $delivered = $source;
+            } elseif ($ibs === FinalResultMappingOptions::TARGET_RETURNED) {
+                $returned = $source;
+            }
+        }
+
+        return [
+            'delivered_status_id' => $delivered,
+            'returned_status_id' => $returned,
+        ];
+    }
+
+    public function resolveFinalResultMapping(int $businessSourceId, string $queueStatusId): ?array
+    {
+        $queueStatusId = trim($queueStatusId);
+        if (!$this->tableExists() || $businessSourceId <= 0 || $queueStatusId === '' || !$this->hasMappingTypeColumn()) {
+            return null;
+        }
+
+        $row = $this->findActiveFinalBySourceStatusExact($businessSourceId, $queueStatusId);
+        if ($row !== null) {
+            return $row;
+        }
+
+        return $this->findActiveFinalBySourceStatusCaseInsensitive($businessSourceId, $queueStatusId);
+    }
+
+    public function saveFinalResultMappings(int $businessSourceId, string $deliveredStatusId, string $returnedStatusId): void
+    {
+        if ($businessSourceId <= 0 || !$this->hasMappingTypeColumn()) {
+            return;
+        }
+
+        $deliveredStatusId = trim($deliveredStatusId);
+        $returnedStatusId = trim($returnedStatusId);
+        if ($deliveredStatusId !== '' && $deliveredStatusId === $returnedStatusId) {
+            throw new \InvalidArgumentException('Delivered and Returned cannot use the same OpenCart status.');
+        }
+
+        $this->deactivateAllFinalResultMappings($businessSourceId);
+
+        if ($deliveredStatusId !== '') {
+            $this->upsertFinalResultMapping($businessSourceId, $deliveredStatusId, FinalResultMappingOptions::TARGET_DELIVERED);
+        }
+        if ($returnedStatusId !== '') {
+            $this->upsertFinalResultMapping($businessSourceId, $returnedStatusId, FinalResultMappingOptions::TARGET_RETURNED);
+        }
+    }
+
+    public function upsertFinalResultMapping(int $businessSourceId, string $ocStatusId, string $ibsStatus): int
+    {
+        $ocStatusId = trim($ocStatusId);
+        $ibsStatus = trim($ibsStatus);
+        if ($businessSourceId <= 0 || $ocStatusId === '' || $ibsStatus === '') {
+            return 0;
+        }
+
+        $existing = $this->resolveFinalResultMapping($businessSourceId, $ocStatusId);
+        if ($existing !== null) {
+            $this->updateFinalResultMapping((int) $existing['status_mapping_id'], $ibsStatus);
+
+            return (int) $existing['status_mapping_id'];
+        }
+
+        return $this->create([
+            'business_source_id' => $businessSourceId,
+            'source_status' => $ocStatusId,
+            'ibs_status' => $ibsStatus,
+            'workflow_group' => 'final_result',
+            'mapping_type' => self::TYPE_FINAL_RESULT,
+            'is_active' => 1,
+        ]);
+    }
+
+    public function deactivateAllFinalResultMappings(int $businessSourceId): int
+    {
+        if (!$this->tableExists() || !$this->hasMappingTypeColumn()) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($this->findActiveFinalResultMappings($businessSourceId) as $row) {
+            if ($this->setActive((int) ($row['status_mapping_id'] ?? 0), false)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    private function updateFinalResultMapping(int $mappingId, string $ibsStatus): void
+    {
+        if ($mappingId <= 0 || !$this->tableExists()) {
+            return;
+        }
+
+        $sql = 'UPDATE `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'SET ibs_status = :ibs_status, updated_at = NOW(), is_active = 1 '
+            . 'WHERE status_mapping_id = :id LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['ibs_status' => $ibsStatus, 'id' => $mappingId]);
+    }
+
+    private function findActiveFinalBySourceStatusExact(int $businessSourceId, string $sourceStatus): ?array
+    {
+        if (!$this->hasMappingTypeColumn()) {
+            return null;
+        }
+
+        $sourceStatus = trim($sourceStatus);
+        if ($sourceStatus === '') {
+            return null;
+        }
+
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE business_source_id = :source_id AND source_status = :source_status '
+            . 'AND is_active = 1 AND mapping_type = :mapping_type LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'source_id' => $businessSourceId,
+            'source_status' => $sourceStatus,
+            'mapping_type' => self::TYPE_FINAL_RESULT,
+        ]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return $row === false ? null : $row;
+    }
+
+    private function findActiveFinalBySourceStatusCaseInsensitive(int $businessSourceId, string $sourceStatus): ?array
+    {
+        if (!$this->hasMappingTypeColumn()) {
+            return null;
+        }
+
+        $sourceStatus = trim($sourceStatus);
+        if ($sourceStatus === '') {
+            return null;
+        }
+
+        $sql = 'SELECT * FROM `' . $this->escapeIdentifier($this->table()) . '` '
+            . 'WHERE business_source_id = :source_id AND LOWER(TRIM(source_status)) = LOWER(:source_status) '
+            . 'AND is_active = 1 AND mapping_type = :mapping_type LIMIT 1';
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'source_id' => $businessSourceId,
+            'source_status' => $sourceStatus,
+            'mapping_type' => self::TYPE_FINAL_RESULT,
+        ]);
+        $row = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return $row === false ? null : $row;
     }
 
     private function updateQueueMapping(int $mappingId, string $ibsStatus, ?string $notes): void

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Domain\EntryMappingOptions;
+use App\Domain\FinalResultMappingOptions;
 use App\Domain\OrderWorkflowStatus;
 
 /**
@@ -29,9 +31,25 @@ class OrderSyncPreviewPresenter
         return $name !== '' ? $name : '—';
     }
 
-    public static function mappedIbsStatusLabel(?string $mappedCode): string
+    public static function mappedIbsStatusLabel(?string $mappedCode, array $row = []): string
     {
+        $entryLabel = trim((string) ($row['entry_action_label'] ?? ''));
+        if ($entryLabel !== '') {
+            return $entryLabel;
+        }
+
+        $resyncLabel = trim((string) ($row['resync_mode_label'] ?? ''));
+        if ($resyncLabel !== '') {
+            return $resyncLabel;
+        }
+
         $code = trim((string) $mappedCode);
+        if ($code === EntryMappingOptions::IBS_STATUS_FOR_IMPORT) {
+            return 'Import as NEW';
+        }
+        if ($code !== '' && FinalResultMappingOptions::isValidTarget($code)) {
+            return FinalResultMappingOptions::targetLabel($code);
+        }
         if ($code === '') {
             return 'No Mapping';
         }
@@ -53,15 +71,21 @@ class OrderSyncPreviewPresenter
         };
     }
 
-    public static function importResultDetail(string $previewStatus): string
+    public static function importResultDetail(string $previewStatus, array $row = []): string
     {
+        if ($previewStatus === 'snapshot_update') {
+            return trim((string) ($row['resync_mode'] ?? '')) === 'final_result'
+                ? 'Existing order — OpenCart final result will apply (Dispatched+).'
+                : 'Already in ERP — snapshot refresh only (supplier workflow protected).';
+        }
+
         return match ($previewStatus) {
-            'eligible' => 'Status mapping matched — new order will import.',
-            'snapshot_update' => 'Already in ERP — OpenCart snapshot fields refresh only.',
-            'blocked_unmapped' => 'Blocked Unmapped Queue Status — map in Sync Settings → Supplier Order Queue Mapping.',
-            'blocked_invalid_mapping' => 'Mapping target is not an allowed initial IBS status.',
+            'eligible' => 'Entry mapping matched — imports as NEW in IBS.',
+            'blocked_unmapped' => 'Blocked Unmapped Status — map in Sync & Mapping Settings → Entry Status Mapping.',
+            'blocked_invalid_mapping' => 'Legacy mapping row — re-save Entry Status Mapping as Import as NEW.',
             'skipped_missing' => 'OpenCart status missing or status id 0 — skipped by sync rules.',
             'blocked_not_supplier_handled' => 'Status mapping matched (legacy preview row).',
+            'blocked_demo_order' => 'Demo/test order — skipped.',
             default => 'Blocked by order sync preview rules.',
         };
     }
@@ -120,9 +144,9 @@ class OrderSyncPreviewPresenter
             'origin_status_name' => $originStatusName !== '' ? $originStatusName : '—',
             'origin_oc_status' => $originStatusName !== '' ? $originStatusName : self::originOcStatus($row),
             'mapping_matched' => (string) ($row['mapping_matched'] ?? ($mappedCode !== null && $mappedCode !== '' ? 'YES' : 'NO')),
-            'mapped_ibs_status' => self::mappedIbsStatusLabel($mappedCode),
+            'mapped_ibs_status' => self::mappedIbsStatusLabel($mappedCode, $row),
             'import_result' => self::importResultLabel($previewStatus),
-            'import_result_detail' => self::importResultDetail($previewStatus),
+            'import_result_detail' => self::importResultDetail($previewStatus, $row),
             'importable' => self::isImportablePreviewStatus($previewStatus),
         ]);
     }

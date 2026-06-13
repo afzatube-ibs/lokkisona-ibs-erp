@@ -2,8 +2,8 @@
 
 return [
     'name' => 'IBS-LK Business Manager',
-    'version' => '2.4.9',
-    'release_label' => 'OpenCart Supplier Queue Connector',
+    'version' => '2.5.2',
+    'release_label' => 'Sync Settings UI Polish',
     'env' => 'local',
     'staging_gate' => [
         'enabled' => false,

@@ -49,7 +49,7 @@ class OrderSyncWorkflowBoundary
 
     public static function syncImportRuleNote(): string
     {
-        return 'OpenCart sync maps origin status to IBS New / Received / Packaging / Shipped at first import only. '
-            . 'After Shipped, IBS workflow actions own the order — sync refreshes snapshot fields only.';
+        return 'OpenCart entry mapping imports as NEW only. Supplier progresses Accepted → Packed → Dispatched in IBS. '
+            . 'After Dispatched, OpenCart may finalize to Delivered or Returned via Final Result Mapping — forward only.';
     }
 }

@@ -1,11 +1,11 @@
 <div class="page-header">
     <h1 class="page-title">Status Mapping</h1>
-    <p class="page-description">Legacy / debug only — v<?= e($appVersion) ?> — <?= e($appReleaseLabel ?? '') ?>. Active order import mapping lives in <a href="<?= e(url('/sync-api-settings')) ?>">Sync Settings → Supplier Order Queue Mapping</a>. This page is retained for inspection and legacy rows only.</p>
+    <p class="page-description">Debug only — v<?= e($appVersion) ?>. Use <a href="<?= e(url('/sync-api-settings')) ?>">Sync & Mapping Settings</a> for all owner mapping and sync workflows.</p>
 </div>
 
 <div class="card card-warn-border mb-15">
     <div class="card-body">
-        <p class="page-description mb-0"><strong>Not used for order import (v2.4.9+).</strong> Configure Connector Queue Status → SFM Status in Sync Settings. Re-sync still updates snapshot fields only and never overwrites SFM workflow status.</p>
+        <p class="page-description mb-0"><strong>Not used for order import (v2.5.0+).</strong> Entry mapping (Import as NEW / Ignore) and Final Result Mapping (Delivered / Returned) live on Sync & Mapping Settings.</p>
     </div>
 </div>
 
